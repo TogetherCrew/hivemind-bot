@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      target: test
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3000
+      - MONGODB_HOST=mongo
+      - MONGODB_PORT=27017
+      - MONGODB_USER=root
+      - MONGODB_PASS=pass
+      - NEO4J_PROTOCOL=bolt
+      - NEO4J_HOST=neo4j
+      - NEO4J_PORT=7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password
+      - NEO4J_DB=neo4j
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=root
+      - POSTGRES_PASS=pass
+      - POSTGRES_PORT=5432
+      - CHUNK_SIZE=512
+      - EMBEDDING_DIM=1024
+      - K1_RETRIEVER_SEARCH=20
+      - K2_RETRIEVER_SEARCH=5
+      - D_RETRIEVER_SEARCH=7
+    volumes:
+      - ./coverage:/project/coverage
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+  neo4j:
+    image: "neo4j:5.9.0"
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+    healthcheck:
+      test: ["CMD" ,"wget", "http://localhost:7474"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 2
+      start_period: 40s
+  mongo:
+    image: "mongo:6.0.8"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    healthcheck:
+      test: echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+      interval: 60s
+      timeout: 10s
+      retries: 2
+      start_period: 40s
+  postgres:
+    image: "ankane/pgvector"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=pass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

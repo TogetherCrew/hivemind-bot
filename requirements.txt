@@ -1,0 +1,20 @@
+numpy
+llama-index>=0.9.21, <1.0.0
+pymongo
+python-dotenv
+pgvector
+asyncpg
+psycopg2-binary
+sqlalchemy[asyncio]
+async-sqlalchemy
+python-pptx
+tc-neo4j-lib
+google-api-python-client
+unstructured
+cohere
+neo4j>=5.14.1, <6.0.0
+coverage>=7.3.3, <8.0.0
+pytest>=7.4.3, <8.0.0
+python-dotenv==1.0.0
+tc_hivemind_backend==1.0.0
+celery>=5.3.6, <6.0.0
