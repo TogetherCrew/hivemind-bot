@@ -133,7 +133,7 @@ def query_discord_auto_filter(
         similarity_top_k=similarity_top_k,
     )
 
-    dates_modified = process_dates(dates, d)
+    dates_modified = process_dates(list(dates), d)
 
     response = query_discord(
         community_id=community_id,
