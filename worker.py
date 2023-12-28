@@ -1,13 +1,12 @@
+from celery_app.tasks import add
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 
-from celery_app.tasks import add
-
 
 # TODO: Update according to our requirements
 def do_something(recieved_data):
-    message = f"Calculation Results:"
+    message = "Calculation Results:"
     print(message)
     print(f"recieved_data: {recieved_data}")
     add.delay(20, 14)

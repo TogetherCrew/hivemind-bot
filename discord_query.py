@@ -1,12 +1,10 @@
-from retrievers.forum_summary_retriever import (
-    ForumBasedSummaryRetriever,
-)
+from llama_index import QueryBundle
+from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
+from retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from retrievers.process_dates import process_dates
 from retrievers.utils.load_hyperparams import load_hyperparams
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
-from llama_index import QueryBundle
-from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
 
 
 def query_discord(
@@ -140,8 +138,8 @@ def query_discord_auto_filter(
     response = query_discord(
         community_id=community_id,
         query=query,
-        thread_names=threads,
-        channel_names=channels,
+        thread_names=list(threads),
+        channel_names=list(channels),
         days=dates_modified,
     )
     return response

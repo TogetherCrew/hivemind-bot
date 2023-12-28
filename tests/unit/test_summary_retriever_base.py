@@ -2,9 +2,9 @@ from functools import partial
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from retrievers.summary_retriever_base import BaseSummarySearch
 from llama_index import Document, MockEmbedding, ServiceContext, VectorStoreIndex
 from llama_index.schema import NodeWithScore
+from retrievers.summary_retriever_base import BaseSummarySearch
 
 
 class TestSummaryRetrieverBase(TestCase):

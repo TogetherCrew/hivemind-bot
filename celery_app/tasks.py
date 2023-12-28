@@ -1,5 +1,5 @@
-from celery_app.server import app
 from celery_app.job_send import job_send
+from celery_app.server import app
 
 # TODO: Write tasks that match our requirements
 

@@ -1,10 +1,9 @@
-from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
-
-from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 from llama_index import VectorStoreIndex
 from llama_index.embeddings import BaseEmbedding
 from llama_index.indices.query.schema import QueryBundle
 from llama_index.schema import NodeWithScore
+from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 
 
 class BaseSummarySearch:
