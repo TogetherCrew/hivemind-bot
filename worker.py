@@ -2,7 +2,6 @@ from celery_app.tasks import add
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
-
 from utils.credentials import load_rabbitmq_credentials
 
 
@@ -32,9 +31,9 @@ def job_recieve(broker_url, port, username, password):
 
 if __name__ == "__main__":
     rabbit_creds = load_rabbitmq_credentials()
-    username = rabbit_creds['user']
-    password = rabbit_creds['password']
-    broker_url = rabbit_creds['host']
-    port = rabbit_creds['port']
+    username = rabbit_creds["user"]
+    password = rabbit_creds["password"]
+    broker_url = rabbit_creds["host"]
+    port = rabbit_creds["port"]
 
     job_recieve(broker_url, port, username, password)

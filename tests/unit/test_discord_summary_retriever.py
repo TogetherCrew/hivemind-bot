@@ -3,9 +3,9 @@ from functools import partial
 from unittest import TestCase
 from unittest.mock import MagicMock
 
+from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from dateutil import parser
 from llama_index import Document, MockEmbedding, ServiceContext, VectorStoreIndex
-from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 
 
 class TestDiscordSummaryRetriever(TestCase):
