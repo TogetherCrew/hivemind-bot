@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from retrievers.utils.load_hyperparams import load_hyperparams
+from bot.retrievers.utils.load_hyperparams import load_hyperparams
 
 
 class TestLoadHyperparams(unittest.TestCase):

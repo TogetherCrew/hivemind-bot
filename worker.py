@@ -3,6 +3,8 @@ from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 
+from utils.credentials import load_rabbitmq_credentials
+
 
 # TODO: Update according to our requirements
 def do_something(recieved_data):
@@ -29,10 +31,10 @@ def job_recieve(broker_url, port, username, password):
 
 
 if __name__ == "__main__":
-    # TODO: read from .env
-    broker_url = "localhost"
-    port = 5672
-    username = "root"
-    password = "pass"
+    rabbit_creds = load_rabbitmq_credentials()
+    username = rabbit_creds['user']
+    password = rabbit_creds['password']
+    broker_url = rabbit_creds['host']
+    port = rabbit_creds['port']
 
     job_recieve(broker_url, port, username, password)

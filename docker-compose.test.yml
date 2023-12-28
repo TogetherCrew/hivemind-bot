@@ -22,6 +22,10 @@ services:
       - POSTGRES_USER=root
       - POSTGRES_PASS=pass
       - POSTGRES_PORT=5432
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_USER=root
+      - RABBIT_PASSWORD=pass
       - CHUNK_SIZE=512
       - EMBEDDING_DIM=1024
       - K1_RETRIEVER_SEARCH=20
@@ -69,3 +73,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  rabbitmq:
+    image: "rabbitmq:3-management-alpine"
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=pass
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 2
+      start_period: 40s
