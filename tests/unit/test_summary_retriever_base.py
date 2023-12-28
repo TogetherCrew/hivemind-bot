@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from llama_index import Document, MockEmbedding, ServiceContext, VectorStoreIndex
 from llama_index.schema import NodeWithScore
-from retrievers.summary_retriever_base import BaseSummarySearch
+from bot.retrievers.summary_retriever_base import BaseSummarySearch
 
 
 class TestSummaryRetrieverBase(TestCase):

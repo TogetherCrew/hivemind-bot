@@ -1,6 +1,6 @@
 import unittest
 
-from retrievers.process_dates import process_dates
+from bot.retrievers.process_dates import process_dates
 
 
 class TestProcessDates(unittest.TestCase):

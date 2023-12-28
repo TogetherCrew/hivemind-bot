@@ -1,5 +1,5 @@
 from llama_index.embeddings import BaseEmbedding
-from retrievers.summary_retriever_base import BaseSummarySearch
+from bot.retrievers.summary_retriever_base import BaseSummarySearch
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 from dateutil import parser
 from llama_index import Document, MockEmbedding, ServiceContext, VectorStoreIndex
-from retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
+from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 
 
 class TestDiscordSummaryRetriever(TestCase):
