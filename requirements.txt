@@ -16,5 +16,5 @@ neo4j>=5.14.1, <6.0.0
 coverage>=7.3.3, <8.0.0
 pytest>=7.4.3, <8.0.0
 python-dotenv==1.0.0
-tc_hivemind_backend==1.0.0
+tc-hivemind-backend==1.0.0
 celery>=5.3.6, <6.0.0
