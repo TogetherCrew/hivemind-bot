@@ -1,21 +1,22 @@
 from utils.query_engine import prepare_discord_engine_auto_filter
 from llama_index.core import BaseQueryEngine
-from guidance.llms import OpenAI as GuidanceOpenAI
+from guidance.models import OpenAI as GuidanceOpenAI
 from llama_index import QueryBundle
 from llama_index.tools import QueryEngineTool, ToolMetadata
 from llama_index.query_engine import SubQuestionQueryEngine
 from llama_index.question_gen.guidance_generator import GuidanceQuestionGenerator
 
+
 def query_multiple_source(
-        query: str,
-        community_id: str,
-        discord: bool,
-        discourse: bool,
-        gdrive: bool,
-        notion: bool,
-        telegram: bool,
-        github: bool,
-    ) -> str:
+    query: str,
+    community_id: str,
+    discord: bool,
+    discourse: bool,
+    gdrive: bool,
+    notion: bool,
+    telegram: bool,
+    github: bool,
+) -> str:
     """
     query multiple platforms and get an answer from the multiple
 
@@ -66,7 +67,7 @@ def query_multiple_source(
         )
         tool_metadata = ToolMetadata(
             name="Discord",
-            description="Provides the discord platform conversations data."
+            description="Provides the discord platform conversations data.",
         )
 
         tools.append(tool_metadata)
@@ -76,7 +77,7 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
-    
+
     if discourse:
         raise NotImplementedError
     if gdrive:
@@ -87,7 +88,6 @@ def query_multiple_source(
         raise NotImplementedError
     if github:
         raise NotImplementedError
-    
 
     question_gen = GuidanceQuestionGenerator.from_defaults(
         guidance_llm=GuidanceOpenAI("text-davinci-003"), verbose=False
@@ -97,8 +97,6 @@ def query_multiple_source(
         question_gen=question_gen,
         query_engine_tools=query_engine_tools,
     )
-    reponse = s_engine.query(
-        QueryBundle(query)
-    )
+    reponse = s_engine.query(QueryBundle(query))
 
     return reponse.response
