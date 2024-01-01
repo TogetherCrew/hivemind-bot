@@ -2,19 +2,19 @@ from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.process_dates import process_dates
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index import QueryBundle
+from llama_index.core import BaseQueryEngine
 from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 
 
-def query_discord(
+def create_discord_engine(
     community_id: str,
-    query: str,
     thread_names: list[str],
     channel_names: list[str],
     days: list[str],
     similarity_top_k: int | None = None,
-) -> str:
+) -> BaseQueryEngine:
     """
     query the discord database using filters given
     and give an anwer to the given query using the LLM
@@ -37,18 +37,16 @@ def query_discord(
 
     Returns
     ---------
-    response : str
-        the LLM response given the query
+    query_engine : BaseQueryEngine
+        the created query engine with the filters
     """
-    if similarity_top_k is None:
-        _, similarity_top_k, _ = load_hyperparams()
-
     table_name = "discord"
     dbname = f"community_{community_id}"
 
     pg_vector = PGVectorAccess(table_name=table_name, dbname=dbname)
-
     index = pg_vector.load_index()
+    if similarity_top_k is None:
+        _, similarity_top_k, _ = load_hyperparams()
 
     thread_filters: list[ExactMatchFilter] = []
     channel_filters: list[ExactMatchFilter] = []
@@ -76,22 +74,17 @@ def query_discord(
         filters=filters, similarity_top_k=similarity_top_k
     )
 
-    query_bundle = QueryBundle(
-        query_str=query, embedding=CohereEmbedding().get_text_embedding(text=query)
-    )
-    response = query_engine.query(query_bundle)
-
-    return response.response
+    return query_engine
 
 
-def query_discord_auto_filter(
+def create_discord_engine_auto_filter(
     community_id: str,
     query: str,
     similarity_top_k: int | None = None,
     d: int | None = None,
-) -> str:
+) -> BaseQueryEngine:
     """
-    get the query results and do the filtering automatically.
+    get the query engine and do the filtering automatically.
     By automatically we mean, it would first query the summaries
     to get the metadata filters
 
@@ -106,14 +99,14 @@ def query_discord_auto_filter(
         to get the `k2` count simliar nodes
         if `None`, then would read from `.env`
     d : int
-        this would make the secondary search (`query_discord`)
+        this would make the secondary search (`create_discord_engine`)
         to be done on the `metadata.date - d` to `metadata.date + d`
 
 
     Returns
     ---------
-    response : str
-        the LLM response given the query
+    query_engine : BaseQueryEngine
+        the created query engine with the filters
     """
     table_name = "discord_summary"
     dbname = f"community_{community_id}"
@@ -135,11 +128,39 @@ def query_discord_auto_filter(
 
     dates_modified = process_dates(list(dates), d)
 
-    response = query_discord(
+    engine = create_discord_engine(
         community_id=community_id,
         query=query,
         thread_names=list(threads),
         channel_names=list(channels),
         days=dates_modified,
     )
+    return engine
+
+
+def query_discord(
+    community_id: str,
+    query: str,
+) -> str:
+    """
+    query the llm using the query engine
+
+    Parameters
+    ------------
+    query_engine : BaseQueryEngine
+        the prepared query engine
+    query : str
+        the string question
+    """
+    query_engine = create_discord_engine_auto_filter(
+        community_id=community_id,
+        query=query,
+    )
+
+    query_bundle = QueryBundle(
+        query_str=query, embedding=CohereEmbedding().get_text_embedding(text=query)
+    )
+
+    response = query_engine.query(query_bundle)
+
     return response
