@@ -5,6 +5,7 @@ from llama_index import QueryBundle
 from llama_index.tools import QueryEngineTool, ToolMetadata
 from llama_index.query_engine import SubQuestionQueryEngine
 from llama_index.question_gen.guidance_generator import GuidanceQuestionGenerator
+from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
 def query_multiple_source(
@@ -97,6 +98,10 @@ def query_multiple_source(
         question_gen=question_gen,
         query_engine_tools=query_engine_tools,
     )
-    reponse = s_engine.query(QueryBundle(query))
+    reponse = s_engine.query(
+        QueryBundle(
+            query_str=query, embedding=CohereEmbedding().get_text_embedding(text=query)
+        )
+    )
 
     return reponse.response
