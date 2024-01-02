@@ -1,6 +1,5 @@
 import unittest
 import os
-from unittest.mock import patch, Mock
 from utils.query_engine.discord_query_engine import prepare_discord_engine
 from llama_index.core import BaseQueryEngine
 from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters

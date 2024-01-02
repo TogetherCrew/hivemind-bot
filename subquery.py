@@ -1,11 +1,11 @@
-from utils.query_engine import prepare_discord_engine_auto_filter
-from llama_index.core import BaseQueryEngine
 from guidance.models import OpenAI as GuidanceOpenAI
 from llama_index import QueryBundle
-from llama_index.tools import QueryEngineTool, ToolMetadata
+from llama_index.core import BaseQueryEngine
 from llama_index.query_engine import SubQuestionQueryEngine
 from llama_index.question_gen.guidance_generator import GuidanceQuestionGenerator
+from llama_index.tools import QueryEngineTool, ToolMetadata
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from utils.query_engine import prepare_discord_engine_auto_filter
 
 
 def query_multiple_source(
@@ -51,11 +51,11 @@ def query_multiple_source(
     tools: list[ToolMetadata] = []
 
     discord_query_engine: BaseQueryEngine
-    discourse_query_engine: BaseQueryEngine
-    gdrive_query_engine: BaseQueryEngine
-    notion_query_engine: BaseQueryEngine
-    telegram_query_engine: BaseQueryEngine
-    github_query_engine: BaseQueryEngine
+    # discourse_query_engine: BaseQueryEngine
+    # gdrive_query_engine: BaseQueryEngine
+    # notion_query_engine: BaseQueryEngine
+    # telegram_query_engine: BaseQueryEngine
+    # github_query_engine: BaseQueryEngine
 
     # query engine perparation
     # tools_metadata and query_engine_tools

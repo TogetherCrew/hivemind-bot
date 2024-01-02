@@ -1,6 +1,6 @@
-from utils.query_engine.discord_query_engine import prepare_discord_engine_auto_filter
 from llama_index import QueryBundle
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from utils.query_engine.discord_query_engine import prepare_discord_engine_auto_filter
 
 
 def query_discord(
