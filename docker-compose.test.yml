@@ -31,6 +31,8 @@ services:
       - K1_RETRIEVER_SEARCH=20
       - K2_RETRIEVER_SEARCH=5
       - D_RETRIEVER_SEARCH=7
+      - COHERE_API_KEY=some_credentials
+      - OPENAI_API_KEY=some_credentials2
     volumes:
       - ./coverage:/project/coverage
     depends_on:
