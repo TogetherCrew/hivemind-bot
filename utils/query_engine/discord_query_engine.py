@@ -12,6 +12,7 @@ def prepare_discord_engine(
     channel_names: list[str],
     days: list[str],
     similarity_top_k: int | None = None,
+    **kwarg,
 ) -> BaseQueryEngine:
     """
     query the discord database using filters given
@@ -32,6 +33,9 @@ def prepare_discord_engine(
     similarity_top_k : int | None
         the k similar results to use when querying the data
         if `None` will load from `.env` file
+    ** kwargs :
+        testing : bool
+            whether to setup the PGVectorAccess in testing mode
 
     Returns
     ---------
@@ -41,7 +45,9 @@ def prepare_discord_engine(
     table_name = "discord"
     dbname = f"community_{community_id}"
 
-    pg_vector = PGVectorAccess(table_name=table_name, dbname=dbname)
+    testing = kwarg.get("testing", False)
+
+    pg_vector = PGVectorAccess(table_name=table_name, dbname=dbname, testing=testing)
     index = pg_vector.load_index()
     if similarity_top_k is None:
         _, similarity_top_k, _ = load_hyperparams()
