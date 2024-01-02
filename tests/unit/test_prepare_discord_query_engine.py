@@ -1,8 +1,9 @@
-import unittest
 import os
-from utils.query_engine.discord_query_engine import prepare_discord_engine
+import unittest
+
 from llama_index.core import BaseQueryEngine
 from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
+from utils.query_engine.discord_query_engine import prepare_discord_engine
 
 
 class TestPrepareDiscordEngine(unittest.TestCase):
