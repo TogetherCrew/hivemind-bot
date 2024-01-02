@@ -17,6 +17,13 @@ def query_discord(
         the prepared query engine
     query : str
         the string question
+
+    Returns
+    ----------
+    response : str
+        the LLM response
+    source_nodes : list[llama_index.schema.NodeWithScore]
+        the source nodes that helped in answering the question
     """
     query_engine = prepare_discord_engine_auto_filter(
         community_id=community_id,
