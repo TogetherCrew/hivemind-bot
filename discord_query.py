@@ -1,4 +1,5 @@
 from llama_index import QueryBundle
+from llama_index.schema import NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine.discord_query_engine import prepare_discord_engine_auto_filter
 
@@ -6,7 +7,7 @@ from utils.query_engine.discord_query_engine import prepare_discord_engine_auto_
 def query_discord(
     community_id: str,
     query: str,
-) -> str:
+) -> tuple[str, list[NodeWithScore]]:
     """
     query the llm using the query engine
 
@@ -25,4 +26,4 @@ def query_discord(
         query_str=query, embedding=CohereEmbedding().get_text_embedding(text=query)
     )
     response = query_engine.query(query_bundle)
-    return response
+    return response.response, response.source_nodes
