@@ -68,7 +68,7 @@ def query_multiple_source(
         )
         tool_metadata = ToolMetadata(
             name="Discord",
-            description="Provides the discord platform conversations data.",
+            description="Contains messages and summaries of conversations from the Discord platform of the community",
         )
 
         tools.append(tool_metadata)
