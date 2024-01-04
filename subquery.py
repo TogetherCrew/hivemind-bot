@@ -1,8 +1,9 @@
 from guidance.models import OpenAI as GuidanceOpenAI
-from llama_index import QueryBundle
+from llama_index import QueryBundle, ServiceContext
 from llama_index.core import BaseQueryEngine
 from llama_index.query_engine import SubQuestionQueryEngine
 from llama_index.question_gen.guidance_generator import GuidanceQuestionGenerator
+from llama_index.schema import NodeWithScore
 from llama_index.tools import QueryEngineTool, ToolMetadata
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine import prepare_discord_engine_auto_filter
@@ -17,7 +18,7 @@ def query_multiple_source(
     notion: bool,
     telegram: bool,
     github: bool,
-) -> str:
+) -> tuple[str, list[NodeWithScore]]:
     """
     query multiple platforms and get an answer from the multiple
 
@@ -43,9 +44,11 @@ def query_multiple_source(
 
     Returns
     --------
-    reponse : str
+    response : str,
         the response to the user query from the LLM
         using the engines of the given platforms (pltform equal to True)
+    source_nodes : list[NodeWithScore]
+        the list of nodes that were source of answering
     """
     query_engine_tools: list[QueryEngineTool] = []
     tools: list[ToolMetadata] = []
@@ -93,15 +96,15 @@ def query_multiple_source(
     question_gen = GuidanceQuestionGenerator.from_defaults(
         guidance_llm=GuidanceOpenAI("text-davinci-003"), verbose=False
     )
-
+    embed_model = CohereEmbedding()
+    service_context = ServiceContext.from_defaults(embed_model=embed_model)
     s_engine = SubQuestionQueryEngine.from_defaults(
         question_gen=question_gen,
         query_engine_tools=query_engine_tools,
+        use_async=False,
+        service_context=service_context,
     )
-    reponse = s_engine.query(
-        QueryBundle(
-            query_str=query, embedding=CohereEmbedding().get_text_embedding(text=query)
-        )
-    )
+    query_embedding = embed_model.get_text_embedding(text=query)
+    response = s_engine.query(QueryBundle(query_str=query, embedding=query_embedding))
 
-    return reponse.response
+    return response.response, response.source_nodes

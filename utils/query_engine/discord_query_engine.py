@@ -4,6 +4,7 @@ from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import BaseQueryEngine
 from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
+from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
 def prepare_discord_engine(
@@ -47,7 +48,12 @@ def prepare_discord_engine(
 
     testing = kwarg.get("testing", False)
 
-    pg_vector = PGVectorAccess(table_name=table_name, dbname=dbname, testing=testing)
+    pg_vector = PGVectorAccess(
+        table_name=table_name,
+        dbname=dbname,
+        testing=testing,
+        embed_model=CohereEmbedding(),
+    )
     index = pg_vector.load_index()
     if similarity_top_k is None:
         _, similarity_top_k, _ = load_hyperparams()
