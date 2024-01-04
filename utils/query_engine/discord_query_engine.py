@@ -3,8 +3,8 @@ from bot.retrievers.process_dates import process_dates
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import BaseQueryEngine
 from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
-from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 
 
 def prepare_discord_engine(
