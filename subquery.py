@@ -1,4 +1,4 @@
-from guidance.models import OpenAI as GuidanceOpenAI
+from guidance.models import OpenAIChat
 from llama_index import QueryBundle, ServiceContext
 from llama_index.core import BaseQueryEngine
 from llama_index.query_engine import SubQuestionQueryEngine
@@ -94,7 +94,8 @@ def query_multiple_source(
         raise NotImplementedError
 
     question_gen = GuidanceQuestionGenerator.from_defaults(
-        guidance_llm=GuidanceOpenAI("text-davinci-003"), verbose=False
+        guidance_llm=OpenAIChat("gpt-3.5-turbo"),
+        verbose=False,
     )
     embed_model = CohereEmbedding()
     service_context = ServiceContext.from_defaults(embed_model=embed_model)
