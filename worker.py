@@ -1,16 +1,20 @@
-from celery_app.tasks import add
+from typing import Any
+from celery_app.tasks import ask_question_auto_search
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
 
 
-# TODO: Update according to our requirements
-def do_something(recieved_data):
-    message = "Calculation Results:"
-    print(message)
-    print(f"recieved_data: {recieved_data}")
-    add.delay(20, 14)
+def query_llm(recieved_data: dict[str, Any]):
+    """
+    # TODO: Find the question and community_id
+    """
+    ask_question_auto_search.delay(
+        question="TODO: QUESTION",
+        community_id="TODO",
+        bot_given_info=recieved_data,
+    )
 
 
 def job_recieve(broker_url, port, username, password):
@@ -19,7 +23,7 @@ def job_recieve(broker_url, port, username, password):
     )
 
     # TODO: Update according to our requirements
-    rabbit_mq.on_event(Event.HIVEMIND.INTERACTION_CREATED, do_something)
+    rabbit_mq.on_event(Event.HIVEMIND.INTERACTION_CREATED, query_llm)
     rabbit_mq.connect(Queue.HIVEMIND)
     rabbit_mq.consume(Queue.HIVEMIND)
 

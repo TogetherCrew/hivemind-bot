@@ -12,12 +12,12 @@ from utils.query_engine import prepare_discord_engine_auto_filter
 def query_multiple_source(
     query: str,
     community_id: str,
-    discord: bool,
-    discourse: bool,
-    gdrive: bool,
-    notion: bool,
-    telegram: bool,
-    github: bool,
+    discord: bool = False,
+    discourse: bool = False,
+    gdrive: bool = False,
+    notion: bool = False,
+    telegram: bool = False,
+    github: bool = False,
 ) -> tuple[str, list[NodeWithScore]]:
     """
     query multiple platforms and get an answer from the multiple
@@ -30,23 +30,29 @@ def query_multiple_source(
         the community id to get their data
     discord : bool
         if `True` then add the engine to the subquery_generator
+        default is set to False
     discourse : bool
         if `True` then add the engine to the subquery_generator
+        default is set to False
     gdrive : bool
         if `True` then add the engine to the subquery_generator
+        default is set to False
     notion : bool
         if `True` then add the engine to the subquery_generator
+        default is set to False
     telegram : bool
         if `True` then add the engine to the subquery_generator
+        default is set to False
     github : bool
         if `True` then add the engine to the subquery_generator
+        default is set to False
 
 
     Returns
     --------
     response : str,
         the response to the user query from the LLM
-        using the engines of the given platforms (pltform equal to True)
+        using the engines of the given platforms (platform equal to True)
     source_nodes : list[NodeWithScore]
         the list of nodes that were source of answering
     """
