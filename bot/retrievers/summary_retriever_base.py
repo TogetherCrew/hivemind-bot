@@ -34,7 +34,7 @@ class BaseSummarySearch:
             the embedding model to use for doing embedding on the query string
             default would be CohereEmbedding that we've written
         """
-        self.index = self._setup_index(table_name, dbname)
+        self.index = self._setup_index(table_name, dbname, embedding_model)
         self.embedding_model = embedding_model
 
     def get_similar_nodes(
@@ -62,10 +62,14 @@ class BaseSummarySearch:
 
         return nodes
 
-    def _setup_index(self, table_name: str, dbname: str) -> VectorStoreIndex:
+    def _setup_index(
+        self, table_name: str, dbname: str, embedding_model: BaseEmbedding
+    ) -> VectorStoreIndex:
         """
         setup the llama_index VectorStoreIndex
         """
-        pg_vector_access = PGVectorAccess(table_name=table_name, dbname=dbname)
+        pg_vector_access = PGVectorAccess(
+            table_name=table_name, dbname=dbname, embed_model=embedding_model
+        )
         index = pg_vector_access.load_index()
         return index

@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 
 hivemind-bot-env/*
+main.ipynb
