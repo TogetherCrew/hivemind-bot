@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 
 def load_postgres_credentials() -> dict[str, str]:
     """
-    load posgresql db credentials from .env
+    load postgresql db credentials from .env
 
     Returns:
     ---------
     postgres_creds : dict[str, Any]
         postgresql credentials
-        a dictionary representive of
+        a dictionary representative of
             `user`: str
             `password` : str
             `host` : str
@@ -37,7 +37,7 @@ def load_rabbitmq_credentials() -> dict[str, str]:
     ---------
     rabbitmq_creds : dict[str, Any]
         rabbitmq credentials
-        a dictionary representive of
+        a dictionary representative of
             `user`: str
             `password` : str
             `host` : str
@@ -63,7 +63,7 @@ def load_mongo_credentials() -> dict[str, str]:
     ---------
     mongo_creds : dict[str, Any]
         mongodb credentials
-        a dictionary representive of
+        a dictionary representative of
             `user`: str
             `password` : str
             `host` : str

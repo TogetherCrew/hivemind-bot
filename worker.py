@@ -14,7 +14,7 @@ def query_llm(recieved_data: dict[str, Any]):
     """
     query the llm using the received data
     """
-    recieved_input = ChatInputCommandInteraction.from_dict(user_input)
+    recieved_input = ChatInputCommandInteraction.from_dict(recieved_data)
     # TODO: `_hoistedOptions` is an array and should be handled right
     user_input = recieved_input.options["_hoistedOptions"]["value"]
 

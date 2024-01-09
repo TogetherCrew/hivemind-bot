@@ -23,7 +23,7 @@ def ask_question_auto_search(
 ) -> None:
     """
     this task is for the case that the user asks a question
-    it would first retrieve the serach metadata from summaries
+    it would first retrieve the search metadata from summaries
     then perform a query on the filetred raw data to find answer
 
     Parameters
