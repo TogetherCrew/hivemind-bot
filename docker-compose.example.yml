@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  server:
+    build:
+      context: .
+      target: prod
+      dockerfile: Dockerfile
+  worker:
+    build:
+      context: .
+      target: prod
+      dockerfile: Dockerfile
+    command: python3 worker.py

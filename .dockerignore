@@ -1,0 +1,8 @@
+.github/
+
+.coverage/
+.coverage
+coverage
+
+venv/
+.env
