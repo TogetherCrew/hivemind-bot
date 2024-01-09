@@ -15,6 +15,7 @@ def query_llm(recieved_data: dict[str, Any]):
     query the llm using the received data
     """
     recieved_input = ChatInputCommandInteraction.from_dict(user_input)
+    # TODO: `_hoistedOptions` is an array and should be handled right
     user_input = recieved_input.options["_hoistedOptions"]["value"]
 
     community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
