@@ -4,15 +4,23 @@ from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
+from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
+    ChatInputCommandInteraction,
+)
+from utils.fetch_community_id import fetch_community_id_by_guild_id
 
 
 def query_llm(recieved_data: dict[str, Any]):
     """
-    # TODO: Find the question and community_id
+    query the llm using the received data
     """
+    recieved_input = ChatInputCommandInteraction.from_dict(user_input)
+    user_input = recieved_input.options["_hoistedOptions"]["value"]
+
+    community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
     ask_question_auto_search.delay(
-        question="TODO: QUESTION",
-        community_id="TODO",
+        question=user_input,
+        community_id=community_id,
         bot_given_info=recieved_data,
     )
 

@@ -7,6 +7,9 @@ from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
     InteractionCallbackData,
 )
+from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
+    ChatInputCommandInteraction,
+)
 from celery_app.utils.fire_event import job_send
 from celery_app.server import app
 from subquery import query_multiple_source
@@ -16,7 +19,7 @@ from subquery import query_multiple_source
 def ask_question_auto_search(
     question: str,
     community_id: str,
-    bot_given_info: dict[str, Any],
+    bot_given_info: ChatInputCommandInteraction,
 ) -> None:
     """
     this task is for the case that the user asks a question
@@ -29,7 +32,7 @@ def ask_question_auto_search(
         the user question
     community_id : str
         the community that the question was asked in
-    bot_given_info : dict[str, Any]
+    bot_given_info : tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction.ChatInputCommandInteraction
         the information data that needed to be sent back to the bot again.
         This would be the `ChatInputCommandInteraction`.
     """
@@ -55,7 +58,7 @@ def ask_question_auto_search(
     response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
         type=19,
         data=InteractionCallbackData(content=json.dumps(results)),
-        interaction=bot_given_info,
+        interaction=bot_given_info.to_dict(),
     ).to_dict()
 
     job_send(
