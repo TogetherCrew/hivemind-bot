@@ -1,6 +1,6 @@
 from guidance.models import OpenAIChat
 from llama_index import QueryBundle, ServiceContext
-from llama_index.core import BaseQueryEngine
+from llama_index.core.base_query_engine import BaseQueryEngine
 from llama_index.query_engine import SubQuestionQueryEngine
 from llama_index.question_gen.guidance_generator import GuidanceQuestionGenerator
 from llama_index.schema import NodeWithScore
