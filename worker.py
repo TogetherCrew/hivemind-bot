@@ -1,14 +1,14 @@
-from typing import Any
 import logging
+from typing import Any
 
 from celery_app.tasks import ask_question_auto_search
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
-from tc_messageBroker.rabbit_mq.queue import Queue
-from utils.credentials import load_rabbitmq_credentials
 from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
     ChatInputCommandInteraction,
 )
+from tc_messageBroker.rabbit_mq.queue import Queue
+from utils.credentials import load_rabbitmq_credentials
 from utils.fetch_community_id import fetch_community_id_by_guild_id
 
 
