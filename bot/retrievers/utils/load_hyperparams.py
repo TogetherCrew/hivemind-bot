@@ -14,7 +14,7 @@ def load_hyperparams() -> tuple[int, int, int]:
         to get the `k1` count similar nodes
     k2 : int
         the value for the secondary raw search
-        to get the `k2` count simliar nodes
+        to get the `k2` count similar nodes
     d : int
         the before and after day interval
     """

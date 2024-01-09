@@ -1,29 +1,68 @@
-from celery_app.job_send import job_send
+import json
+from typing import Any
+
 from celery_app.server import app
-from utils.credentials import load_rabbitmq_credentials
-
-# TODO: Write tasks that match our requirements
-
-
-@app.task
-def add(x, y):
-    rabbit_creds = load_rabbitmq_credentials()
-    username = rabbit_creds["user"]
-    password = rabbit_creds["password"]
-    broker_url = rabbit_creds["host"]
-    port = rabbit_creds["port"]
-
-    res = x + y
-    job_send(broker_url, port, username, password, res)
-
-    return res
+from celery_app.utils.fire_event import job_send
+from subquery import query_multiple_source
+from tc_messageBroker.rabbit_mq.event import Event
+from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
+    InteractionCallbackData,
+)
+from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
+    ChatInputCommandInteraction,
+)
+from tc_messageBroker.rabbit_mq.payload.payload import Payload
+from tc_messageBroker.rabbit_mq.queue import Queue
 
 
 @app.task
-def mul(x, y):
-    return x * y
+def ask_question_auto_search(
+    question: str,
+    community_id: str,
+    bot_given_info: ChatInputCommandInteraction,
+) -> None:
+    """
+    this task is for the case that the user asks a question
+    it would first retrieve the search metadata from summaries
+    then perform a query on the filetred raw data to find answer
 
+    Parameters
+    ------------
+    question : str
+        the user question
+    community_id : str
+        the community that the question was asked in
+    bot_given_info : tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction.ChatInputCommandInteraction
+        the information data that needed to be sent back to the bot again.
+        This would be the `ChatInputCommandInteraction`.
+    """
 
-@app.task
-def xsum(numbers):
-    return sum(numbers)
+    # for now we have just the discord platform
+    response, source_nodes = query_multiple_source(
+        query=question,
+        community_id=community_id,
+        discord=True,
+    )
+
+    source_nodes_dict: list[dict[str, Any]] = []
+    for node in source_nodes:
+        node_dict = dict(node)
+        node_dict.pop("relationships", None)
+        source_nodes_dict.append(node_dict)
+
+    results = {
+        "response": response,
+        "source_nodes": source_nodes_dict,
+    }
+
+    response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
+        type=19,
+        data=InteractionCallbackData(content=json.dumps(results)),
+        interaction=bot_given_info.to_dict(),
+    ).to_dict()
+
+    job_send(
+        event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
+        queue_name=Queue.DISCORD_BOT,
+        content=response_payload,
+    )

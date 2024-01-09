@@ -42,7 +42,7 @@ class BaseSummarySearch:
     ) -> list[NodeWithScore]:
         """
         get k similar nodes to the query.
-        Note: this funciton wold get the embedding
+        Note: this function wold get the embedding
         for the query to do the similarity search.
 
         Parameters

@@ -1,16 +1,37 @@
-from celery_app.tasks import add
+import logging
+from typing import Any
+
+from celery_app.tasks import ask_question_auto_search
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
+from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
+    ChatInputCommandInteraction,
+)
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
+from utils.fetch_community_id import fetch_community_id_by_guild_id
 
 
-# TODO: Update according to our requirements
-def do_something(recieved_data):
-    message = "Calculation Results:"
-    print(message)
-    print(f"recieved_data: {recieved_data}")
-    add.delay(20, 14)
+def query_llm(recieved_data: dict[str, Any]):
+    """
+    query the llm using the received data
+    """
+    recieved_input = ChatInputCommandInteraction.from_dict(recieved_data)
+    # For now we just have one user input
+    if len(recieved_input.options["_hoistedOptions"]) > 1:
+        logging.warning(
+            "_hoistedOptions does contain more user inputs "
+            "but for now we're just using the first one!"
+        )
+
+    user_input = recieved_input.options["_hoistedOptions"][0]["value"]
+
+    community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
+    ask_question_auto_search.delay(
+        question=user_input,
+        community_id=community_id,
+        bot_given_info=recieved_data,
+    )
 
 
 def job_recieve(broker_url, port, username, password):
@@ -18,8 +39,7 @@ def job_recieve(broker_url, port, username, password):
         broker_url=broker_url, port=port, username=username, password=password
     )
 
-    # TODO: Update according to our requirements
-    rabbit_mq.on_event(Event.HIVEMIND.INTERACTION_CREATED, do_something)
+    rabbit_mq.on_event(Event.HIVEMIND.INTERACTION_CREATED, query_llm)
     rabbit_mq.connect(Queue.HIVEMIND)
     rabbit_mq.consume(Queue.HIVEMIND)
 

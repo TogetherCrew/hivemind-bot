@@ -161,3 +161,4 @@ cython_debug/
 
 hivemind-bot-env/*
 main.ipynb
+.DS_Store
