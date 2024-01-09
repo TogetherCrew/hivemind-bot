@@ -1,4 +1,6 @@
 from typing import Any
+import logging
+
 from celery_app.tasks import ask_question_auto_search
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
@@ -15,8 +17,14 @@ def query_llm(recieved_data: dict[str, Any]):
     query the llm using the received data
     """
     recieved_input = ChatInputCommandInteraction.from_dict(recieved_data)
-    # TODO: `_hoistedOptions` is an array and should be handled right
-    user_input = recieved_input.options["_hoistedOptions"]["value"]
+    # For now we just have one user input
+    if len(recieved_input.options["_hoistedOptions"]) > 1:
+        logging.warning(
+            "_hoistedOptions does contain more user inputs "
+            "but for now we're just using the first one!"
+        )
+
+    user_input = recieved_input.options["_hoistedOptions"][0]["value"]
 
     community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
     ask_question_auto_search.delay(
