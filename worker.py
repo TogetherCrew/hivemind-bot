@@ -39,7 +39,6 @@ def job_recieve(broker_url, port, username, password):
         broker_url=broker_url, port=port, username=username, password=password
     )
 
-    # TODO: Update according to our requirements
     rabbit_mq.on_event(Event.HIVEMIND.INTERACTION_CREATED, query_llm)
     rabbit_mq.connect(Queue.HIVEMIND)
     rabbit_mq.consume(Queue.HIVEMIND)
