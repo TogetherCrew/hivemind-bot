@@ -1,3 +1,4 @@
+import logging
 import json
 from typing import Any
 
@@ -39,6 +40,8 @@ def ask_question_auto_search(
         the information data that needed to be sent back to the bot again.
         This would be the `ChatInputCommandInteraction`.
     """
+    prefix = f"COMMUNITY_ID: {community_id} | "
+    logging.info(f"{prefix}Processing question!")
     create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
         interaction=bot_given_info.to_dict(),
         data=InteractionResponse(
@@ -49,12 +52,13 @@ def ask_question_auto_search(
         ),
     ).to_dict()
 
+    logging.info(f"{prefix}Sending process question to discord-bot!")
     job_send(
         event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
         queue_name=Queue.DISCORD_BOT,
         content=create_interaction_content,
     )
-
+    logging.info(f"{prefix}Querying the data sources!")
     # for now we have just the discord platform
     response, source_nodes = query_multiple_source(
         query=question,
@@ -78,6 +82,7 @@ def ask_question_auto_search(
         data=InteractionCallbackData(content=json.dumps(results)),
     ).to_dict()
 
+    logging.info(f"{prefix}Sending Edit response to discord-bot!")
     job_send(
         event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
         queue_name=Queue.DISCORD_BOT,
