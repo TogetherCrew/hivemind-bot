@@ -8,9 +8,11 @@ from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
     InteractionCallbackData,
 )
-from tc_messageBroker.rabbit_mq.payload.discord_bot.interaction_response import InteractionResponse
 from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
     ChatInputCommandInteraction,
+)
+from tc_messageBroker.rabbit_mq.payload.discord_bot.interaction_response import (
+    InteractionResponse,
 )
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
@@ -42,8 +44,7 @@ def ask_question_auto_search(
         data=InteractionResponse(
             type=4,
             data=InteractionCallbackData(
-                content="Processing your question ...",
-                flags=64
+                content="Processing your question ...", flags=64
             ),
         ),
     ).to_dict()
