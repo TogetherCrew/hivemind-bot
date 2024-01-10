@@ -8,6 +8,7 @@ from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
     InteractionCallbackData,
 )
+from tc_messageBroker.rabbit_mq.payload.discord_bot.interaction_response import InteractionResponse
 from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
     ChatInputCommandInteraction,
 )
@@ -36,6 +37,22 @@ def ask_question_auto_search(
         the information data that needed to be sent back to the bot again.
         This would be the `ChatInputCommandInteraction`.
     """
+    create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
+        interaction=bot_given_info.to_dict(),
+        data=InteractionResponse(
+            type=4,
+            data=InteractionCallbackData(
+                content="Processing your question ...",
+                flags=64
+            ),
+        ),
+    ).to_dict()
+
+    job_send(
+        event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
+        queue_name=Queue.DISCORD_BOT,
+        content=create_interaction_content,
+    )
 
     # for now we have just the discord platform
     response, source_nodes = query_multiple_source(
@@ -55,14 +72,13 @@ def ask_question_auto_search(
         "source_nodes": source_nodes_dict,
     }
 
-    response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
-        type=19,
-        data=InteractionCallbackData(content=json.dumps(results)),
+    response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
         interaction=bot_given_info.to_dict(),
+        data=InteractionCallbackData(content=json.dumps(results)),
     ).to_dict()
 
     job_send(
-        event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
+        event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
         queue_name=Queue.DISCORD_BOT,
         content=response_payload,
     )
