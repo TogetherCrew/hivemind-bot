@@ -1,5 +1,5 @@
 numpy
-llama-index>=0.9.26, <1.0.0
+llama-index>=0.9.27, <1.0.0
 pymongo
 python-dotenv
 pgvector
@@ -19,3 +19,4 @@ python-dotenv==1.0.0
 tc-hivemind-backend==1.1.0
 celery>=5.3.6, <6.0.0
 guidance
+tc-messageBroker>=1.6.4, <2.0.0
