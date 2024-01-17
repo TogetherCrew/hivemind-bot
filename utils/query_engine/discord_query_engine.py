@@ -67,7 +67,7 @@ def prepare_discord_engine_auto_filter(
         the query (question) of the user
     similarity_top_k : int | None
         the value for the initial summary search
-        to get the `k2` count simliar nodes
+        to get the `k2` count similar nodes
         if `None`, then would read from `.env`
     d : int
         this would make the secondary search (`prepare_discord_engine`)
