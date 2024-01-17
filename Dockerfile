@@ -9,4 +9,4 @@ RUN chmod +x docker-entrypoint.sh
 CMD ["./docker-entrypoint.sh"]
 
 FROM base AS prod
-CMD ["python3", "celery", "-A", "celery_app.server", "worker", "-l", "INFO"]
+CMD ["python3", "-m", "celery", "-A", "celery_app.server", "worker", "-l", "INFO"]
