@@ -161,11 +161,11 @@ class LevelBasedPlatformQueryEngine:
         if similarity_top_k is None:
             similarity_top_k, _, _ = load_hyperparams()
 
-        discourse_retriever = ForumBasedSummaryRetriever(
+        platform_retriever = ForumBasedSummaryRetriever(
             table_name=self.platform_table_name, dbname=dbname
         )
 
-        level1_names, level2_names, dates = discourse_retriever.retreive_metadata(
+        level1_names, level2_names, dates = platform_retriever.retreive_metadata(
             query=query,
             metadata_group1_key=self.level1_key,
             metadata_group2_key=self.level2_key,

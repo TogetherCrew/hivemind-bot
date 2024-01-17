@@ -37,7 +37,9 @@ def prepare_discourse_engine(
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-    level_based_query_engine = get_discourse_level_based_platform_query_engine()
+    level_based_query_engine = get_discourse_level_based_platform_query_engine(
+        table_name="discourse",
+    )
 
     query_engine = level_based_query_engine.prepare_platform_engine(
         community_id=community_id,
@@ -80,7 +82,9 @@ def prepare_discourse_engine_auto_filter(
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-    level_based_query_engine = get_discourse_level_based_platform_query_engine()
+    level_based_query_engine = get_discourse_level_based_platform_query_engine(
+        table_name="discourse_summary"
+    )
 
     query_engine = level_based_query_engine.prepare_engine_auto_filter(
         community_id=community_id,
@@ -91,12 +95,23 @@ def prepare_discourse_engine_auto_filter(
     return query_engine
 
 
-def get_discourse_level_based_platform_query_engine() -> LevelBasedPlatformQueryEngine:
+def get_discourse_level_based_platform_query_engine(
+    table_name: str,
+) -> LevelBasedPlatformQueryEngine:
     """
-    just perpare the `LevelBasedPlatformQueryEngine` to use
+    perpare the `LevelBasedPlatformQueryEngine` to use
 
+    Parameters
+    -----------
+    table_name : str
+        the postgresql data table to use
+
+    Returns
+    ---------
+    level_based_query_engine : LevelBasedPlatformQueryEngine
+        the query engine creator class
     """
     level_based_query_engine = LevelBasedPlatformQueryEngine(
-        level1_key="category", level2_key="topic", platform_table_name="discourse"
+        level1_key="category", level2_key="topic", platform_table_name=table_name
     )
     return level_based_query_engine

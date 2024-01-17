@@ -37,7 +37,9 @@ def prepare_discord_engine(
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-    query_engine_preparation = get_discord_level_based_platform_query_engine()
+    query_engine_preparation = get_discord_level_based_platform_query_engine(
+        table_name="discord",
+    )
     query_engine = query_engine_preparation.prepare_platform_engine(
         community_id=community_id,
         level1_names=thread_names,
@@ -80,7 +82,9 @@ def prepare_discord_engine_auto_filter(
         the created query engine with the filters
     """
 
-    query_engine_preparation = get_discord_level_based_platform_query_engine()
+    query_engine_preparation = get_discord_level_based_platform_query_engine(
+        table_name="discord_summary"
+    )
     query_engine = query_engine_preparation.prepare_engine_auto_filter(
         community_id=community_id,
         query=query,
@@ -91,10 +95,25 @@ def prepare_discord_engine_auto_filter(
     return query_engine
 
 
-def get_discord_level_based_platform_query_engine() -> LevelBasedPlatformQueryEngine:
+def get_discord_level_based_platform_query_engine(
+    table_name: str,
+) -> LevelBasedPlatformQueryEngine:
+    """
+    perpare the `LevelBasedPlatformQueryEngine` to use
+
+    Parameters
+    -----------
+    table_name : str
+        the postgresql data table to use
+
+    Returns
+    ---------
+    level_based_query_engine : LevelBasedPlatformQueryEngine
+        the query engine creator class
+    """
     level_based_query_engine = LevelBasedPlatformQueryEngine(
         level1_key="thread",
         level2_key="channel",
-        platform_table_name="discord",
+        platform_table_name=table_name,
     )
     return level_based_query_engine
