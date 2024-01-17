@@ -16,6 +16,8 @@ def query_llm(recieved_data: dict[str, Any]):
     """
     query the llm using the received data
     """
+    logging.info(f"RECIEVED DATA: {recieved_data}")
+    logging.info("CONVERTING RECIEVED DATA INTO ChatInputCommandInteraction!")
     recieved_input = ChatInputCommandInteraction.from_dict(recieved_data)
     # For now we just have one user input
     if len(recieved_input.options["_hoistedOptions"]) > 1:
