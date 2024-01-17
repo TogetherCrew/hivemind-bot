@@ -23,10 +23,11 @@ class LevelBasedPlatformQueryEngine:
         level1_key : str
             first hierarchy of the discussion.
             the platforms can be discord or discourse. for example in discord
-            the level1 is `channel` and level2 is `thread`.
+            the level1 is `channel` and in discourse it can be `category`
         level2_key : str
             the second level of discussion in the hierarchy.
-            e.g.: In discourse the level1 can be `category` and level2 would be `topic`
+            For example in discord level2 is `thread`,
+            and on discourse level2 would be `topic`
         platform_table_name : str
             the postgresql table name for the platform. Can be only the platform name
             as `discord` or `discourse`
