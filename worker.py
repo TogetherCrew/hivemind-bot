@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any
 
@@ -18,7 +19,8 @@ def query_llm(recieved_data: dict[str, Any]):
     """
     logging.info(f"RECIEVED DATA: {recieved_data}")
     logging.info("CONVERTING RECIEVED DATA INTO ChatInputCommandInteraction!")
-    recieved_input = ChatInputCommandInteraction.from_dict(recieved_data)
+    interaction = json.loads(recieved_data["content"]["interaction"])
+    recieved_input = ChatInputCommandInteraction.from_dict(interaction)
     # For now we just have one user input
     if len(recieved_input.options["_hoistedOptions"]) > 1:
         logging.warning(
