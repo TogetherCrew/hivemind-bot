@@ -12,9 +12,6 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callb
 from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
     ChatInputCommandInteraction,
 )
-from tc_messageBroker.rabbit_mq.payload.discord_bot.interaction_response import (
-    InteractionResponse,
-)
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
 
@@ -48,22 +45,22 @@ def ask_question_auto_search(
 
     interaction = json.loads(bot_given_info["content"]["interaction"])
     chat_input_interaction = ChatInputCommandInteraction.from_dict(interaction)
-    create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
-        interaction=chat_input_interaction,
-        data=InteractionResponse(
-            type=4,
-            data=InteractionCallbackData(
-                content="Processing your question ...", flags=64
-            ),
-        ),
-    ).to_dict()
+    # create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
+    #     interaction=chat_input_interaction,
+    #     data=InteractionResponse(
+    #         type=4,
+    #         data=InteractionCallbackData(
+    #             content="Processing your question ...", flags=64
+    #         ),
+    #     ),
+    # ).to_dict()
 
-    logging.info(f"{prefix}Sending process question to discord-bot!")
-    job_send(
-        event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
-        queue_name=Queue.DISCORD_BOT,
-        content=create_interaction_content,
-    )
+    # logging.info(f"{prefix}Sending process question to discord-bot!")
+    # job_send(
+    #     event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
+    #     queue_name=Queue.DISCORD_BOT,
+    #     content=create_interaction_content,
+    # )
     logging.info(f"{prefix}Querying the data sources!")
     # for now we have just the discord platform
     response, source_nodes = query_multiple_source(
