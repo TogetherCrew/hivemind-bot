@@ -1,5 +1,5 @@
-import logging
 import json
+import logging
 from typing import Any
 
 from celery_app.tasks import ask_question_auto_search
