@@ -34,7 +34,7 @@ def query_llm(recieved_data: dict[str, Any]):
     ask_question_auto_search.delay(
         question=user_input,
         community_id=community_id,
-        bot_given_info=recieved_input,
+        bot_given_info=recieved_data,
     )
 
 

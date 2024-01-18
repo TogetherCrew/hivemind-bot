@@ -23,7 +23,7 @@ from tc_messageBroker.rabbit_mq.queue import Queue
 def ask_question_auto_search(
     question: str,
     community_id: str,
-    bot_given_info: ChatInputCommandInteraction,
+    bot_given_info: dict[str, Any],
 ) -> None:
     """
     this task is for the case that the user asks a question
@@ -38,12 +38,18 @@ def ask_question_auto_search(
         the community that the question was asked in
     bot_given_info : tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction.ChatInputCommandInteraction
         the information data that needed to be sent back to the bot again.
-        This would be the `ChatInputCommandInteraction`.
+        This would be a dictionary representing the keys
+        - `event`
+        - `date`
+        - `content`: which is the `ChatInputCommandInteraction` as a dictionary
     """
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
+
+    interaction = json.loads(bot_given_info["content"]["interaction"])
+    chat_input_interaction = ChatInputCommandInteraction.from_dict(interaction)
     create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
-        interaction=bot_given_info.to_dict(),
+        interaction=chat_input_interaction,
         data=InteractionResponse(
             type=4,
             data=InteractionCallbackData(
@@ -78,7 +84,7 @@ def ask_question_auto_search(
     }
 
     response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
-        interaction=bot_given_info.to_dict(),
+        interaction=chat_input_interaction,
         data=InteractionCallbackData(content=json.dumps(results)),
     ).to_dict()
 
