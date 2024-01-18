@@ -63,21 +63,22 @@ def ask_question_auto_search(
     # )
     logging.info(f"{prefix}Querying the data sources!")
     # for now we have just the discord platform
-    response, source_nodes = query_multiple_source(
+    response, _ = query_multiple_source(
         query=question,
         community_id=community_id,
         discord=True,
     )
 
-    source_nodes_dict: list[dict[str, Any]] = []
-    for node in source_nodes:
-        node_dict = dict(node)
-        node_dict.pop("relationships", None)
-        source_nodes_dict.append(node_dict)
+    # source_nodes_dict: list[dict[str, Any]] = []
+    # for node in source_nodes:
+    #     node_dict = dict(node)
+    #     node_dict.pop("relationships", None)
+    #     source_nodes_dict.append(node_dict)
 
     results = {
         "response": response,
-        "source_nodes": source_nodes_dict,
+        # The source of answers is commented for now
+        # "source_nodes": source_nodes_dict,
     }
 
     response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
