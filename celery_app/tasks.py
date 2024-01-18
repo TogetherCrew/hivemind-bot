@@ -45,8 +45,11 @@ def ask_question_auto_search(
     """
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
+
+    interaction = json.loads(bot_given_info["content"]["interaction"])
+    chat_input_interaction = ChatInputCommandInteraction.from_dict(interaction)
     create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
-        interaction=bot_given_info,
+        interaction=chat_input_interaction,
         data=InteractionResponse(
             type=4,
             data=InteractionCallbackData(
@@ -79,9 +82,6 @@ def ask_question_auto_search(
         "response": response,
         "source_nodes": source_nodes_dict,
     }
-
-    interaction = json.loads(bot_given_info["content"]["interaction"])
-    chat_input_interaction = ChatInputCommandInteraction.from_dict(interaction)
 
     response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
         interaction=chat_input_interaction,
