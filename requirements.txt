@@ -19,4 +19,4 @@ python-dotenv==1.0.0
 tc-hivemind-backend==1.1.0
 celery>=5.3.6, <6.0.0
 guidance
-tc-messageBroker>=1.6.5, <2.0.0
+tc-messageBroker==1.6.6
