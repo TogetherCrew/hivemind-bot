@@ -18,7 +18,6 @@ def query_llm(recieved_data: dict[str, Any]):
     query the llm using the received data
     """
     logging.info(f"RECIEVED DATA: {recieved_data}")
-    logging.info("CONVERTING RECIEVED DATA INTO ChatInputCommandInteraction!")
     interaction = json.loads(recieved_data["content"]["interaction"])
     recieved_input = ChatInputCommandInteraction.from_dict(interaction)
     # For now we just have one user input
@@ -31,6 +30,7 @@ def query_llm(recieved_data: dict[str, Any]):
     user_input = recieved_input.options["_hoistedOptions"][0]["value"]
 
     community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
+    logging.info(f"COMMUNITY_ID: {community_id} | Sending job to Celery!")
     ask_question_auto_search.delay(
         question=user_input,
         community_id=community_id,

@@ -19,7 +19,6 @@ def job_send(event: str, queue_name: str, content: dict[str, Any]) -> None:
         the content to send messages to
     """
     logging.info(f"IN JOB_SEND!, event: {event}")
-    print(f"JOB_SEND: CONTENT: {content}")
 
     rabbit_creds = load_rabbitmq_credentials()
     username = rabbit_creds["user"]

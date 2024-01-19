@@ -75,15 +75,19 @@ def ask_question_auto_search(
     #     node_dict.pop("relationships", None)
     #     source_nodes_dict.append(node_dict)
 
-    results = {
-        "response": response,
-        # The source of answers is commented for now
-        # "source_nodes": source_nodes_dict,
-    }
+    # results = {
+    # "response": response,
+    # The source of answers is commented for now
+    # "source_nodes": source_nodes_dict,
+    # }
+    results = response
 
     response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
         interaction=chat_input_interaction,
-        data=InteractionCallbackData(content=json.dumps(results)),
+        data=InteractionCallbackData(
+            # content=json.dumps(results)
+            content=results
+        ),
     ).to_dict()
 
     logging.info(f"{prefix}Sending Edit response to discord-bot!")
