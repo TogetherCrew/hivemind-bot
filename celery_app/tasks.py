@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+from dotenv import load_dotenv
 from typing import Any
 
 from celery_app.server import app
@@ -41,7 +43,9 @@ def ask_question_auto_search(
         - `date`
         - `content`: which is the `ChatInputCommandInteraction` as a dictionary
     """
-    Traceloop.init()
+    load_dotenv()
+    otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
+    Traceloop.init(api_endpoint=otel_endpoint, app_name="Hivemind-server")
 
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
