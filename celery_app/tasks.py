@@ -4,6 +4,7 @@ from typing import Any
 
 from celery_app.server import app
 from celery_app.utils.fire_event import job_send
+from traceloop.sdk import Traceloop
 from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
@@ -40,6 +41,8 @@ def ask_question_auto_search(
         - `date`
         - `content`: which is the `ChatInputCommandInteraction` as a dictionary
     """
+    Traceloop.init(app_name="hivemind-server")
+
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
 
