@@ -12,6 +12,7 @@ services:
       - MONGODB_PORT=27017
       - MONGODB_USER=root
       - MONGODB_PASS=pass
+      - TRACELOOP_BASE_URL=some_url
       - NEO4J_PROTOCOL=bolt
       - NEO4J_HOST=neo4j
       - NEO4J_PORT=7687
