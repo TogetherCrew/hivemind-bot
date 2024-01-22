@@ -14,6 +14,7 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
 )
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
+from traceloop.sdk import Traceloop
 
 
 @app.task
@@ -40,6 +41,8 @@ def ask_question_auto_search(
         - `date`
         - `content`: which is the `ChatInputCommandInteraction` as a dictionary
     """
+    Traceloop.init(app_name="hivemind-server")
+
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
 
