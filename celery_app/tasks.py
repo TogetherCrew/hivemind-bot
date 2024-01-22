@@ -3,7 +3,6 @@ import logging
 import os
 from typing import Any
 
-
 from celery_app.server import app
 from celery_app.utils.fire_event import job_send
 from dotenv import load_dotenv
