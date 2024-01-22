@@ -1,11 +1,9 @@
 import json
 import logging
-import os
 from typing import Any
 
 from celery_app.server import app
 from celery_app.utils.fire_event import job_send
-from dotenv import load_dotenv
 from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
@@ -16,7 +14,6 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
 )
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
-from traceloop.sdk import Traceloop
 
 
 @app.task
@@ -43,10 +40,6 @@ def ask_question_auto_search(
         - `date`
         - `content`: which is the `ChatInputCommandInteraction` as a dictionary
     """
-    load_dotenv()
-    otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
-    Traceloop.init(api_endpoint=otel_endpoint, app_name="Hivemind-server")
-
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
 
