@@ -1,5 +1,6 @@
-from celery import Celery
 import os
+
+from celery import Celery
 from dotenv import load_dotenv
 from traceloop.sdk import Traceloop
 from utils.credentials import load_rabbitmq_credentials
