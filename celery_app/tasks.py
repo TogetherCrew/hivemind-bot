@@ -4,7 +4,6 @@ from typing import Any
 
 from celery_app.server import app
 from celery_app.utils.fire_event import job_send
-from traceloop.sdk import Traceloop
 from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
@@ -15,6 +14,7 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
 )
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
+from traceloop.sdk import Traceloop
 
 
 @app.task
