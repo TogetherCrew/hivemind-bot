@@ -45,7 +45,7 @@ def ask_question_auto_search(
     """
     load_dotenv()
     otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
-    Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
+    Traceloop.init(api_endpoint=otel_endpoint, app_name="Hivemind-server")
 
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
