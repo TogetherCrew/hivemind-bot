@@ -1,10 +1,10 @@
 import json
 import logging
 from typing import Any
-import backoff
-from pika.exceptions import ConnectionClosedByBroker
 
+import backoff
 from celery_app.tasks import ask_question_auto_search
+from pika.exceptions import ConnectionClosedByBroker
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
