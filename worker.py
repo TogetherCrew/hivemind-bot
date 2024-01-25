@@ -1,6 +1,8 @@
 import json
 import logging
 from typing import Any
+import backoff
+from pika.exceptions import ConnectionClosedByBroker
 
 from celery_app.tasks import ask_question_auto_search
 from tc_messageBroker import RabbitMQ
@@ -38,6 +40,12 @@ def query_llm(recieved_data: dict[str, Any]):
     )
 
 
+@backoff.on_exception(
+    wait_gen=backoff.expo,
+    exception=(ConnectionClosedByBroker, ConnectionError),
+    # waiting for 3 hours
+    max_time=60 * 60 * 3,
+)
 def job_recieve(broker_url, port, username, password):
     rabbit_mq = RabbitMQ(
         broker_url=broker_url, port=port, username=username, password=password
@@ -50,7 +58,7 @@ def job_recieve(broker_url, port, username, password):
     if rabbit_mq.channel is not None:
         rabbit_mq.channel.start_consuming()
     else:
-        print("Connection to broker was not successful!")
+        logging.error("Connection to broker was not successful!")
 
 
 if __name__ == "__main__":
