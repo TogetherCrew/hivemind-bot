@@ -1,3 +1,5 @@
+import logging
+
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.process_dates import process_dates
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
@@ -175,6 +177,13 @@ class LevelBasedPlatformQueryEngine:
         )
 
         dates_modified = process_dates(list(dates), d)
+
+        logging.info(
+            f"COMMUNITY_ID: {community_id} | "
+            f"summary retrieved {self.date_key}: {dates_modified} | "
+            f"summary retrieved {self.level1_key}: {list(level1_names)} | "
+            f"summary retrieved {self.level2_key}: {list(level2_names)}"
+        )
 
         engine = self.prepare_platform_engine(
             community_id=community_id,
