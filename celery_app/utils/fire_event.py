@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from tc_messageBroker import RabbitMQ
@@ -17,6 +18,7 @@ def job_send(event: str, queue_name: str, content: dict[str, Any]) -> None:
     content : dict[str, Any]
         the content to send messages to
     """
+    logging.info(f"IN JOB_SEND!, event: {event}")
 
     rabbit_creds = load_rabbitmq_credentials()
     username = rabbit_creds["user"]
@@ -26,9 +28,12 @@ def job_send(event: str, queue_name: str, content: dict[str, Any]) -> None:
     rabbit_mq = RabbitMQ(
         broker_url=broker_url, port=port, username=username, password=password
     )
+    logging.info("Connecting to rabbitMQ!")
     rabbit_mq.connect(queue_name)
+    logging.info("Trying to publish on rabbitMQ")
     rabbit_mq.publish(
         queue_name=queue_name,
         event=event,
         content=content,
     )
+    logging.info("Published to RabbitMQ!")

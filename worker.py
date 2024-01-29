@@ -1,7 +1,10 @@
+import json
 import logging
 from typing import Any
 
+import backoff
 from celery_app.tasks import ask_question_auto_search
+from pika.exceptions import ConnectionClosedByBroker
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
@@ -16,7 +19,9 @@ def query_llm(recieved_data: dict[str, Any]):
     """
     query the llm using the received data
     """
-    recieved_input = ChatInputCommandInteraction.from_dict(recieved_data)
+    logging.info(f"RECIEVED DATA: {recieved_data}")
+    interaction = json.loads(recieved_data["content"]["interaction"])
+    recieved_input = ChatInputCommandInteraction.from_dict(interaction)
     # For now we just have one user input
     if len(recieved_input.options["_hoistedOptions"]) > 1:
         logging.warning(
@@ -27,6 +32,7 @@ def query_llm(recieved_data: dict[str, Any]):
     user_input = recieved_input.options["_hoistedOptions"][0]["value"]
 
     community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
+    logging.info(f"COMMUNITY_ID: {community_id} | Sending job to Celery!")
     ask_question_auto_search.delay(
         question=user_input,
         community_id=community_id,
@@ -34,6 +40,12 @@ def query_llm(recieved_data: dict[str, Any]):
     )
 
 
+@backoff.on_exception(
+    wait_gen=backoff.expo,
+    exception=(ConnectionClosedByBroker, ConnectionError),
+    # waiting for 3 hours
+    max_time=60 * 60 * 3,
+)
 def job_recieve(broker_url, port, username, password):
     rabbit_mq = RabbitMQ(
         broker_url=broker_url, port=port, username=username, password=password
@@ -46,7 +58,7 @@ def job_recieve(broker_url, port, username, password):
     if rabbit_mq.channel is not None:
         rabbit_mq.channel.start_consuming()
     else:
-        print("Connection to broker was not successful!")
+        logging.error("Connection to broker was not successful!")
 
 
 if __name__ == "__main__":
