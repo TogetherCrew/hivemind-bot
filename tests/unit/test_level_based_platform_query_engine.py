@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from utils.query_engine.level_based_platform_query_engine import (
     LevelBasedPlatformQueryEngine,
