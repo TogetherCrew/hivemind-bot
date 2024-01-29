@@ -6,7 +6,7 @@ from llama_index.vector_stores import ExactMatchFilter, FilterCondition, Metadat
 from utils.query_engine.discourse_query_engine import prepare_discourse_engine
 
 
-class TestPrepareDiscordEngine(unittest.TestCase):
+class TestPrepareDiscourseEngine(unittest.TestCase):
     def setUp(self):
         # Set up environment variables for testing
         os.environ["CHUNK_SIZE"] = "128"
@@ -15,7 +15,7 @@ class TestPrepareDiscordEngine(unittest.TestCase):
         os.environ["K2_RETRIEVER_SEARCH"] = "5"
         os.environ["D_RETRIEVER_SEARCH"] = "3"
 
-    def test_prepare_discord_engine(self):
+    def test_prepare_discourse_engine(self):
         community_id = "123456"
         topic_names = ["topic1", "topic2"]
         category_names = ["category1", "category2"]
