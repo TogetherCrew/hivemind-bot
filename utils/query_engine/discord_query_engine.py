@@ -1,3 +1,5 @@
+import logging
+
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.process_dates import process_dates
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
@@ -137,6 +139,12 @@ def prepare_discord_engine_auto_filter(
     )
 
     dates_modified = process_dates(list(dates), d)
+    logging.info(
+        f"COMMUNITY_ID: {community_id} | "
+        f"summary retrieved dates: {dates_modified} | "
+        f"summary retrieved threads: {list(threads)} |"
+        f" summary retrieved channels: {list(channels)}"
+    )
 
     engine = prepare_discord_engine(
         community_id=community_id,
