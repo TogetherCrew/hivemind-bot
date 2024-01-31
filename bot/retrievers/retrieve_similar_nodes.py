@@ -49,11 +49,12 @@ class RetrieveSimilarNodes:
             ),
         ).order_by(text("distance asc"))
 
-        if filters is not None:
+        if filters is not None and filters != []:
             stmt = stmt.where(
                 or_(
                     and_(
-                        self._vector_store._table_class.metadata_.op("->>")(key) == value
+                        self._vector_store._table_class.metadata_.op("->>")(key)
+                        == value
                         for key, value in condition.items()
                     )
                     for condition in filters

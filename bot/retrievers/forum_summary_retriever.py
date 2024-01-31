@@ -16,16 +16,16 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
         """
         super().__init__(table_name, dbname, embedding_model=embedding_model)
 
-    def retreive_metadata(
+    def retreive_filtering(
         self,
         query: str,
         metadata_group1_key: str,
         metadata_group2_key: str,
         metadata_date_key: str,
         similarity_top_k: int = 20,
-    ) -> tuple[set[str], set[str], set[str]]:
+    ) -> list[dict[str, str]]:
         """
-        retrieve the metadata information of the similar nodes with the query
+        retrieve filtering that can be done based on the retrieved similar nodes with the query
 
         Parameters
         -----------
@@ -46,28 +46,25 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
 
         Returns
         ---------
-        group1_data : set[str]
-            the similar summary nodes having the group1_data.
-            can be an empty set meaning no similar thread
-            conversations for it was available.
-        group2_data : set[str]
-            the similar summary nodes having the group2_data.
-            can be an empty set meaning no similar channel
-            conversations for it was available.
-        dates : set[str]
-            the similar daily conversations to the given query
+        filters : list[dict[str, str]]
+            a list of filters to apply with `or` condition
+            the dictionary would be applying `and`
+            operation between keys and values of json metadata_
         """
         nodes = self.get_similar_nodes(query=query, similarity_top_k=similarity_top_k)
 
-        group1_data: set[str] = set()
-        dates: set[str] = set()
-        group2_data: set[str] = set()
+        filters: list[dict[str, str]] = []
 
         for node in nodes:
+            # the filter made by given node
+            filter: dict[str, str] = {}
             if node.metadata[metadata_group1_key]:
-                group1_data.add(node.metadata[metadata_group1_key])
+                filter[metadata_group1_key] = node.metadata[metadata_group1_key]
             if node.metadata[metadata_group2_key]:
-                group2_data.add(node.metadata[metadata_group2_key])
-            dates.add(node.metadata[metadata_date_key])
+                filter[metadata_group2_key] = node.metadata[metadata_group2_key]
+            # date filter
+            filter[metadata_date_key] = node.metadata[metadata_date_key]
 
-        return group1_data, group2_data, dates
+            filters.append(filter)
+
+        return filters
