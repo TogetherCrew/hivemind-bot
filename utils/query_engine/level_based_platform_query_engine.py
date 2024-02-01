@@ -1,3 +1,4 @@
+from dateutil import parser
 import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
@@ -40,10 +41,10 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )
         similar_nodes = retriever.query_db(query=query_str, filters=self._filters)
 
-        context_str = self._prepare_context_str(similar_nodes)
+        context_str = self._prepare_context_str(similar_nodes, self.summary_nodes)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
-        # logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
+        logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
         return str(response)
 
     @classmethod
@@ -77,7 +78,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         **kwargs :
             llm : llama-index.LLM
                 the LLM to use answering queries
-                default is gpt-3.5-turbo
+                default is gpt-4
             synthesizer : llama_index.response_synthesizers.base.BaseSynthesizer
                 the synthesizers to use when creating the prompt
                 default is to get from `get_response_synthesizer(response_mode="compact")`
@@ -95,7 +96,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         synthesizer = kwargs.get(
             "synthesizer", get_response_synthesizer(response_mode="compact")
         )
-        llm = kwargs.get("llm", OpenAI("gpt-3.5-turbo"))
+        llm = kwargs.get("llm", OpenAI("gpt-4"))
         qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
 
         pg_vector = PGVectorAccess(
@@ -128,6 +129,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         level1_key: str,
         level2_key: str,
         date_key: str = "date",
+        include_summary_context: bool = False,
     ) -> "LevelBasedPlatformQueryEngine":
         """
         get the query engine and do the filtering automatically.
@@ -171,13 +173,23 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             table_name=platform_table_name + "_summary", dbname=dbname
         )
 
-        filters = platform_retriever.retreive_filtering(
-            query=query,
+        nodes = platform_retriever.get_similar_nodes(query, summary_similarity_top_k)
+
+        filters = platform_retriever.define_filters(
+            nodes,
             metadata_group1_key=level1_key,
             metadata_group2_key=level2_key,
             metadata_date_key=date_key,
-            similarity_top_k=summary_similarity_top_k,
         )
+        # saving to add summaries to the context of prompt
+        if include_summary_context:
+            cls.summary_nodes = nodes
+        else:
+            cls.summary_nodes = []
+
+        cls._level1_key = level1_key
+        cls._level2_key = level2_key
+        cls._date_key = date_key
 
         # getting all the metadata dates from filters
         dates: list[str] = [f[date_key] for f in filters]
@@ -194,13 +206,113 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )
         return engine
 
-    def _prepare_context_str(self, nodes: list[NodeWithScore]) -> str:
-        context_str = "\n\n".join(
+    def _prepare_context_str(
+        self, raw_nodes: list[NodeWithScore], summary_nodes: list[NodeWithScore]
+    ) -> str:
+        """
+        prepare the prompt context using the raw_nodes for answers and summary_nodes for additional information
+        """
+        context_str: str = ""
+
+        if summary_nodes == []:
+            logging.warning(
+                "Empty context_nodes. Cannot add summaries as context information!"
+            )
+
+            context_str += self._prepare_prompt_with_metadata_info(nodes=raw_nodes)
+        else:
+            grouped_raw_nodes = self._group_nodes_per_metadata(raw_nodes)
+            for summary_node in summary_nodes:
+                # can be thread_title for discord
+                level1_title = summary_node.metadata[self._level1_key]
+                # can be channel_title for discord
+                level2_title = summary_node.metadata[self._level2_key]
+                date = summary_node.metadata[self._date_key]
+
+                # intiialization
+                node_context: str = ""
+
+                nested_dict = grouped_raw_nodes.get(level1_title, {}).get(
+                    level2_title, {}
+                )
+
+                if date in nested_dict:
+                    raw_nodes = grouped_raw_nodes[level1_title][level2_title][date]
+                    node_context: str = (
+                        f"{self._level1_key}: {level1_title}\n"
+                        f"{self._level2_key}: {level2_title}\n"
+                        f"{self._date_key}: {date}\n"
+                        f"summary: {summary_node.text}\n"
+                        "messages:\n"
+                    )
+                    node_context += self._prepare_prompt_with_metadata_info(
+                        raw_nodes, prefix="  "
+                    )
+
+                context_str += node_context
+
+        logging.info(f"||||||||context_str|||||||| {context_str} |||||||")
+        return context_str
+
+    def _group_nodes_per_metadata(
+        self, raw_nodes: list[NodeWithScore]
+    ) -> dict[str, dict[str, dict[str, list[NodeWithScore]]]]:
+        """
+        group all nodes based on their level1 and level2 metadata
+
+        Parameters
+        -----------
+        raw_nodes : list[NodeWithScore]
+            a list of raw nodes
+
+        Returns
+        ---------
+        grouped_nodes : dict[str, dict[str, dict[str, list[NodeWithScore]]]]
+            a list of nodes grouped by
+            - `level1_key`
+            - `level2_key`
+            - and the last dict key `date_key`
+
+            The values of the nested dictionary are the nodes grouped
+        """
+        grouped_nodes: dict[str, dict[str, dict[str, list[NodeWithScore]]]] = {}
+        for node in raw_nodes:
+            level1_title = node.metadata[self._level1_key]
+            # TODO: remove the _name when the data got updated
+            level2_title = node.metadata[self._level2_key + "_name"]
+            date_str = node.metadata[self._date_key]
+            date = parser.parse(date_str).strftime("%Y-%m-%d")
+
+            # defining an empty list (if keys weren't previously made)
+            grouped_nodes.setdefault(level1_title, {}).setdefault(
+                level2_title, {}
+            ).setdefault(date, [])
+            # Adding to list
+            grouped_nodes[level1_title][level2_title][date].append(node)
+
+        return grouped_nodes
+
+    def _prepare_prompt_with_metadata_info(
+        self, nodes: list[NodeWithScore], prefix: str = ""
+    ) -> str:
+        """
+        prepare a prompt with given nodes including the nodes' metadata
+        Note: the prefix is set before each text!
+        """
+        context_str = "\n".join(
             [
-                node.get_content()
+                "author: "
+                + node.metadata["author_username"]
                 + "\n"
-                + node.node.get_metadata_str(mode=MetadataMode.LLM)
-                for node in nodes
+                + prefix
+                + "message_date: "
+                + node.metadata["date"]
+                + "\n"
+                + prefix
+                + f"message {idx + 1}: "
+                + node.get_content()
+                for idx, node in enumerate(nodes)
             ]
         )
+
         return context_str

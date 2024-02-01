@@ -72,5 +72,6 @@ def prepare_discord_engine_auto_filter(
         level1_key="channel",
         level2_key="thread",
         date_key="date",
+        include_summary_context=True,
     )
     return engine
