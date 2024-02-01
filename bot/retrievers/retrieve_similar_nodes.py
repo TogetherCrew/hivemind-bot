@@ -19,7 +19,6 @@ class RetrieveSimilarNodes:
         self._vector_store = vector_store
         self._embed_model = embed_model
         self._similarity_top_k = similarity_top_k
-        super().__init__()
 
     def query_db(
         self, query: str, filters: list[dict[str, str]] | None = None
