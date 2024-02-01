@@ -72,8 +72,6 @@ def query_multiple_source(
         discord_query_engine = prepare_discord_engine_auto_filter(
             community_id,
             query,
-            similarity_top_k=None,
-            d=None,
         )
         tool_metadata = ToolMetadata(
             name="Discord",
@@ -100,7 +98,7 @@ def query_multiple_source(
         raise NotImplementedError
 
     question_gen = GuidanceQuestionGenerator.from_defaults(
-        guidance_llm=OpenAIChat("gpt-3.5-turbo"),
+        guidance_llm=OpenAIChat("gpt-4"),
         verbose=False,
     )
     embed_model = CohereEmbedding()

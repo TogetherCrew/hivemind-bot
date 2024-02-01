@@ -14,8 +14,9 @@ class TestDiscordSummaryRetriever(TestCase):
         documents: list[Document] = []
         all_dates: list[str] = []
 
+        start_date = parser.parse("2023-08-01")
         for i in range(30):
-            date = parser.parse("2023-08-01") + timedelta(days=i)
+            date = start_date + timedelta(days=i)
             doc_date = date.strftime("%Y-%m-%d")
             doc = Document(
                 text="SAMPLESAMPLESAMPLE",
@@ -44,39 +45,32 @@ class TestDiscordSummaryRetriever(TestCase):
             dbname="sample",
             embedding_model=mock_embedding_model(),
         )
-        channels, threads, dates = base_summary_search.retreive_metadata(
+        filters = base_summary_search.retreive_filtering(
             query="what is samplesample?",
             similarity_top_k=5,
             metadata_group1_key="channel",
             metadata_group2_key="thread",
             metadata_date_key="date",
         )
-        self.assertIsInstance(threads, set)
-        self.assertIsInstance(channels, set)
-        self.assertIsInstance(dates, set)
 
-        self.assertTrue(
-            threads.issubset(
-                set(
-                    [
-                        "thread0",
-                        "thread1",
-                        "thread2",
-                        "thread3",
-                        "thread4",
-                    ]
-                )
+        self.assertIsInstance(filters, list)
+
+        expected_dates = [
+            (start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(30)
+        ]
+        for filter in filters:
+            self.assertIsInstance(filter, dict)
+            self.assertIn(
+                filter["thread"],
+                [
+                    "thread0",
+                    "thread1",
+                    "thread2",
+                    "thread3",
+                    "thread4",
+                ],
             )
-        )
-        self.assertTrue(
-            channels.issubset(
-                set(
-                    [
-                        "channel0",
-                        "channel1",
-                        "channel2",
-                    ]
-                )
-            )
-        )
-        self.assertTrue(dates.issubset(all_dates))
+            self.assertIn(filter["channel"], ["channel0", "channel1", "channel2"])
+            date = parser.parse("2023-08-01") + timedelta(days=i)
+            doc_date = date.strftime("%Y-%m-%d")
+            self.assertIn(filter["date"], expected_dates)

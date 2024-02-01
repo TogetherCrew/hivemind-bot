@@ -2,54 +2,59 @@ import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.process_dates import process_dates
+from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
-from llama_index.query_engine import BaseQueryEngine
-from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
+from llama_index.llms import OpenAI
+from llama_index.prompts import PromptTemplate
+from llama_index.query_engine import CustomQueryEngine
+from llama_index.response_synthesizers import BaseSynthesizer, get_response_synthesizer
+from llama_index.retrievers import BaseRetriever
+from llama_index.schema import MetadataMode, NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 
+qa_prompt = PromptTemplate(
+    "Context information is below.\n"
+    "---------------------\n"
+    "{context_str}\n"
+    "---------------------\n"
+    "Given the context information and not prior knowledge, "
+    "answer the query.\n"
+    "Query: {query_str}\n"
+    "Answer: "
+)
 
-class LevelBasedPlatformQueryEngine:
-    def __init__(
-        self,
-        level1_key: str,
-        level2_key: str,
-        platform_table_name: str,
-        date_key: str = "date",
-    ) -> None:
-        """
-        A two level based platform query engine preparation tools.
 
-        Parameters
-        ------------
-        level1_key : str
-            first hierarchy of the discussion.
-            the platforms can be discord or discourse. for example in discord
-            the level1 is `channel` and in discourse it can be `category`
-        level2_key : str
-            the second level of discussion in the hierarchy.
-            For example in discord level2 is `thread`,
-            and on discourse level2 would be `topic`
-        platform_table_name : str
-            the postgresql table name for the platform. Can be only the platform name
-            as `discord` or `discourse`
-        date_key : str
-            the day key which the date is saved under the field in postgresql table.
-            for default is is `date` which was the one that we used previously
-        """
-        self.level1_key = level1_key
-        self.level2_key = level2_key
-        self.platform_table_name = platform_table_name
-        self.date_key = date_key
+class LevelBasedPlatformQueryEngine(CustomQueryEngine):
+    retriever: BaseRetriever
+    response_synthesizer: BaseSynthesizer
+    llm: OpenAI
+    qa_prompt: PromptTemplate
 
+    def custom_query(self, query_str: str):
+        """Doing custom query"""
+        # first retrieving similar nodes in summary
+        retriever = RetrieveSimilarNodes(
+            self._vector_store,
+            self._similarity_top_k,
+        )
+        similar_nodes = retriever.query_db(query=query_str, filters=self._filters)
+
+        context_str = self._prepare_context_str(similar_nodes)
+        fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
+        response = self.llm.complete(fmt_qa_prompt)
+        # logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
+        return str(response)
+
+    @classmethod
     def prepare_platform_engine(
-        self,
+        cls,
         community_id: str,
-        level1_names: list[str],
-        level2_names: list[str],
-        days: list[str],
-        **kwarg,
-    ) -> BaseQueryEngine:
+        platform_table_name: str,
+        filters: list[dict[str, str]] | None = None,
+        testing=False,
+        **kwargs,
+    ) -> "LevelBasedPlatformQueryEngine":
         """
         query the platform database using filters given
         and give an anwer to the given query using the LLM
@@ -58,20 +63,27 @@ class LevelBasedPlatformQueryEngine:
         ------------
         community_id : str
             the community id data to query
-        query : str
-            the query (question) of the user
-        level1_names : list[str]
-            the given categorys to search for
-        level2_names : list[str]
-            the given topics to search for
-        days : list[str]
-            the given days to search for
-        ** kwargs :
-            similarity_top_k : int | None
-                the k similar results to use when querying the data
-                if not given, will load from `.env` file
-            testing : bool
-                whether to setup the PGVectorAccess in testing mode
+        platform_table_name : str
+            the postgresql table name for the platform. Can be only the platform name
+            as `discord` or `discourse`
+        filters : list[dict[str, str]] | None
+            the list of filters to be applied when retrieving data
+            if `None` then set no filtering on PGVectorStore
+        testing : bool
+            if `True` it is in test phase and nothing must be changed
+        similarity_top_k : int | None
+            the k similar results to use when querying the data
+            if not given, will load from `.env` file
+        **kwargs :
+            llm : llama-index.LLM
+                the LLM to use answering queries
+                default is gpt-3.5-turbo
+            synthesizer : llama_index.response_synthesizers.base.BaseSynthesizer
+                the synthesizers to use when creating the prompt
+                default is to get from `get_response_synthesizer(response_mode="compact")`
+            qa_prompt : llama-index.prompts.PromptTemplate
+                the Q&A prompt to use
+                default would be the default prompt of llama-index
 
         Returns
         ---------
@@ -80,58 +92,43 @@ class LevelBasedPlatformQueryEngine:
         """
         dbname = f"community_{community_id}"
 
-        testing = kwarg.get("testing", False)
-        similarity_top_k = kwarg.get("similarity_top_k", None)
+        synthesizer = kwargs.get(
+            "synthesizer", get_response_synthesizer(response_mode="compact")
+        )
+        llm = kwargs.get("llm", OpenAI("gpt-3.5-turbo"))
+        qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
 
         pg_vector = PGVectorAccess(
-            table_name=self.platform_table_name,
+            table_name=platform_table_name,
             dbname=dbname,
             testing=testing,
             embed_model=CohereEmbedding(),
         )
         index = pg_vector.load_index()
-        if similarity_top_k is None:
-            _, similarity_top_k, _ = load_hyperparams()
+        retriever = index.as_retriever()
+        _, similarity_top_k, _ = load_hyperparams()
 
-        level2_filters: list[ExactMatchFilter] = []
-        level1_filters: list[ExactMatchFilter] = []
-        day_filters: list[ExactMatchFilter] = []
+        cls._vector_store = index.vector_store
+        cls._similarity_top_k = similarity_top_k
+        cls._filters = filters
 
-        for level1 in level1_names:
-            level1_name_value = level1.replace("'", "''")
-            level1_filters.append(
-                ExactMatchFilter(key=self.level1_key, value=level1_name_value)
-            )
-
-        for level2 in level2_names:
-            levle2_value = level2.replace("'", "''")
-            level2_filters.append(
-                ExactMatchFilter(key=self.level2_key, value=levle2_value)
-            )
-
-        for day in days:
-            day_filters.append(ExactMatchFilter(key=self.date_key, value=day))
-
-        all_filters: list[ExactMatchFilter] = []
-        all_filters.extend(level1_filters)
-        all_filters.extend(level2_filters)
-        all_filters.extend(day_filters)
-
-        filters = MetadataFilters(filters=all_filters, condition=FilterCondition.OR)
-
-        query_engine = index.as_query_engine(
-            filters=filters, similarity_top_k=similarity_top_k
+        return cls(
+            retriever=retriever,
+            response_synthesizer=synthesizer,
+            llm=llm,
+            qa_prompt=qa_prompt_,
         )
 
-        return query_engine
-
+    @classmethod
     def prepare_engine_auto_filter(
-        self,
+        cls,
         community_id: str,
         query: str,
-        similarity_top_k: int | None = None,
-        d: int | None = None,
-    ) -> BaseQueryEngine:
+        platform_table_name: str,
+        level1_key: str,
+        level2_key: str,
+        date_key: str = "date",
+    ) -> "LevelBasedPlatformQueryEngine":
         """
         get the query engine and do the filtering automatically.
         By automatically we mean, it would first query the summaries
@@ -143,14 +140,22 @@ class LevelBasedPlatformQueryEngine:
             the community id to process its platform data
         query : str
             the query (question) of the user
-        similarity_top_k : int | None
-            the value for the initial summary search
-            to get the `k2` count simliar nodes
-            if `None`, then would read from `.env`
-        d : int
-            this would make the secondary search (`prepare_discourse_engine`)
-            to be done on the `metadata.date - d` to `metadata.date + d`
-
+            this query would be used for filters preparation
+            which filters are based on available summaries.
+        platform_table_name : str
+            the postgresql table name for the platform. Can be only the platform name
+            as `discord` or `discourse`
+        level1_key : str
+            first hierarchy of the discussion.
+            the platforms can be discord or discourse. for example in discord
+            the level1 is `channel` and in discourse it can be `category`
+        level2_key : str
+            the second level of discussion in the hierarchy.
+            For example in discord level2 is `thread`,
+            and on discourse level2 would be `topic`
+        date_key : str
+            the day key which the date is saved under the field in postgresql table.
+            for default is is `date` which was the one that we used previously
 
         Returns
         ---------
@@ -159,37 +164,43 @@ class LevelBasedPlatformQueryEngine:
         """
         dbname = f"community_{community_id}"
 
-        if d is None:
-            _, _, d = load_hyperparams()
-        if similarity_top_k is None:
-            similarity_top_k, _, _ = load_hyperparams()
+        summary_similarity_top_k, _, d = load_hyperparams()
 
+        # For summaries data a posfix `summary` would be added
         platform_retriever = ForumBasedSummaryRetriever(
-            table_name=self.platform_table_name, dbname=dbname
+            table_name=platform_table_name + "_summary", dbname=dbname
         )
 
-        level1_names, level2_names, dates = platform_retriever.retreive_metadata(
+        filters = platform_retriever.retreive_filtering(
             query=query,
-            metadata_group1_key=self.level1_key,
-            metadata_group2_key=self.level2_key,
-            metadata_date_key=self.date_key,
-            similarity_top_k=similarity_top_k,
+            metadata_group1_key=level1_key,
+            metadata_group2_key=level2_key,
+            metadata_date_key=date_key,
+            similarity_top_k=summary_similarity_top_k,
         )
 
+        # getting all the metadata dates from filters
+        dates: list[str] = [f[date_key] for f in filters]
         dates_modified = process_dates(list(dates), d)
+        dates_filter = [{date_key: date} for date in dates_modified]
+        filters.extend(dates_filter)
 
-        logging.info(
-            f"COMMUNITY_ID: {community_id} | "
-            f"summary retrieved {self.date_key}: {dates_modified} | "
-            f"summary retrieved {self.level1_key}: {list(level1_names)} | "
-            f"summary retrieved {self.level2_key}: {list(level2_names)}"
-        )
+        logging.info(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
 
-        engine = self.prepare_platform_engine(
+        engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
             community_id=community_id,
-            query=query,
-            level1_names=list(level1_names),
-            level2_names=list(level2_names),
-            days=dates_modified,
+            platform_table_name=platform_table_name,
+            filters=filters,
         )
         return engine
+
+    def _prepare_context_str(self, nodes: list[NodeWithScore]) -> str:
+        context_str = "\n\n".join(
+            [
+                node.get_content()
+                + "\n"
+                + node.node.get_metadata_str(mode=MetadataMode.LLM)
+                for node in nodes
+            ]
+        )
+        return context_str
