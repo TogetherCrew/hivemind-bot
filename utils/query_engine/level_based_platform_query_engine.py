@@ -48,6 +48,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         context_str = self._prepare_context_str(similar_nodes)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
+        # logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
         return str(response)
 
     @classmethod
@@ -57,6 +58,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         platform_table_name: str,
         filters: list[dict[str, str]] | None = None,
         testing=False,
+        **kwargs,
     ) -> "LevelBasedPlatformQueryEngine":
         """
         query the platform database using filters given
@@ -77,6 +79,17 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         similarity_top_k : int | None
             the k similar results to use when querying the data
             if not given, will load from `.env` file
+        **kwargs :
+            llm : llama-index.LLM
+                the LLM to use answering queries
+                default is gpt-3.5-turbo
+            synthesizer : llama_index.response_synthesizers.base.BaseSynthesizer
+                the synthesizers to use when creating the prompt
+                default is to get from `get_response_synthesizer(response_mode="compact")`
+            qa_prompt : llama-index.prompts.PromptTemplate
+                the Q&A prompt to use
+                default would be the default prompt of llama-index
+
 
 
         Returns
@@ -86,6 +99,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         """
         dbname = f"community_{community_id}"
 
+        synthesizer = kwargs.get(
+            "synthesizer", get_response_synthesizer(response_mode="compact")
+        )
+        llm = kwargs.get("llm", OpenAI("gpt-3.5-turbo"))
+        qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
+
         pg_vector = PGVectorAccess(
             table_name=platform_table_name,
             dbname=dbname,
@@ -93,20 +112,18 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             embed_model=CohereEmbedding(),
         )
         index = pg_vector.load_index()
+        retriever = index.as_retriever()
         _, similarity_top_k, _ = load_hyperparams()
 
         cls._vector_store = index.vector_store
         cls._similarity_top_k = similarity_top_k
         cls._filters = filters
 
-        llm = OpenAI("gpt-3.5-turbo")
-        synthesizer = get_response_synthesizer(response_mode="compact")
-        retriever = index.as_retriever()
         return cls(
             retriever=retriever,
             response_synthesizer=synthesizer,
             llm=llm,
-            qa_prompt=qa_prompt,
+            qa_prompt=qa_prompt_,
         )
 
     @classmethod

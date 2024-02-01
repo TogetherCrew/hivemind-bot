@@ -5,10 +5,8 @@ from .level_based_platform_query_engine import LevelBasedPlatformQueryEngine
 
 def prepare_discord_engine(
     community_id: str,
-    thread_names: list[str],
-    channel_names: list[str],
-    days: list[str],
-    **kwarg,
+    filters: list[dict[str, str]],
+    **kwargs,
 ) -> BaseQueryEngine:
     """
     query the platform database using filters given
@@ -20,16 +18,10 @@ def prepare_discord_engine(
         the discord community id data to query
     query : str
         the query (question) of the user
-    level1_names : list[str]
-        the given categorys to search for
-    level2_names : list[str]
-        the given topics to search for
-    days : list[str]
-        the given days to search for
+    filters : list[dict[str, str]] | None
+        the list of filters to be applied when retrieving data
+        if `None` then set no filtering on PGVectorStore
     ** kwargs :
-        similarity_top_k : int | None
-            the k similar results to use when querying the data
-            if not given, will load from `.env` file
         testing : bool
             whether to setup the PGVectorAccess in testing mode
 
@@ -38,15 +30,13 @@ def prepare_discord_engine(
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-    query_engine_preparation = get_discord_level_based_platform_query_engine(
-        table_name="discord",
-    )
-    query_engine = query_engine_preparation.prepare_platform_engine(
+
+    testing = kwargs.get("testing", False)
+    query_engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
         community_id=community_id,
-        level1_names=thread_names,
-        level2_names=channel_names,
-        days=days,
-        **kwarg,
+        platform_table_name="discord",
+        filters=filters,
+        testing=testing,
     )
     return query_engine
 
@@ -54,8 +44,6 @@ def prepare_discord_engine(
 def prepare_discord_engine_auto_filter(
     community_id: str,
     query: str,
-    similarity_top_k: int | None = None,
-    d: int | None = None,
 ) -> BaseQueryEngine:
     """
     get the query engine and do the filtering automatically.
@@ -68,13 +56,6 @@ def prepare_discord_engine_auto_filter(
         the discord community data to query
     query : str
         the query (question) of the user
-    similarity_top_k : int | None
-        the value for the initial summary search
-        to get the `k2` count similar nodes
-        if `None`, then would read from `.env`
-    d : int
-        this would make the secondary search (`prepare_discord_engine`)
-        to be done on the `metadata.date - d` to `metadata.date + d`
 
 
     Returns
@@ -83,38 +64,12 @@ def prepare_discord_engine_auto_filter(
         the created query engine with the filters
     """
 
-    query_engine_preparation = get_discord_level_based_platform_query_engine(
-        table_name="discord_summary"
-    )
-    query_engine = query_engine_preparation.prepare_engine_auto_filter(
+    engine = LevelBasedPlatformQueryEngine.prepare_engine_auto_filter(
         community_id=community_id,
         query=query,
-        similarity_top_k=similarity_top_k,
-        d=d,
+        platform_table_name="discord",
+        level1_key="channel",
+        level2_key="thread",
+        date_key="date",
     )
-
-    return query_engine
-
-
-def get_discord_level_based_platform_query_engine(
-    table_name: str,
-) -> LevelBasedPlatformQueryEngine:
-    """
-    perpare the `LevelBasedPlatformQueryEngine` to use
-
-    Parameters
-    -----------
-    table_name : str
-        the postgresql data table to use
-
-    Returns
-    ---------
-    level_based_query_engine : LevelBasedPlatformQueryEngine
-        the query engine creator class
-    """
-    level_based_query_engine = LevelBasedPlatformQueryEngine(
-        level1_key="thread",
-        level2_key="channel",
-        platform_table_name=table_name,
-    )
-    return level_based_query_engine
+    return engine

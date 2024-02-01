@@ -3,7 +3,7 @@ import unittest
 
 from llama_index.core.base_query_engine import BaseQueryEngine
 from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
-from utils.query_engine.discord_query_engine import prepare_discord_engine
+from utils.query_engine.prepare_discord_query_engine import prepare_discord_engine
 
 
 class TestPrepareDiscordEngine(unittest.TestCase):

@@ -2,7 +2,7 @@ from llama_index.embeddings import BaseEmbedding
 from llama_index.schema import NodeWithScore
 from llama_index.vector_stores import PGVectorStore, VectorStoreQueryResult
 from llama_index.vector_stores.postgres import DBEmbeddingRow
-from sqlalchemy import select, text, and_, or_
+from sqlalchemy import select, text, and_, or_, Date, cast
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
@@ -50,18 +50,29 @@ class RetrieveSimilarNodes:
         ).order_by(text("distance asc"))
 
         if filters is not None and filters != []:
-            stmt = stmt.where(
-                or_(
-                    and_(
-                        self._vector_store._table_class.metadata_.op("->>")(key)
-                        == value
-                        for key, value in condition.items()
-                    )
-                    for condition in filters
-                )
-            )
+            conditions = []
+            for condition in filters:
+                filters_and = []
+                for key, value in condition.items():
+                    if key == "date":
+                        # Apply ::date cast when the key is 'date'
+                        filter_condition = cast(
+                            self._vector_store._table_class.metadata_.op("->>")(key),
+                            Date,
+                        ) == cast(value, Date)
+                    else:
+                        filter_condition = (
+                            self._vector_store._table_class.metadata_.op("->>")(key)
+                            == value
+                        )
 
-        stmt = stmt.limit(self._similarity_top_k)
+                    filters_and.append(filter_condition)
+
+                conditions.append(and_(*filters_and))
+
+            stmt = stmt.where(or_(*conditions))
+
+            stmt = stmt.limit(self._similarity_top_k)
 
         with self._vector_store._session() as session, session.begin():
             res = session.execute(stmt)
