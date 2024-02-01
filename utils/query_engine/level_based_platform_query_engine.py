@@ -90,8 +90,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                 the Q&A prompt to use
                 default would be the default prompt of llama-index
 
-
-
         Returns
         ---------
         query_engine : BaseQueryEngine
@@ -147,6 +145,8 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             the community id to process its platform data
         query : str
             the query (question) of the user
+            this query would be used for filters preparation
+            which filters are based on available summaries.
         platform_table_name : str
             the postgresql table name for the platform. Can be only the platform name
             as `discord` or `discourse`

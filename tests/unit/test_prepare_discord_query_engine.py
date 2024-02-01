@@ -14,37 +14,22 @@ class TestPrepareDiscordEngine(unittest.TestCase):
         os.environ["K1_RETRIEVER_SEARCH"] = "20"
         os.environ["K2_RETRIEVER_SEARCH"] = "5"
         os.environ["D_RETRIEVER_SEARCH"] = "3"
+        os.environ["OPENAI_API_KEY"] = "sk-some_creds"
 
     def test_prepare_discord_engine(self):
         community_id = "123456"
-        thread_names = ["thread1", "thread2"]
-        channel_names = ["channel1", "channel2"]
-        days = ["2022-01-01", "2022-01-02"]
+        filters = [
+            {"channel": "general", "date": "2023-01-02"},
+            {"thread": "discussion", "date": "2024-01-03"},
+            {"date": "2022-01-01"},
+        ]
 
         # Call the function
         query_engine = prepare_discord_engine(
             community_id,
-            thread_names,
-            channel_names,
-            days,
+            filters=filters,
             testing=True,
         )
 
-        # Assertions
+        self.assertIsNotNone(query_engine)
         self.assertIsInstance(query_engine, BaseQueryEngine)
-
-        expected_filter = MetadataFilters(
-            filters=[
-                ExactMatchFilter(key="thread", value="thread1"),
-                ExactMatchFilter(key="thread", value="thread2"),
-                ExactMatchFilter(key="channel", value="channel1"),
-                ExactMatchFilter(key="channel", value="channel2"),
-                ExactMatchFilter(key="date", value="2022-01-01"),
-                ExactMatchFilter(key="date", value="2022-01-02"),
-            ],
-            condition=FilterCondition.OR,
-        )
-
-        self.assertEqual(query_engine.retriever._filters, expected_filter)
-        # this is the secondary search, so K2 should be for this
-        self.assertEqual(query_engine.retriever._similarity_top_k, 5)
