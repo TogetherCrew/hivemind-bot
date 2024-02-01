@@ -63,13 +63,20 @@ class BaseSummarySearch:
         return nodes
 
     def _setup_index(
-        self, table_name: str, dbname: str, embedding_model: BaseEmbedding, testing: bool = False,
+        self,
+        table_name: str,
+        dbname: str,
+        embedding_model: BaseEmbedding,
+        testing: bool = False,
     ) -> VectorStoreIndex:
         """
         setup the llama_index VectorStoreIndex
         """
         pg_vector_access = PGVectorAccess(
-            table_name=table_name, dbname=dbname, embed_model=embedding_model, testing=testing
+            table_name=table_name,
+            dbname=dbname,
+            embed_model=embedding_model,
+            testing=testing,
         )
         index = pg_vector_access.load_index()
         return index

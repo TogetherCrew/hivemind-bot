@@ -1,10 +1,8 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from collections import namedtuple
-
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
-from llama_index.schema import NodeWithScore, TextNode
+from llama_index.schema import TextNode
 
 
 class TestRetrieveSimilarNodes(TestCase):
@@ -17,7 +15,7 @@ class TestRetrieveSimilarNodes(TestCase):
         self.retriever = RetrieveSimilarNodes(
             vector_store=self.vector_store,
             similarity_top_k=5,
-            embed_model=self.embed_model
+            embed_model=self.embed_model,
         )
 
     def test_init(self):
@@ -29,7 +27,7 @@ class TestRetrieveSimilarNodes(TestCase):
         query_result = MagicMock()
         query_result.nodes = [TextNode(), TextNode(), TextNode()]
         query_result.similarities = [0.8, 0.9, 0.7]
-        
+
         result = self.retriever._get_nodes_with_score(query_result)
 
         self.assertEqual(len(result), 3)

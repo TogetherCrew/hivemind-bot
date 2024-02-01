@@ -35,6 +35,8 @@ class TestSummaryRetrieverBase(TestCase):
         embedding_model = MagicMock()
         search_instance = BaseSummarySearch(table_name, dbname, embedding_model)
 
-        index = search_instance._setup_index(table_name, dbname, embedding_model, testing=True)
+        index = search_instance._setup_index(
+            table_name, dbname, embedding_model, testing=True
+        )
         self.assertIsNotNone(index)
         self.assertIsInstance(index, VectorStoreIndex)
