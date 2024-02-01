@@ -2,7 +2,6 @@ import os
 import unittest
 
 from llama_index.core.base_query_engine import BaseQueryEngine
-from llama_index.vector_stores import ExactMatchFilter, FilterCondition, MetadataFilters
 from utils.query_engine.prepare_discourse_query_engine import prepare_discourse_engine
 
 

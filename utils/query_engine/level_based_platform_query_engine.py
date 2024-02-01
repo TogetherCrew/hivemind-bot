@@ -2,21 +2,16 @@ import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.process_dates import process_dates
-from bot.retrievers.utils.load_hyperparams import load_hyperparams
-from llama_index.query_engine import CustomQueryEngine
-from llama_index.retrievers import BaseRetriever
-from llama_index.response_synthesizers import (
-    get_response_synthesizer,
-    BaseSynthesizer,
-)
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
-from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
-from tc_hivemind_backend.pg_vector_access import PGVectorAccess
+from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.llms import OpenAI
 from llama_index.prompts import PromptTemplate
-from llama_index.schema import NodeWithScore
-from llama_index.schema import MetadataMode
-
+from llama_index.query_engine import CustomQueryEngine
+from llama_index.response_synthesizers import get_response_synthesizer, BaseSynthesizer
+from llama_index.retrievers import BaseRetriever
+from llama_index.schema import MetadataMode, NodeWithScore
+from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"

@@ -2,7 +2,7 @@ from llama_index.embeddings import BaseEmbedding
 from llama_index.schema import NodeWithScore
 from llama_index.vector_stores import PGVectorStore, VectorStoreQueryResult
 from llama_index.vector_stores.postgres import DBEmbeddingRow
-from sqlalchemy import select, text, and_, or_, Date, cast
+from sqlalchemy import Date, and_, cast, or_, select, text
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
