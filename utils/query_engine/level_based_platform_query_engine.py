@@ -7,7 +7,7 @@ from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.llms import OpenAI
 from llama_index.prompts import PromptTemplate
 from llama_index.query_engine import CustomQueryEngine
-from llama_index.response_synthesizers import get_response_synthesizer, BaseSynthesizer
+from llama_index.response_synthesizers import BaseSynthesizer, get_response_synthesizer
 from llama_index.retrievers import BaseRetriever
 from llama_index.schema import MetadataMode, NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
