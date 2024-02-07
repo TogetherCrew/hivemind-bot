@@ -1,3 +1,6 @@
+from datetime import timedelta
+from dateutil import parser
+
 from llama_index.embeddings import BaseEmbedding
 from llama_index.schema import NodeWithScore
 from llama_index.vector_stores import PGVectorStore, VectorStoreQueryResult
@@ -21,7 +24,10 @@ class RetrieveSimilarNodes:
         self._similarity_top_k = similarity_top_k
 
     def query_db(
-        self, query: str, filters: list[dict[str, str]] | None = None
+        self,
+        query: str,
+        filters: list[dict[str, str]] | None = None,
+        date_interval: int = 0,
     ) -> list[NodeWithScore]:
         """
         query database with given filters (similarity search is also done)
@@ -35,6 +41,9 @@ class RetrieveSimilarNodes:
             the dictionary would be applying `and`
             operation between keys and values of json metadata_
             if `None` then no filtering would be applied
+        date_interval : int
+            the number of back and forth days of date
+            default is set to 0 meaning no days back or forward.
         """
         self._vector_store._initialize()
         embedding = self._embed_model.get_text_embedding(text=query)
@@ -55,21 +64,41 @@ class RetrieveSimilarNodes:
                 for key, value in condition.items():
                     if key == "date":
                         # Apply ::date cast when the key is 'date'
-                        filter_condition = cast(
+                        date = parser.parse(value)
+                        date_back = (date - timedelta(days=date_interval)).strftime(
+                            "%Y-%m-%d"
+                        )
+                        date_forward = (date + timedelta(days=date_interval)).strftime(
+                            "%Y-%m-%d"
+                        )
+
+                        filter_condition_back = cast(
                             self._vector_store._table_class.metadata_.op("->>")(key),
                             Date,
-                        ) == cast(value, Date)
+                        ) >= cast(date_back, Date)
+
+                        filter_condition_forward = cast(
+                            self._vector_store._table_class.metadata_.op("->>")(key),
+                            Date,
+                        ) <= cast(date_forward, Date)
+
+                        filters_and.append(filter_condition_back)
+                        filters_and.append(filter_condition_forward)
                     else:
                         filter_condition = (
                             self._vector_store._table_class.metadata_.op("->>")(key)
                             == value
+                            if value is not None
+                            else self._vector_store._table_class.metadata_.op("->>")(
+                                key
+                            ).is_(None)
                         )
-
-                    filters_and.append(filter_condition)
+                        filters_and.append(filter_condition)
 
                 conditions.append(and_(*filters_and))
 
             stmt = stmt.where(or_(*conditions))
+            print("filters", filters)
 
             stmt = stmt.limit(self._similarity_top_k)
 

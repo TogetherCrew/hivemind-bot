@@ -90,10 +90,8 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
         for node in nodes:
             # the filter made by given node
             filter: dict[str, str] = {}
-            if node.metadata[metadata_group1_key]:
-                filter[metadata_group1_key] = node.metadata[metadata_group1_key]
-            if node.metadata[metadata_group2_key]:
-                filter[metadata_group2_key] = node.metadata[metadata_group2_key]
+            filter[metadata_group1_key] = node.metadata[metadata_group1_key]
+            filter[metadata_group2_key] = node.metadata[metadata_group2_key]
             # date filter
             filter[metadata_date_key] = node.metadata[metadata_date_key]
 

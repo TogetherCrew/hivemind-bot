@@ -39,12 +39,15 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             self._vector_store,
             self._similarity_top_k,
         )
-        similar_nodes = retriever.query_db(query=query_str, filters=self._filters)
+        logging.info(f"self._filters {self._filters}")
+        similar_nodes = retriever.query_db(
+            query=query_str, filters=self._filters, date_interval=self._d
+        )
 
         context_str = self._prepare_context_str(similar_nodes, self.summary_nodes)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
-        logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
+        # logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
         return str(response)
 
     @classmethod
@@ -107,7 +110,8 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )
         index = pg_vector.load_index()
         retriever = index.as_retriever()
-        _, similarity_top_k, _ = load_hyperparams()
+        _, similarity_top_k, d = load_hyperparams()
+        cls._d = d
 
         cls._vector_store = index.vector_store
         cls._similarity_top_k = similarity_top_k
@@ -190,12 +194,13 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         cls._level1_key = level1_key
         cls._level2_key = level2_key
         cls._date_key = date_key
+        cls._d = d
 
-        # getting all the metadata dates from filters
-        dates: list[str] = [f[date_key] for f in filters]
-        dates_modified = process_dates(list(dates), d)
-        dates_filter = [{date_key: date} for date in dates_modified]
-        filters.extend(dates_filter)
+        # # getting all the metadata dates from filters
+        # dates: list[str] = [f[date_key] for f in filters]
+        # dates_modified = process_dates(list(dates), d)
+        # dates_filter = [{date_key: date} for date in dates_modified]
+        # filters.extend(dates_filter)
 
         logging.info(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
 
@@ -212,6 +217,8 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         """
         prepare the prompt context using the raw_nodes for answers and summary_nodes for additional information
         """
+        logging.info(f"START len(raw_nodes) {len(raw_nodes)}")
+        logging.info(f"START len(summary_nodes) {len(summary_nodes)}")
         context_str: str = ""
 
         if summary_nodes == []:
@@ -222,12 +229,28 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             context_str += self._prepare_prompt_with_metadata_info(nodes=raw_nodes)
         else:
             grouped_raw_nodes = self._group_nodes_per_metadata(raw_nodes)
+
+            raw_data_logs: list[str] = []
+            for level1_title in grouped_raw_nodes:
+                for level2_title in grouped_raw_nodes[level1_title]:
+                    for date in grouped_raw_nodes[level1_title][level2_title]:
+                        raw_data_logs.append(
+                            f"GROUPED RAW DATA {self._level1_key}: {level1_title}, {self._level2_key}: {level2_title}, {self._date_key}: {date}"
+                            f", Message count {len(grouped_raw_nodes[level1_title][level2_title][date])}"
+                        )
+
+            logging.info(f"raw_data_logs {raw_data_logs}")
+
+            summary_log_data: list[str] = []
             for summary_node in summary_nodes:
                 # can be thread_title for discord
                 level1_title = summary_node.metadata[self._level1_key]
                 # can be channel_title for discord
                 level2_title = summary_node.metadata[self._level2_key]
                 date = summary_node.metadata[self._date_key]
+                summary_log_data.append(
+                    f"SUMMARY DATA {self._level1_key}: {level1_title}, {self._level2_key}: {level2_title}, {self._date_key}: {date}"
+                )
 
                 # intiialization
                 node_context: str = ""
@@ -236,21 +259,45 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                     level2_title, {}
                 )
 
-                if date in nested_dict:
-                    raw_nodes = grouped_raw_nodes[level1_title][level2_title][date]
+                dates_modified = process_dates([date], self._d)
+                # if date in nested_dict:
+
+                # if they had any intersect
+                if set(nested_dict.keys()) & set(dates_modified):
+                    raw_nodes = []
+                    for date in dates_modified:
+                        nodes = grouped_raw_nodes[level1_title][level2_title].get(
+                            date, []
+                        )
+                        raw_nodes.extend(nodes)
+
+                    logging.info(
+                        f"len(raw_nodes) {len(raw_nodes)} for "
+                        f"{self._level1_key}: {level1_title}, "
+                        f"{self._level2_key}: {level2_title}, "
+                        f"{self._date_key} range: {dates_modified[0]} - {dates_modified[-1]}"
+                    )
                     node_context: str = (
                         f"{self._level1_key}: {level1_title}\n"
                         f"{self._level2_key}: {level2_title}\n"
-                        f"{self._date_key}: {date}\n"
+                        f"{self._date_key} range: {dates_modified[0]} - {dates_modified[-1]}\n"
                         f"summary: {summary_node.text}\n"
                         "messages:\n"
                     )
                     node_context += self._prepare_prompt_with_metadata_info(
                         raw_nodes, prefix="  "
                     )
+                if node_context == "":
+                    logging.warning(
+                        "Error empty node_context for "
+                        f"{self._level1_key}: {level1_title}, "
+                        f"{self._level2_key}: {level2_title}, "
+                        f"{self._date_key}: {date}"
+                    )
+                else:
+                    context_str += node_context + "\n"
 
-                context_str += node_context
-
+        # logging.info(f"summary_log_data {summary_log_data}")
         logging.info(f"||||||||context_str|||||||| {context_str} |||||||")
         return context_str
 
@@ -278,8 +325,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         grouped_nodes: dict[str, dict[str, dict[str, list[NodeWithScore]]]] = {}
         for node in raw_nodes:
             level1_title = node.metadata[self._level1_key]
-            # TODO: remove the _name when the data got updated
-            level2_title = node.metadata[self._level2_key + "_name"]
+            level2_title = node.metadata[self._level2_key]
             date_str = node.metadata[self._date_key]
             date = parser.parse(date_str).strftime("%Y-%m-%d")
 
@@ -301,7 +347,8 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         """
         context_str = "\n".join(
             [
-                "author: "
+                prefix
+                + "author: "
                 + node.metadata["author_username"]
                 + "\n"
                 + prefix
