@@ -10,7 +10,7 @@ from llama_index.prompts import PromptTemplate
 from llama_index.query_engine import CustomQueryEngine
 from llama_index.response_synthesizers import BaseSynthesizer, get_response_synthesizer
 from llama_index.retrievers import BaseRetriever
-from llama_index.schema import MetadataMode, NodeWithScore
+from llama_index.schema import NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 
@@ -39,7 +39,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             self._vector_store,
             self._similarity_top_k,
         )
-        logging.info(f"self._filters {self._filters}")
+        logging.debug(f"retrieval database filters {self._filters}")
         similar_nodes = retriever.query_db(
             query=query_str, filters=self._filters, date_interval=self._d
         )
@@ -47,7 +47,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         context_str = self._prepare_context_str(similar_nodes, self.summary_nodes)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
-        # logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
+
         return str(response)
 
     @classmethod
@@ -169,7 +169,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             the created query engine with the filters
         """
         dbname = f"community_{community_id}"
-
         summary_similarity_top_k, _, d = load_hyperparams()
 
         # For summaries data a posfix `summary` would be added
@@ -196,12 +195,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         cls._date_key = date_key
         cls._d = d
 
-        # # getting all the metadata dates from filters
-        # dates: list[str] = [f[date_key] for f in filters]
-        # dates_modified = process_dates(list(dates), d)
-        # dates_filter = [{date_key: date} for date in dates_modified]
-        # filters.extend(dates_filter)
-
         logging.info(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
 
         engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
@@ -217,8 +210,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         """
         prepare the prompt context using the raw_nodes for answers and summary_nodes for additional information
         """
-        logging.info(f"START len(raw_nodes) {len(raw_nodes)}")
-        logging.info(f"START len(summary_nodes) {len(summary_nodes)}")
         context_str: str = ""
 
         if summary_nodes == []:
@@ -230,27 +221,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         else:
             grouped_raw_nodes = self._group_nodes_per_metadata(raw_nodes)
 
-            raw_data_logs: list[str] = []
-            for level1_title in grouped_raw_nodes:
-                for level2_title in grouped_raw_nodes[level1_title]:
-                    for date in grouped_raw_nodes[level1_title][level2_title]:
-                        raw_data_logs.append(
-                            f"GROUPED RAW DATA {self._level1_key}: {level1_title}, {self._level2_key}: {level2_title}, {self._date_key}: {date}"
-                            f", Message count {len(grouped_raw_nodes[level1_title][level2_title][date])}"
-                        )
-
-            logging.info(f"raw_data_logs {raw_data_logs}")
-
-            summary_log_data: list[str] = []
             for summary_node in summary_nodes:
                 # can be thread_title for discord
                 level1_title = summary_node.metadata[self._level1_key]
                 # can be channel_title for discord
                 level2_title = summary_node.metadata[self._level2_key]
                 date = summary_node.metadata[self._date_key]
-                summary_log_data.append(
-                    f"SUMMARY DATA {self._level1_key}: {level1_title}, {self._level2_key}: {level2_title}, {self._date_key}: {date}"
-                )
 
                 # intiialization
                 node_context: str = ""
@@ -271,12 +247,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                         )
                         raw_nodes.extend(nodes)
 
-                    logging.info(
-                        f"len(raw_nodes) {len(raw_nodes)} for "
-                        f"{self._level1_key}: {level1_title}, "
-                        f"{self._level2_key}: {level2_title}, "
-                        f"{self._date_key} range: {dates_modified[0]} - {dates_modified[-1]}"
-                    )
                     node_context: str = (
                         f"{self._level1_key}: {level1_title}\n"
                         f"{self._level2_key}: {level2_title}\n"
@@ -288,17 +258,25 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                         raw_nodes, prefix="  "
                     )
                 if node_context == "":
-                    logging.warning(
-                        "Error empty node_context for "
+                    logging.debug(
+                        "No messages fetched for "
                         f"{self._level1_key}: {level1_title}, "
                         f"{self._level2_key}: {level2_title}, "
                         f"{self._date_key}: {date}"
+                        " of summaries data"
                     )
-                else:
+                if node_context != "":
+                    logging.debug(
+                        f"{len(raw_nodes)} messages fetched for "
+                        f"{self._level1_key}: {level1_title}, "
+                        f"{self._level2_key}: {level2_title}, "
+                        f"{self._date_key}: {date}"
+                        " of summaries data"
+                    )
                     context_str += node_context + "\n"
 
-        # logging.info(f"summary_log_data {summary_log_data}")
-        logging.info(f"||||||||context_str|||||||| {context_str} |||||||")
+        logging.debug(f"context_str of prompt\n" f"{context_str}")
+
         return context_str
 
     def _group_nodes_per_metadata(

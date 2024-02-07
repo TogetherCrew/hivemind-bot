@@ -98,7 +98,6 @@ class RetrieveSimilarNodes:
                 conditions.append(and_(*filters_and))
 
             stmt = stmt.where(or_(*conditions))
-            print("filters", filters)
 
             stmt = stmt.limit(self._similarity_top_k)
 
