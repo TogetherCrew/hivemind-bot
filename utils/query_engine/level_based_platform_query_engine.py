@@ -1,12 +1,14 @@
-from dateutil import parser
 import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
-from bot.retrievers.process_dates import process_dates
+from utils.query_engine.utils import (
+    LevelBasedPlatformUtils,
+)
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.llms import OpenAI
 from llama_index.prompts import PromptTemplate
+from llama_index import VectorStoreIndex
 from llama_index.query_engine import CustomQueryEngine
 from llama_index.response_synthesizers import BaseSynthesizer, get_response_synthesizer
 from llama_index.retrievers import BaseRetriever
@@ -36,10 +38,10 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         """Doing custom query"""
         # first retrieving similar nodes in summary
         retriever = RetrieveSimilarNodes(
-            self._vector_store,
+            self._raw_vector_store,
             self._similarity_top_k,
         )
-        logging.debug(f"retrieval database filters {self._filters}")
+
         similar_nodes = retriever.query_db(
             query=query_str, filters=self._filters, date_interval=self._d
         )
@@ -102,18 +104,15 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         llm = kwargs.get("llm", OpenAI("gpt-4"))
         qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
 
-        pg_vector = PGVectorAccess(
-            table_name=platform_table_name,
-            dbname=dbname,
-            testing=testing,
-            embed_model=CohereEmbedding(),
-        )
-        index = pg_vector.load_index()
+        index = cls._setup_vector_store_index(platform_table_name, dbname, testing)
         retriever = index.as_retriever()
         _, similarity_top_k, d = load_hyperparams()
         cls._d = d
 
-        cls._vector_store = index.vector_store
+        cls._raw_vector_store = index._vector_store
+        cls._summary_vector_store = cls._setup_vector_store_index(
+            platform_table_name + "_summary", dbname, testing
+        )._vector_store
         cls._similarity_top_k = similarity_top_k
         cls._filters = filters
 
@@ -190,12 +189,14 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         else:
             cls.summary_nodes = []
 
+        cls._utils_class = LevelBasedPlatformUtils(level1_key, level2_key, date_key)
         cls._level1_key = level1_key
         cls._level2_key = level2_key
         cls._date_key = date_key
         cls._d = d
+        cls._platform_table_name = platform_table_name
 
-        logging.info(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
+        logging.debug(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
 
         engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
             community_id=community_id,
@@ -217,127 +218,85 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                 "Empty context_nodes. Cannot add summaries as context information!"
             )
 
-            context_str += self._prepare_prompt_with_metadata_info(nodes=raw_nodes)
+            context_str += self._utils_class.prepare_prompt_with_metadata_info(
+                nodes=raw_nodes
+            )
         else:
-            grouped_raw_nodes = self._group_nodes_per_metadata(raw_nodes)
+            # grouping the data we have so we could
+            # get them per each metadata without search
+            (
+                grouped_raw_nodes,
+                grouped_summary_nodes,
+            ) = self._group_summary_and_raw_nodes(raw_nodes, summary_nodes)
 
-            for summary_node in summary_nodes:
-                # can be thread_title for discord
-                level1_title = summary_node.metadata[self._level1_key]
-                # can be channel_title for discord
-                level2_title = summary_node.metadata[self._level2_key]
-                date = summary_node.metadata[self._date_key]
+            # first using the available summary nodes try to create prompt
+            context_data, (
+                summary_nodes_to_fetch_filters,
+                raw_nodes_missed,
+            ) = self._utils_class.prepare_context_str_based_on_summaries(
+                grouped_raw_nodes, grouped_summary_nodes
+            )
+            context_str += context_data
 
-                # intiialization
-                node_context: str = ""
-
-                nested_dict = grouped_raw_nodes.get(level1_title, {}).get(
-                    level2_title, {}
+            logging.info(
+                f"summary_nodes_to_fetch_filters {summary_nodes_to_fetch_filters}"
+            )
+            # then if there was some missing summaries
+            if len(summary_nodes_to_fetch_filters):
+                retriever = RetrieveSimilarNodes(
+                    self._summary_vector_store,
+                    similarity_top_k=None,
                 )
-
-                dates_modified = process_dates([date], self._d)
-                # if date in nested_dict:
-
-                # if they had any intersect
-                if set(nested_dict.keys()) & set(dates_modified):
-                    raw_nodes = []
-                    for date in dates_modified:
-                        nodes = grouped_raw_nodes[level1_title][level2_title].get(
-                            date, []
-                        )
-                        raw_nodes.extend(nodes)
-
-                    node_context: str = (
-                        f"{self._level1_key}: {level1_title}\n"
-                        f"{self._level2_key}: {level2_title}\n"
-                        f"{self._date_key} range: {dates_modified[0]} - {dates_modified[-1]}\n"
-                        f"summary: {summary_node.text}\n"
-                        "messages:\n"
-                    )
-                    node_context += self._prepare_prompt_with_metadata_info(
-                        raw_nodes, prefix="  "
-                    )
-                if node_context == "":
-                    logging.debug(
-                        "No messages fetched for "
-                        f"{self._level1_key}: {level1_title}, "
-                        f"{self._level2_key}: {level2_title}, "
-                        f"{self._date_key}: {date}"
-                        " of summaries data"
-                    )
-                if node_context != "":
-                    logging.debug(
-                        f"{len(raw_nodes)} messages fetched for "
-                        f"{self._level1_key}: {level1_title}, "
-                        f"{self._level2_key}: {level2_title}, "
-                        f"{self._date_key}: {date}"
-                        " of summaries data"
-                    )
-                    context_str += node_context + "\n"
+                fetched_summary_nodes = retriever.query_db(
+                    query="",
+                    filters=summary_nodes_to_fetch_filters,
+                    ignore_sort=True,
+                )
+                logging.info(f"len(fetched_summary_nodes) {len(fetched_summary_nodes)}")
+                logging.info(f"fetched_summary_nodes {fetched_summary_nodes}")
+                grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
+                    fetched_summary_nodes
+                )
+                logging.info(f"grouped_summary_nodes {grouped_summary_nodes}")
+                logging.info(f"len(grouped_summary_nodes) {len(grouped_summary_nodes)}")
+                context_data, (
+                    summary_nodes_to_fetch_filters,
+                    _,
+                ) = self._utils_class.prepare_context_str_based_on_summaries(
+                    raw_nodes_missed, grouped_summary_nodes
+                )
+                context_str += context_data
 
         logging.debug(f"context_str of prompt\n" f"{context_str}")
 
         return context_str
 
-    def _group_nodes_per_metadata(
-        self, raw_nodes: list[NodeWithScore]
-    ) -> dict[str, dict[str, dict[str, list[NodeWithScore]]]]:
+    @classmethod
+    def _setup_vector_store_index(
+        cls, platform_table_name: str, dbname: str, testing: str
+    ) -> VectorStoreIndex:
         """
-        group all nodes based on their level1 and level2 metadata
-
-        Parameters
-        -----------
-        raw_nodes : list[NodeWithScore]
-            a list of raw nodes
-
-        Returns
-        ---------
-        grouped_nodes : dict[str, dict[str, dict[str, list[NodeWithScore]]]]
-            a list of nodes grouped by
-            - `level1_key`
-            - `level2_key`
-            - and the last dict key `date_key`
-
-            The values of the nested dictionary are the nodes grouped
+        prepare the vector_store for querying data
         """
-        grouped_nodes: dict[str, dict[str, dict[str, list[NodeWithScore]]]] = {}
-        for node in raw_nodes:
-            level1_title = node.metadata[self._level1_key]
-            level2_title = node.metadata[self._level2_key]
-            date_str = node.metadata[self._date_key]
-            date = parser.parse(date_str).strftime("%Y-%m-%d")
+        pg_vector = PGVectorAccess(
+            table_name=platform_table_name,
+            dbname=dbname,
+            testing=testing,
+            embed_model=CohereEmbedding(),
+        )
+        index = pg_vector.load_index()
+        return index
 
-            # defining an empty list (if keys weren't previously made)
-            grouped_nodes.setdefault(level1_title, {}).setdefault(
-                level2_title, {}
-            ).setdefault(date, [])
-            # Adding to list
-            grouped_nodes[level1_title][level2_title][date].append(node)
-
-        return grouped_nodes
-
-    def _prepare_prompt_with_metadata_info(
-        self, nodes: list[NodeWithScore], prefix: str = ""
-    ) -> str:
-        """
-        prepare a prompt with given nodes including the nodes' metadata
-        Note: the prefix is set before each text!
-        """
-        context_str = "\n".join(
-            [
-                prefix
-                + "author: "
-                + node.metadata["author_username"]
-                + "\n"
-                + prefix
-                + "message_date: "
-                + node.metadata["date"]
-                + "\n"
-                + prefix
-                + f"message {idx + 1}: "
-                + node.get_content()
-                for idx, node in enumerate(nodes)
-            ]
+    def _group_summary_and_raw_nodes(
+        self, raw_nodes: list[NodeWithScore], summary_nodes: list[NodeWithScore]
+    ) -> tuple[
+        dict[str, dict[str, dict[str, list[NodeWithScore]]]],
+        dict[str, dict[str, dict[str, list[NodeWithScore]]]],
+    ]:
+        """a wrapper to do the grouping of given nodes"""
+        grouped_raw_nodes = self._utils_class.group_nodes_per_metadata(raw_nodes)
+        grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
+            summary_nodes
         )
 
-        return context_str
+        return grouped_raw_nodes, grouped_summary_nodes
