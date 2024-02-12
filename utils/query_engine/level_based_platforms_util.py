@@ -140,6 +140,8 @@ class LevelBasedPlatformUtils:
                                 self.level1_key: level1_title,
                                 self.level2_key: level2_title,
                                 self.date_key: date,
+                                # we need the thread summaries
+                                "type": "thread",
                             }
                         )
                         raw_nodes_missed.setdefault(level1_title, {}).setdefault(

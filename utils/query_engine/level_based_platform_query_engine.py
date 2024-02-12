@@ -47,6 +47,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         context_str = self._prepare_context_str(similar_nodes, self.summary_nodes)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
+        logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
 
         return str(response)
 
@@ -191,7 +192,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             summary_similarity_top_k,
         )
         # getting nodes of just thread summaries
-        nodes = retriever.query_db(query, [{"thread": None}, {"thread": {"ne": None}}])
+        nodes = retriever.query_db(query, [{"type": "thread"}])
 
         # For summaries data a posfix `summary` would be added
         platform_retriever = ForumBasedSummaryRetriever(
