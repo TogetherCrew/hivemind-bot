@@ -1,20 +1,18 @@
 import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
-from utils.query_engine.level_based_platforms_util import (
-    LevelBasedPlatformUtils,
-)
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
+from llama_index import VectorStoreIndex
 from llama_index.llms import OpenAI
 from llama_index.prompts import PromptTemplate
-from llama_index import VectorStoreIndex
 from llama_index.query_engine import CustomQueryEngine
 from llama_index.response_synthesizers import BaseSynthesizer, get_response_synthesizer
 from llama_index.retrievers import BaseRetriever
 from llama_index.schema import NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
+from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"
@@ -248,11 +246,11 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             )
         else:
             # grouping the data we have so we could
-            # get them per each metadata without search
-            (
-                grouped_raw_nodes,
-                grouped_summary_nodes,
-            ) = self._group_summary_and_raw_nodes(raw_nodes, summary_nodes)
+            # get them per each metadata without looping over them
+            grouped_raw_nodes = self._utils_class.group_nodes_per_metadata(raw_nodes)
+            grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
+                summary_nodes
+            )
 
             # first using the available summary nodes try to create prompt
             context_data, (
@@ -307,17 +305,3 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )
         index = pg_vector.load_index()
         return index
-
-    def _group_summary_and_raw_nodes(
-        self, raw_nodes: list[NodeWithScore], summary_nodes: list[NodeWithScore]
-    ) -> tuple[
-        dict[str, dict[str, dict[str, list[NodeWithScore]]]],
-        dict[str, dict[str, dict[str, list[NodeWithScore]]]],
-    ]:
-        """a wrapper to do the grouping of given nodes"""
-        grouped_raw_nodes = self._utils_class.group_nodes_per_metadata(raw_nodes)
-        grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
-            summary_nodes
-        )
-
-        return grouped_raw_nodes, grouped_summary_nodes

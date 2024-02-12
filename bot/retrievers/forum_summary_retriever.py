@@ -1,7 +1,7 @@
 from bot.retrievers.summary_retriever_base import BaseSummarySearch
 from llama_index.embeddings import BaseEmbedding
-from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from llama_index.schema import NodeWithScore
+from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
 class ForumBasedSummaryRetriever(BaseSummarySearch):

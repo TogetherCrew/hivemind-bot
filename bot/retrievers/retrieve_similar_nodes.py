@@ -1,11 +1,11 @@
 from datetime import timedelta
-from dateutil import parser
 
+from dateutil import parser
 from llama_index.embeddings import BaseEmbedding
 from llama_index.schema import NodeWithScore
 from llama_index.vector_stores import PGVectorStore, VectorStoreQueryResult
 from llama_index.vector_stores.postgres import DBEmbeddingRow
-from sqlalchemy import Date, and_, null, cast, or_, select, text
+from sqlalchemy import Date, and_, cast, null, or_, select, text
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
@@ -84,7 +84,8 @@ class RetrieveSimilarNodes:
                 for key, value in condition.items():
                     if key == "date":
                         # Apply ::date cast when the key is 'date'
-                        date = parser.parse(value)
+                        # The value should be always str
+                        date = parser.parse(value)  # flake8: noqa
                         date_back = (date - timedelta(days=date_interval)).strftime(
                             "%Y-%m-%d"
                         )
