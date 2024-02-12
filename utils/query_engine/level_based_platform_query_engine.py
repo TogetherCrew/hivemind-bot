@@ -1,7 +1,7 @@
 import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
-from utils.query_engine.utils import (
+from utils.query_engine.level_based_platforms_util import (
     LevelBasedPlatformUtils,
 )
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
