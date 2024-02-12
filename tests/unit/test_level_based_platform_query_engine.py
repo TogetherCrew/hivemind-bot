@@ -6,6 +6,7 @@ from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from utils.query_engine.level_based_platform_query_engine import (
     LevelBasedPlatformQueryEngine,
 )
+from sqlalchemy.exc import OperationalError
 
 
 class TestLevelBasedPlatformQueryEngine(unittest.TestCase):
@@ -26,9 +27,9 @@ class TestLevelBasedPlatformQueryEngine(unittest.TestCase):
         """
         # the output should always have a `date` key for each dictionary
         filters = [
-            {"channel": "general", "date": "2023-01-02"},
-            {"thread": "discussion", "date": "2024-01-03"},
-            {"date": "2022-01-01"},
+            {"channel": "general", "thread": "some_thread", "date": "2023-01-02"},
+            {"channel": "general", "thread": "discussion", "date": "2024-01-03"},
+            {"channel": "general#2", "thread": "Agenda", "date": "2022-01-01"},
         ]
 
         engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
@@ -44,21 +45,22 @@ class TestLevelBasedPlatformQueryEngine(unittest.TestCase):
         Test prepare_engine_auto_filter method with sample data
         """
         with patch.object(
-            ForumBasedSummaryRetriever, "retreive_filtering"
+            ForumBasedSummaryRetriever, "define_filters"
         ) as mock_retriever:
             # the output should always have a `date` key for each dictionary
             mock_retriever.return_value = [
-                {"channel": "general", "date": "2023-01-02"},
-                {"thread": "discussion", "date": "2024-01-03"},
-                {"date": "2022-01-01"},
+                {"channel": "general", "thread": "some_thread", "date": "2023-01-02"},
+                {"channel": "general", "thread": "discussion", "date": "2024-01-03"},
+                {"channel": "general#2", "thread": "Agenda", "date": "2022-01-01"},
             ]
 
-            engine = LevelBasedPlatformQueryEngine.prepare_engine_auto_filter(
-                community_id=self.community_id,
-                query="test query",
-                platform_table_name=self.platform_table_name,
-                level1_key=self.level1_key,
-                level2_key=self.level2_key,
-                date_key=self.date_key,
-            )
-            self.assertIsNotNone(engine)
+            with self.assertRaises(OperationalError):
+                # no database with name of `test_community` is available
+                _ = LevelBasedPlatformQueryEngine.prepare_engine_auto_filter(
+                    community_id=self.community_id,
+                    query="test query",
+                    platform_table_name=self.platform_table_name,
+                    level1_key=self.level1_key,
+                    level2_key=self.level2_key,
+                    date_key=self.date_key,
+                )

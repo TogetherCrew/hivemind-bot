@@ -132,6 +132,7 @@ class LevelBasedPlatformUtils:
                             f"{self.level1_key}: {level1_title}, "
                             f"{self.level2_key}: {level2_title}, "
                             f"{self.date_key}: {date}"
+                            "\t will fetch them after"
                         )
                         summary_nodes_to_fetch_filters.append(
                             {
