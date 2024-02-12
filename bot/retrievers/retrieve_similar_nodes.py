@@ -26,7 +26,7 @@ class RetrieveSimilarNodes:
     def query_db(
         self,
         query: str,
-        filters: list[dict[str, str]] | None = None,
+        filters: list[dict[str, str | dict | None]] | None = None,
         date_interval: int = 0,
         **kwargs
     ) -> list[NodeWithScore]:
@@ -37,11 +37,13 @@ class RetrieveSimilarNodes:
         -------------
         query : str
             the user question
-        filters : list[dict[str, str]] | None
+        filters : list[dict[str, str | dict | None]] | None
             a list of filters to apply with `or` condition
             the dictionary would be applying `and`
             operation between keys and values of json metadata_
-            if `None` then no filtering would be applied
+            the value can be a dictionary with one key of "ne" and a value
+            which means to do a not equal operator `!=`
+            if `None` then no filtering would be applied.
         date_interval : int
             the number of back and forth days of date
             default is set to 0 meaning no days back or forward.
@@ -106,10 +108,11 @@ class RetrieveSimilarNodes:
                         filter_condition = (
                             self._vector_store._table_class.metadata_.op("->>")(key)
                             == value
-                            if value is not None
+                            if not isinstance(value, dict)
                             else self._vector_store._table_class.metadata_.op("->>")(
                                 key
-                            ).is_(None)
+                            )
+                            != value["ne"]
                         )
                         filters_and.append(filter_condition)
 

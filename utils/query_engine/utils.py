@@ -106,7 +106,6 @@ class LevelBasedPlatformUtils:
                         .get(date, [])
                     )
                     if len(summary_nodes) == 1:
-                        # if len(summary_nodes) == 1 or len(summary_nodes) == 2:
                         logging.debug(
                             f"{len(raw_nodes)} messages available for "
                             f"{self.level1_key}: {level1_title}, "
@@ -149,12 +148,6 @@ class LevelBasedPlatformUtils:
                         )
                     else:
                         logging.info(f"len(summary_nodes) {len(summary_nodes)}")
-                        # UU_nodes = []
-                        # UU_nodes_text = ""
-                        # for node in summary_nodes:
-                        #     UU_nodes.append(node.metadata)
-                        #     UU_nodes_text += node.text + "\n\n"
-                        # logging.info(f"summary_nodes UU_nodes: {UU_nodes} || UU_nodes_text {UU_nodes_text}")
                         raise ValueError(
                             "Not possible to have multiple summaries for a"
                             f" combination of "

@@ -90,6 +90,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             qa_prompt : llama-index.prompts.PromptTemplate
                 the Q&A prompt to use
                 default would be the default prompt of llama-index
+            index_raw : VectorStoreIndex
+                the vector store index for raw data
+                If not passed, it would just create one itself
+            index_summary : VectorStoreIndex
+                the vector store index for summary data
+                If not passed, it would just create one itself
 
         Returns
         ---------
@@ -103,16 +109,23 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )
         llm = kwargs.get("llm", OpenAI("gpt-4"))
         qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
-
-        index = cls._setup_vector_store_index(platform_table_name, dbname, testing)
+        index: VectorStoreIndex = kwargs.get(
+            "index_raw",
+            cls._setup_vector_store_index(platform_table_name, dbname, testing),
+        )
         retriever = index.as_retriever()
+        cls._summary_vector_store = kwargs.get(
+            "index_summary",
+            cls._setup_vector_store_index(
+                platform_table_name + "_summary", dbname, testing
+            ),
+        )._vector_store
+
         _, similarity_top_k, d = load_hyperparams()
         cls._d = d
 
         cls._raw_vector_store = index._vector_store
-        cls._summary_vector_store = cls._setup_vector_store_index(
-            platform_table_name + "_summary", dbname, testing
-        )._vector_store
+
         cls._similarity_top_k = similarity_top_k
         cls._filters = filters
 
@@ -170,12 +183,22 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         dbname = f"community_{community_id}"
         summary_similarity_top_k, _, d = load_hyperparams()
 
+        index_summary = cls._setup_vector_store_index(
+            platform_table_name + "_summary", dbname, False
+        )
+        vector_store = index_summary._vector_store
+
+        retriever = RetrieveSimilarNodes(
+            vector_store,
+            summary_similarity_top_k,
+        )
+        # getting nodes of just thread summaries
+        nodes = retriever.query_db(query, [{"thread": None}, {"thread": {"ne": None}}])
+
         # For summaries data a posfix `summary` would be added
         platform_retriever = ForumBasedSummaryRetriever(
             table_name=platform_table_name + "_summary", dbname=dbname
         )
-
-        nodes = platform_retriever.get_similar_nodes(query, summary_similarity_top_k)
 
         filters = platform_retriever.define_filters(
             nodes,
@@ -183,6 +206,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             metadata_group2_key=level2_key,
             metadata_date_key=date_key,
         )
+
         # saving to add summaries to the context of prompt
         if include_summary_context:
             cls.summary_nodes = nodes
@@ -202,6 +226,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             community_id=community_id,
             platform_table_name=platform_table_name,
             filters=filters,
+            index_summary=index_summary,
         )
         return engine
 
@@ -238,9 +263,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             )
             context_str += context_data
 
-            logging.info(
-                f"summary_nodes_to_fetch_filters {summary_nodes_to_fetch_filters}"
-            )
             # then if there was some missing summaries
             if len(summary_nodes_to_fetch_filters):
                 retriever = RetrieveSimilarNodes(
@@ -252,13 +274,9 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                     filters=summary_nodes_to_fetch_filters,
                     ignore_sort=True,
                 )
-                logging.info(f"len(fetched_summary_nodes) {len(fetched_summary_nodes)}")
-                logging.info(f"fetched_summary_nodes {fetched_summary_nodes}")
                 grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
                     fetched_summary_nodes
                 )
-                logging.info(f"grouped_summary_nodes {grouped_summary_nodes}")
-                logging.info(f"len(grouped_summary_nodes) {len(grouped_summary_nodes)}")
                 context_data, (
                     summary_nodes_to_fetch_filters,
                     _,
@@ -273,7 +291,10 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
 
     @classmethod
     def _setup_vector_store_index(
-        cls, platform_table_name: str, dbname: str, testing: str
+        cls,
+        platform_table_name: str,
+        dbname: str,
+        testing: bool = False,
     ) -> VectorStoreIndex:
         """
         prepare the vector_store for querying data
