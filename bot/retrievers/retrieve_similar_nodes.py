@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from dateutil import parser
 from llama_index.embeddings import BaseEmbedding
@@ -83,9 +83,13 @@ class RetrieveSimilarNodes:
                 filters_and = []
                 for key, value in condition.items():
                     if key == "date":
-                        # Apply ::date cast when the key is 'date'
-                        # The value should be always str
-                        date = parser.parse(value)  # flake8: noqa
+                        date: datetime
+                        if isinstance(value, str):
+                            date = parser.parse(value)
+                        else:
+                            raise ValueError(
+                                "the values for filtering dates must be string!"
+                            )
                         date_back = (date - timedelta(days=date_interval)).strftime(
                             "%Y-%m-%d"
                         )
@@ -93,6 +97,7 @@ class RetrieveSimilarNodes:
                             "%Y-%m-%d"
                         )
 
+                        # Apply ::date cast when the key is 'date'
                         filter_condition_back = cast(
                             self._vector_store._table_class.metadata_.op("->>")(key),
                             Date,
