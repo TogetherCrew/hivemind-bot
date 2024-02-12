@@ -30,6 +30,7 @@ class LevelBasedPlatformUtils:
                 + prefix
                 + f"message {idx + 1}: "
                 + node.get_content()
+                + "\n"
                 for idx, node in enumerate(nodes)
             ]
         )

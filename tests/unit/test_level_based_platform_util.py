@@ -32,8 +32,8 @@ class TestLevelBasedPlatformUtils(unittest.TestCase):
         ]
         prefix = "  "
         expected_output = (
-            "  author: user1\n  message_date: 2022-01-01\n  message 1: content1\n"
-            "  author: user2\n  message_date: 2022-01-02\n  message 2: content2"
+            "  author: user1\n  message_date: 2022-01-01\n  message 1: content1\n\n"
+            "  author: user2\n  message_date: 2022-01-02\n  message 2: content2\n"
         )
         result = self.utils.prepare_prompt_with_metadata_info(nodes, prefix)
         self.assertEqual(result, expected_output)
@@ -108,9 +108,9 @@ class TestLevelBasedPlatformUtils(unittest.TestCase):
         grouped_raw_nodes = {"A": {"X": {"2022-01-01": raw_nodes}}}
         grouped_summary_nodes = {"A": {"X": {"2022-01-01": summary_nodes}}}
         expected_output = (
-            """channel: A\nthread: X\ndate: 2022-01-01\nsummary: summary_content\nmessages:\n"""
-            """  author: USERNAME#1\n  message_date: 2022-01-01\n  message 1: raw_content1\n"""
-            """  author: USERNAME#2\n  message_date: 2022-01-04\n  message 2: raw_content2\n"""
+            "channel: A\nthread: X\ndate: 2022-01-01\nsummary: summary_content\nmessages:\n"
+            "  author: USERNAME#1\n  message_date: 2022-01-01\n  message 1: raw_content1\n\n"
+            "  author: USERNAME#2\n  message_date: 2022-01-04\n  message 2: raw_content2\n\n"
         )
         result, _ = self.utils.prepare_context_str_based_on_summaries(
             grouped_raw_nodes, grouped_summary_nodes
