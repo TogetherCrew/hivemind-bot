@@ -1,17 +1,18 @@
 import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
-from bot.retrievers.process_dates import process_dates
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
+from llama_index import VectorStoreIndex
 from llama_index.llms import OpenAI
 from llama_index.prompts import PromptTemplate
 from llama_index.query_engine import CustomQueryEngine
 from llama_index.response_synthesizers import BaseSynthesizer, get_response_synthesizer
 from llama_index.retrievers import BaseRetriever
-from llama_index.schema import MetadataMode, NodeWithScore
+from llama_index.schema import NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
+from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"
@@ -35,15 +36,19 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         """Doing custom query"""
         # first retrieving similar nodes in summary
         retriever = RetrieveSimilarNodes(
-            self._vector_store,
+            self._raw_vector_store,
             self._similarity_top_k,
         )
-        similar_nodes = retriever.query_db(query=query_str, filters=self._filters)
 
-        context_str = self._prepare_context_str(similar_nodes)
+        similar_nodes = retriever.query_db(
+            query=query_str, filters=self._filters, date_interval=self._d
+        )
+
+        context_str = self._prepare_context_str(similar_nodes, self.summary_nodes)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
-        # logging.info(f"fmt_qa_prompt {fmt_qa_prompt}")
+        logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
+
         return str(response)
 
     @classmethod
@@ -77,13 +82,19 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         **kwargs :
             llm : llama-index.LLM
                 the LLM to use answering queries
-                default is gpt-3.5-turbo
+                default is gpt-4
             synthesizer : llama_index.response_synthesizers.base.BaseSynthesizer
                 the synthesizers to use when creating the prompt
                 default is to get from `get_response_synthesizer(response_mode="compact")`
             qa_prompt : llama-index.prompts.PromptTemplate
                 the Q&A prompt to use
                 default would be the default prompt of llama-index
+            index_raw : VectorStoreIndex
+                the vector store index for raw data
+                If not passed, it would just create one itself
+            index_summary : VectorStoreIndex
+                the vector store index for summary data
+                If not passed, it would just create one itself
 
         Returns
         ---------
@@ -95,20 +106,25 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         synthesizer = kwargs.get(
             "synthesizer", get_response_synthesizer(response_mode="compact")
         )
-        llm = kwargs.get("llm", OpenAI("gpt-3.5-turbo"))
+        llm = kwargs.get("llm", OpenAI("gpt-4"))
         qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
-
-        pg_vector = PGVectorAccess(
-            table_name=platform_table_name,
-            dbname=dbname,
-            testing=testing,
-            embed_model=CohereEmbedding(),
+        index: VectorStoreIndex = kwargs.get(
+            "index_raw",
+            cls._setup_vector_store_index(platform_table_name, dbname, testing),
         )
-        index = pg_vector.load_index()
         retriever = index.as_retriever()
-        _, similarity_top_k, _ = load_hyperparams()
+        cls._summary_vector_store = kwargs.get(
+            "index_summary",
+            cls._setup_vector_store_index(
+                platform_table_name + "_summary", dbname, testing
+            ),
+        )._vector_store
 
-        cls._vector_store = index.vector_store
+        _, similarity_top_k, d = load_hyperparams()
+        cls._d = d
+
+        cls._raw_vector_store = index._vector_store
+
         cls._similarity_top_k = similarity_top_k
         cls._filters = filters
 
@@ -128,6 +144,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         level1_key: str,
         level2_key: str,
         date_key: str = "date",
+        include_summary_context: bool = False,
     ) -> "LevelBasedPlatformQueryEngine":
         """
         get the query engine and do the filtering automatically.
@@ -163,44 +180,129 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             the created query engine with the filters
         """
         dbname = f"community_{community_id}"
-
         summary_similarity_top_k, _, d = load_hyperparams()
+
+        index_summary = cls._setup_vector_store_index(
+            platform_table_name + "_summary", dbname, False
+        )
+        vector_store = index_summary._vector_store
+
+        retriever = RetrieveSimilarNodes(
+            vector_store,
+            summary_similarity_top_k,
+        )
+        # getting nodes of just thread summaries
+        nodes = retriever.query_db(query, [{"type": "thread"}])
 
         # For summaries data a posfix `summary` would be added
         platform_retriever = ForumBasedSummaryRetriever(
             table_name=platform_table_name + "_summary", dbname=dbname
         )
 
-        filters = platform_retriever.retreive_filtering(
-            query=query,
+        filters = platform_retriever.define_filters(
+            nodes,
             metadata_group1_key=level1_key,
             metadata_group2_key=level2_key,
             metadata_date_key=date_key,
-            similarity_top_k=summary_similarity_top_k,
         )
 
-        # getting all the metadata dates from filters
-        dates: list[str] = [f[date_key] for f in filters]
-        dates_modified = process_dates(list(dates), d)
-        dates_filter = [{date_key: date} for date in dates_modified]
-        filters.extend(dates_filter)
+        # saving to add summaries to the context of prompt
+        if include_summary_context:
+            cls.summary_nodes = nodes
+        else:
+            cls.summary_nodes = []
 
-        logging.info(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
+        cls._utils_class = LevelBasedPlatformUtils(level1_key, level2_key, date_key)
+        cls._level1_key = level1_key
+        cls._level2_key = level2_key
+        cls._date_key = date_key
+        cls._d = d
+        cls._platform_table_name = platform_table_name
+
+        logging.debug(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
 
         engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
             community_id=community_id,
             platform_table_name=platform_table_name,
             filters=filters,
+            index_summary=index_summary,
         )
         return engine
 
-    def _prepare_context_str(self, nodes: list[NodeWithScore]) -> str:
-        context_str = "\n\n".join(
-            [
-                node.get_content()
-                + "\n"
-                + node.node.get_metadata_str(mode=MetadataMode.LLM)
-                for node in nodes
-            ]
-        )
+    def _prepare_context_str(
+        self, raw_nodes: list[NodeWithScore], summary_nodes: list[NodeWithScore]
+    ) -> str:
+        """
+        prepare the prompt context using the raw_nodes for answers and summary_nodes for additional information
+        """
+        context_str: str = ""
+
+        if summary_nodes == []:
+            logging.warning(
+                "Empty context_nodes. Cannot add summaries as context information!"
+            )
+
+            context_str += self._utils_class.prepare_prompt_with_metadata_info(
+                nodes=raw_nodes
+            )
+        else:
+            # grouping the data we have so we could
+            # get them per each metadata without looping over them
+            grouped_raw_nodes = self._utils_class.group_nodes_per_metadata(raw_nodes)
+            grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
+                summary_nodes
+            )
+
+            # first using the available summary nodes try to create prompt
+            context_data, (
+                summary_nodes_to_fetch_filters,
+                raw_nodes_missed,
+            ) = self._utils_class.prepare_context_str_based_on_summaries(
+                grouped_raw_nodes, grouped_summary_nodes
+            )
+            context_str += context_data
+
+            # then if there was some missing summaries
+            if len(summary_nodes_to_fetch_filters):
+                retriever = RetrieveSimilarNodes(
+                    self._summary_vector_store,
+                    similarity_top_k=None,
+                )
+                fetched_summary_nodes = retriever.query_db(
+                    query="",
+                    filters=summary_nodes_to_fetch_filters,
+                    ignore_sort=True,
+                )
+                grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
+                    fetched_summary_nodes
+                )
+                context_data, (
+                    summary_nodes_to_fetch_filters,
+                    _,
+                ) = self._utils_class.prepare_context_str_based_on_summaries(
+                    raw_nodes_missed, grouped_summary_nodes
+                )
+                context_str += context_data
+
+        logging.debug(f"context_str of prompt\n" f"{context_str}")
+
         return context_str
+
+    @classmethod
+    def _setup_vector_store_index(
+        cls,
+        platform_table_name: str,
+        dbname: str,
+        testing: bool = False,
+    ) -> VectorStoreIndex:
+        """
+        prepare the vector_store for querying data
+        """
+        pg_vector = PGVectorAccess(
+            table_name=platform_table_name,
+            dbname=dbname,
+            testing=testing,
+            embed_model=CohereEmbedding(),
+        )
+        index = pg_vector.load_index()
+        return index

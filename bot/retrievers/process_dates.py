@@ -19,7 +19,9 @@ def process_dates(dates: list[str], d: int) -> list[str]:
     Returns
     ----------
     dates_modified : list[str]
-        days added to it
+        days added to it sorted ascending meaning
+        the first index is the lowest date
+        and the last is the biggest date
     """
     dates_modified: list[str] = []
     if dates != []:

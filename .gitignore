@@ -162,3 +162,5 @@ cython_debug/
 hivemind-bot-env/*
 main.ipynb
 .DS_Store
+
+temp_test_run_data.json

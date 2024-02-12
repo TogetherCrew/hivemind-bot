@@ -1,5 +1,6 @@
 from bot.retrievers.summary_retriever_base import BaseSummarySearch
 from llama_index.embeddings import BaseEmbedding
+from llama_index.schema import NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
@@ -53,15 +54,44 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
         """
         nodes = self.get_similar_nodes(query=query, similarity_top_k=similarity_top_k)
 
+        filters = self.define_filters(
+            nodes=nodes,
+            metadata_group1_key=metadata_group1_key,
+            metadata_group2_key=metadata_group2_key,
+            metadata_date_key=metadata_date_key,
+        )
+
+        return filters
+
+    def define_filters(
+        self,
+        nodes: list[NodeWithScore],
+        metadata_group1_key: str,
+        metadata_group2_key: str,
+        metadata_date_key: str,
+    ) -> list[dict[str, str]]:
+        """
+        define dictionary filters based on metadata of retrieved nodes
+
+        Parameters
+        ----------
+        nodes : list[dict[llama_index.schema.NodeWithScore]]
+            a list of retrieved similar nodes to define filters based
+
+        Returns
+        ---------
+        filters : list[dict[str, str]]
+            a list of filters to apply with `or` condition
+            the dictionary would be applying `and`
+            operation between keys and values of json metadata_
+        """
         filters: list[dict[str, str]] = []
 
         for node in nodes:
             # the filter made by given node
             filter: dict[str, str] = {}
-            if node.metadata[metadata_group1_key]:
-                filter[metadata_group1_key] = node.metadata[metadata_group1_key]
-            if node.metadata[metadata_group2_key]:
-                filter[metadata_group2_key] = node.metadata[metadata_group2_key]
+            filter[metadata_group1_key] = node.metadata[metadata_group1_key]
+            filter[metadata_group2_key] = node.metadata[metadata_group2_key]
             # date filter
             filter[metadata_date_key] = node.metadata[metadata_date_key]
 

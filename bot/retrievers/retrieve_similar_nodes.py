@@ -1,8 +1,11 @@
+from datetime import datetime, timedelta
+
+from dateutil import parser
 from llama_index.embeddings import BaseEmbedding
 from llama_index.schema import NodeWithScore
 from llama_index.vector_stores import PGVectorStore, VectorStoreQueryResult
 from llama_index.vector_stores.postgres import DBEmbeddingRow
-from sqlalchemy import Date, and_, cast, or_, select, text
+from sqlalchemy import Date, and_, cast, null, or_, select, text
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
@@ -12,7 +15,7 @@ class RetrieveSimilarNodes:
     def __init__(
         self,
         vector_store: PGVectorStore,
-        similarity_top_k: int,
+        similarity_top_k: int | None,
         embed_model: BaseEmbedding = CohereEmbedding(),
     ) -> None:
         """Init params."""
@@ -21,7 +24,11 @@ class RetrieveSimilarNodes:
         self._similarity_top_k = similarity_top_k
 
     def query_db(
-        self, query: str, filters: list[dict[str, str]] | None = None
+        self,
+        query: str,
+        filters: list[dict[str, str | dict | None]] | None = None,
+        date_interval: int = 0,
+        **kwargs
     ) -> list[NodeWithScore]:
         """
         query database with given filters (similarity search is also done)
@@ -30,23 +37,45 @@ class RetrieveSimilarNodes:
         -------------
         query : str
             the user question
-        filters : list[dict[str, str]] | None
+        filters : list[dict[str, str | dict | None]] | None
             a list of filters to apply with `or` condition
             the dictionary would be applying `and`
             operation between keys and values of json metadata_
-            if `None` then no filtering would be applied
+            the value can be a dictionary with one key of "ne" and a value
+            which means to do a not equal operator `!=`
+            if `None` then no filtering would be applied.
+        date_interval : int
+            the number of back and forth days of date
+            default is set to 0 meaning no days back or forward.
+        **kwargs
+            ignore_sort : bool
+                to ignore sort by vector similarity.
+                Note: This would completely disable the similarity search and
+                it would just return the results with no ordering.
+                default is `False`. If `True` the query will be ignored and no embedding of it would be fetched
         """
+        ignore_sort = kwargs.get("ignore_sort", False)
         self._vector_store._initialize()
-        embedding = self._embed_model.get_text_embedding(text=query)
+
+        if not ignore_sort:
+            embedding = self._embed_model.get_text_embedding(text=query)
+        else:
+            embedding = None
+
         stmt = select(  # type: ignore
             self._vector_store._table_class.id,
             self._vector_store._table_class.node_id,
             self._vector_store._table_class.text,
             self._vector_store._table_class.metadata_,
-            self._vector_store._table_class.embedding.cosine_distance(embedding).label(
-                "distance"
-            ),
-        ).order_by(text("distance asc"))
+            (
+                self._vector_store._table_class.embedding.cosine_distance(embedding)
+                if not ignore_sort
+                else null()
+            ).label("distance"),
+        )
+
+        if not ignore_sort:
+            stmt = stmt.order_by(text("distance asc"))
 
         if filters is not None and filters != []:
             conditions = []
@@ -54,24 +83,51 @@ class RetrieveSimilarNodes:
                 filters_and = []
                 for key, value in condition.items():
                     if key == "date":
+                        date: datetime
+                        if isinstance(value, str):
+                            date = parser.parse(value)
+                        else:
+                            raise ValueError(
+                                "the values for filtering dates must be string!"
+                            )
+                        date_back = (date - timedelta(days=date_interval)).strftime(
+                            "%Y-%m-%d"
+                        )
+                        date_forward = (date + timedelta(days=date_interval)).strftime(
+                            "%Y-%m-%d"
+                        )
+
                         # Apply ::date cast when the key is 'date'
-                        filter_condition = cast(
+                        filter_condition_back = cast(
                             self._vector_store._table_class.metadata_.op("->>")(key),
                             Date,
-                        ) == cast(value, Date)
+                        ) >= cast(date_back, Date)
+
+                        filter_condition_forward = cast(
+                            self._vector_store._table_class.metadata_.op("->>")(key),
+                            Date,
+                        ) <= cast(date_forward, Date)
+
+                        filters_and.append(filter_condition_back)
+                        filters_and.append(filter_condition_forward)
                     else:
                         filter_condition = (
                             self._vector_store._table_class.metadata_.op("->>")(key)
                             == value
+                            if not isinstance(value, dict)
+                            else self._vector_store._table_class.metadata_.op("->>")(
+                                key
+                            )
+                            != value["ne"]
                         )
-
-                    filters_and.append(filter_condition)
+                        filters_and.append(filter_condition)
 
                 conditions.append(and_(*filters_and))
 
             stmt = stmt.where(or_(*conditions))
 
-            stmt = stmt.limit(self._similarity_top_k)
+            if self._similarity_top_k is not None:
+                stmt = stmt.limit(self._similarity_top_k)
 
         with self._vector_store._session() as session, session.begin():
             res = session.execute(stmt)
