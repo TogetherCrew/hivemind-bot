@@ -49,57 +49,71 @@ def ask_question_auto_search(
 
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
-
     interaction = json.loads(bot_given_info["content"]["interaction"])
     chat_input_interaction = ChatInputCommandInteraction.from_dict(interaction)
-    # create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
-    #     interaction=chat_input_interaction,
-    #     data=InteractionResponse(
-    #         type=4,
-    #         data=InteractionCallbackData(
-    #             content="Processing your question ...", flags=64
-    #         ),
-    #     ),
-    # ).to_dict()
 
-    # logging.info(f"{prefix}Sending process question to discord-bot!")
-    # job_send(
-    #     event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
-    #     queue_name=Queue.DISCORD_BOT,
-    #     content=create_interaction_content,
-    # )
-    logging.info(f"{prefix}Querying the data sources!")
-    # for now we have just the discord platform
-    response, _ = query_multiple_source(
-        query=question,
-        community_id=community_id,
-        discord=True,
-    )
+    try:
+        # create_interaction_content = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Create(
+        #     interaction=chat_input_interaction,
+        #     data=InteractionResponse(
+        #         type=4,
+        #         data=InteractionCallbackData(
+        #             content="Processing your question ...", flags=64
+        #         ),
+        #     ),
+        # ).to_dict()
 
-    # source_nodes_dict: list[dict[str, Any]] = []
-    # for node in source_nodes:
-    #     node_dict = dict(node)
-    #     node_dict.pop("relationships", None)
-    #     source_nodes_dict.append(node_dict)
+        # logging.info(f"{prefix}Sending process question to discord-bot!")
+        # job_send(
+        #     event=Event.DISCORD_BOT.INTERACTION_RESPONSE.CREATE,
+        #     queue_name=Queue.DISCORD_BOT,
+        #     content=create_interaction_content,
+        # )
+        logging.info(f"{prefix}Querying the data sources!")
+        # for now we have just the discord platform
+        response, _ = query_multiple_source(
+            query=question,
+            community_id=community_id,
+            discord=True,
+        )
 
-    # results = {
-    # "response": response,
-    # The source of answers is commented for now
-    # "source_nodes": source_nodes_dict,
-    # }
-    results = response
+        # source_nodes_dict: list[dict[str, Any]] = []
+        # for node in source_nodes:
+        #     node_dict = dict(node)
+        #     node_dict.pop("relationships", None)
+        #     source_nodes_dict.append(node_dict)
 
-    response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
-        interaction=chat_input_interaction,
-        data=InteractionCallbackData(
-            # content=json.dumps(results)
-            content=results
-        ),
-    ).to_dict()
+        # results = {
+        # "response": response,
+        # The source of answers is commented for now
+        # "source_nodes": source_nodes_dict,
+        # }
+        results = response
 
-    logging.info(f"{prefix}Sending Edit response to discord-bot!")
-    job_send(
-        event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
-        queue_name=Queue.DISCORD_BOT,
-        content=response_payload,
-    )
+        response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
+            interaction=chat_input_interaction,
+            data=InteractionCallbackData(
+                # content=json.dumps(results)
+                content=results
+            ),
+        ).to_dict()
+
+        logging.info(f"{prefix}Sending Edit response to discord-bot!")
+        job_send(
+            event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
+            queue_name=Queue.DISCORD_BOT,
+            content=response_payload,
+        )
+    except Exception as exp:
+        logging.error(f"Exception {exp} | during processing the question {question}")
+        response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
+            interaction=chat_input_interaction,
+            data=InteractionCallbackData(
+                content="Sorry, We cannot process your question at the moment."
+            ),
+        ).to_dict()
+        job_send(
+            event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
+            queue_name=Queue.DISCORD_BOT,
+            content=response_payload,
+        )
