@@ -115,13 +115,30 @@ class LevelBasedPlatformUtils:
                         )
                         summary_node = summary_nodes[0]
 
-                        node_context: str = (
-                            f"{self.level1_key}: {level1_title}\n"
-                            f"{self.level2_key}: {level2_title}\n"
-                            f"{self.date_key}: {date}\n"
-                            f"summary: {summary_node.text}\n"
-                            "messages:\n"
-                        )
+                        if level1_title != "None" and level2_title != "None":
+                            node_context: str = (
+                                f"{self.level1_key}: {level1_title}\n"
+                                f"{self.level2_key}: {level2_title}\n"
+                                f"{self.date_key}: {date}\n"
+                                f"summary: {summary_node.text}\n"
+                                "messages:\n"
+                            )
+                        elif level1_title == "None":
+                            node_context: str = (
+                                f"{self.level1_key}: main {self.level2_key}\n"
+                                f"{self.level2_key}: {level2_title}\n"
+                                f"{self.date_key}: {date}\n"
+                                f"summary: {summary_node.text}\n"
+                                "messages:\n"
+                            )
+                        elif level2_title == "None":
+                            node_context: str = (
+                                f"{self.level1_key}: {level1_title}\n"
+                                f"{self.level2_key}: main {self.level1_key}\n"
+                                f"{self.date_key}: {date}\n"
+                                f"summary: {summary_node.text}\n"
+                                "messages:\n"
+                            )
                         node_context += self.prepare_prompt_with_metadata_info(
                             raw_nodes, prefix="  "
                         )
