@@ -127,7 +127,7 @@ class LevelBasedPlatformUtils:
                             # if it was None, then we would say it is the main level2_key
                             # e.g.: for the thread in discord we would say the main channel
                             node_context = (
-                                f"{self.level1_key}: main {self.level2_key}\n"
+                                f"{self.level1_key}: Main {self.level2_key}\n"
                                 f"{self.level2_key}: {level2_title}\n"
                                 f"{self.date_key}: {date}\n"
                                 f"summary: {summary_node.text}\n"
@@ -137,7 +137,7 @@ class LevelBasedPlatformUtils:
                             # if it was None, then we would say it is the main level1_key
                             node_context = (
                                 f"{self.level1_key}: {level1_title}\n"
-                                f"{self.level2_key}: main {self.level1_key}\n"
+                                f"{self.level2_key}: Main {self.level1_key}\n"
                                 f"{self.date_key}: {date}\n"
                                 f"summary: {summary_node.text}\n"
                                 "messages:\n"
