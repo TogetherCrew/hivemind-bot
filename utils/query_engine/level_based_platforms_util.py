@@ -124,6 +124,8 @@ class LevelBasedPlatformUtils:
                                 "messages:\n"
                             )
                         elif level1_title == "None":
+                            # if it was None, then we would say it is the main level2_key
+                            # e.g.: for the thread in discord we would say the main channel
                             node_context: str = (
                                 f"{self.level1_key}: main {self.level2_key}\n"
                                 f"{self.level2_key}: {level2_title}\n"
@@ -132,6 +134,7 @@ class LevelBasedPlatformUtils:
                                 "messages:\n"
                             )
                         elif level2_title == "None":
+                            # if it was None, then we would say it is the main level1_key
                             node_context: str = (
                                 f"{self.level1_key}: {level1_title}\n"
                                 f"{self.level2_key}: main {self.level1_key}\n"
