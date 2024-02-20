@@ -40,7 +40,7 @@ class LevelBasedPlatformUtils:
     def group_nodes_per_metadata(
         self,
         nodes: list[NodeWithScore],
-    ) -> dict[str, dict[str, dict[str, list[NodeWithScore]]]]:
+    ) -> dict[str | None, dict[str | None, dict[str, list[NodeWithScore]]]]:
         """
         group all nodes based on their level1 and level2 metadata
 
@@ -51,7 +51,7 @@ class LevelBasedPlatformUtils:
 
         Returns
         ---------
-        grouped_nodes : dict[str, dict[str, dict[str, list[NodeWithScore]]]]
+        grouped_nodes : dict[str | None, dict[str | None, dict[str, list[NodeWithScore]]]]
             a list of nodes grouped by
             - `level1_key`
             - `level2_key`
@@ -59,7 +59,9 @@ class LevelBasedPlatformUtils:
 
             The values of the nested dictionary are the nodes grouped
         """
-        grouped_nodes: dict[str, dict[str, dict[str, list[NodeWithScore]]]] = {}
+        grouped_nodes: dict[
+            str | None, dict[str | None, dict[str, list[NodeWithScore]]]
+        ] = {}
         for node in nodes:
             level1_title = node.metadata[self.level1_key]
             level2_title = node.metadata[self.level2_key]
@@ -77,13 +79,17 @@ class LevelBasedPlatformUtils:
 
     def prepare_context_str_based_on_summaries(
         self,
-        grouped_raw_nodes: dict[str, dict[str, dict[str, list[NodeWithScore]]]],
-        grouped_summary_nodes: dict[str, dict[str, dict[str, list[NodeWithScore]]]],
+        grouped_raw_nodes: dict[
+            str | None, dict[str | None, dict[str, list[NodeWithScore]]]
+        ],
+        grouped_summary_nodes: dict[
+            str | None, dict[str | None, dict[str, list[NodeWithScore]]]
+        ],
     ) -> tuple[
         str,
         tuple[
             list[dict[str, str | None]],
-            dict[str, dict[str, dict[str, list[NodeWithScore]]]],
+            dict[str | None, dict[str | None, dict[str, list[NodeWithScore]]]],
         ],
     ]:
         """
@@ -93,7 +99,9 @@ class LevelBasedPlatformUtils:
 
         summary_nodes_to_fetch_filters: list[dict[str, str | None]] = []
         # in case of summary wasn't available for them
-        raw_nodes_missed: dict[str, dict[str, dict[str, list[NodeWithScore]]]] = {}
+        raw_nodes_missed: dict[
+            str | None, dict[str | None, dict[str, list[NodeWithScore]]]
+        ] = {}
 
         for level1_title in grouped_raw_nodes:
             for level2_title in grouped_raw_nodes[level1_title]:
@@ -115,7 +123,7 @@ class LevelBasedPlatformUtils:
                         )
                         summary_node = summary_nodes[0]
 
-                        if level1_title != "None" and level2_title != "None":
+                        if level1_title is not None and level2_title is not None:
                             node_context = (
                                 f"{self.level1_key}: {level1_title}\n"
                                 f"{self.level2_key}: {level2_title}\n"
@@ -123,7 +131,7 @@ class LevelBasedPlatformUtils:
                                 f"summary: {summary_node.text}\n"
                                 "messages:\n"
                             )
-                        elif level1_title == "None":
+                        elif level1_title is None:
                             # if it was None, then we would say it is the main level2_key
                             # e.g.: for the thread in discord we would say the main channel
                             node_context = (
@@ -133,7 +141,7 @@ class LevelBasedPlatformUtils:
                                 f"summary: {summary_node.text}\n"
                                 "messages:\n"
                             )
-                        elif level2_title == "None":
+                        elif level2_title is None:
                             # if it was None, then we would say it is the main level1_key
                             node_context = (
                                 f"{self.level1_key}: {level1_title}\n"
