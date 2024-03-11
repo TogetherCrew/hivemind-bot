@@ -1,7 +1,7 @@
 import logging
 
 from dateutil import parser
-from llama_index.schema import NodeWithScore
+from llama_index.core.schema import NodeWithScore
 
 
 class LevelBasedPlatformUtils:
