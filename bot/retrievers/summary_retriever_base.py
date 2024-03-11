@@ -1,7 +1,6 @@
 from llama_index.core import VectorStoreIndex
 from llama_index.core.embeddings import BaseEmbedding
-from llama_index.core.schema import QueryBundle
-from llama_index.core.schema import NodeWithScore
+from llama_index.core.schema import NodeWithScore, QueryBundle
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 

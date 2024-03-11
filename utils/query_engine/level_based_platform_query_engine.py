@@ -4,7 +4,6 @@ from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import VectorStoreIndex
-from llama_index.llms.openai import OpenAI
 from llama_index.core.prompts import PromptTemplate
 from llama_index.core.query_engine import CustomQueryEngine
 from llama_index.core.response_synthesizers import (
@@ -13,6 +12,7 @@ from llama_index.core.response_synthesizers import (
 )
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore
+from llama_index.llms.openai import OpenAI
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
