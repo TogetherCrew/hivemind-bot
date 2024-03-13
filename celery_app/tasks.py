@@ -88,10 +88,7 @@ def ask_question_auto_search(
         # The source of answers is commented for now
         # "source_nodes": source_nodes_dict,
         # }
-        results = (
-            f"**Question:**{question}\n"
-            f"**Answer:**{response}"
-        )
+        results = f"**Question:** {question}\n**Answer:** {response}"
 
         response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
             interaction=chat_input_interaction,
