@@ -1,5 +1,5 @@
-from llama_index import QueryBundle
-from llama_index.schema import NodeWithScore
+from llama_index.core import QueryBundle
+from llama_index.core.schema import NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine.prepare_discord_query_engine import (
     prepare_discord_engine_auto_filter,
