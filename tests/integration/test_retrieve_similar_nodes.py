@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
-from llama_index.schema import TextNode
+from llama_index.core.schema import TextNode
 
 
 class TestRetrieveSimilarNodes(TestCase):

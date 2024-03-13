@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from llama_index.core.base_query_engine import BaseQueryEngine
+from llama_index.core.base.base_query_engine import BaseQueryEngine
 from utils.query_engine.prepare_discord_query_engine import prepare_discord_engine
 
 

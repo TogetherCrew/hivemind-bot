@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
-from llama_index.schema import NodeWithScore, TextNode
+from llama_index.core.schema import NodeWithScore, TextNode
 from sqlalchemy.exc import OperationalError
 from utils.query_engine.level_based_platform_query_engine import (
     LevelBasedPlatformQueryEngine,

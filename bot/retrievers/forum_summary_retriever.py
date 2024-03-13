@@ -1,6 +1,6 @@
 from bot.retrievers.summary_retriever_base import BaseSummarySearch
-from llama_index.embeddings import BaseEmbedding
-from llama_index.schema import NodeWithScore
+from llama_index.core.embeddings import BaseEmbedding
+from llama_index.core.schema import NodeWithScore
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 

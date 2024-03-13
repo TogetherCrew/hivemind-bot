@@ -3,8 +3,8 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from bot.retrievers.summary_retriever_base import BaseSummarySearch
-from llama_index import Document, MockEmbedding, ServiceContext, VectorStoreIndex
-from llama_index.schema import NodeWithScore
+from llama_index.core import Document, MockEmbedding, Settings, VectorStoreIndex
+from llama_index.core.schema import NodeWithScore
 
 
 class TestSummaryRetrieverBase(TestCase):
@@ -13,11 +13,10 @@ class TestSummaryRetrieverBase(TestCase):
         doc = Document(text="SAMPLESAMPLESAMPLE")
         mock_embedding_model = partial(MockEmbedding, embed_dim=1024)
 
-        service_context = ServiceContext.from_defaults(
-            llm=None, embed_model=mock_embedding_model()
-        )
+        Settings.llm = None
+        Settings.embed_model = mock_embedding_model()
         BaseSummarySearch._setup_index.return_value = VectorStoreIndex.from_documents(
-            documents=[doc], service_context=service_context
+            documents=[doc]
         )
 
         base_summary_search = BaseSummarySearch(

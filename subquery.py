@@ -1,10 +1,11 @@
 from guidance.models import OpenAIChat
-from llama_index import QueryBundle, ServiceContext
-from llama_index.core.base_query_engine import BaseQueryEngine
-from llama_index.query_engine import SubQuestionQueryEngine
-from llama_index.question_gen.guidance_generator import GuidanceQuestionGenerator
-from llama_index.schema import NodeWithScore
-from llama_index.tools import QueryEngineTool, ToolMetadata
+from llama_index.core import QueryBundle, Settings
+from llama_index.core.base.base_query_engine import BaseQueryEngine
+from llama_index.core.query_engine import SubQuestionQueryEngine
+from llama_index.core.schema import NodeWithScore
+from llama_index.core.tools import QueryEngineTool, ToolMetadata
+from llama_index.llms.openai import OpenAI
+from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine import prepare_discord_engine_auto_filter
 
@@ -97,17 +98,19 @@ def query_multiple_source(
     if github:
         raise NotImplementedError
 
+    embed_model = CohereEmbedding()
+    llm = OpenAI("gpt-3.5-turbo")
+    Settings.embed_model = embed_model
+    Settings.llm = llm
+
     question_gen = GuidanceQuestionGenerator.from_defaults(
         guidance_llm=OpenAIChat("gpt-4"),
         verbose=False,
     )
-    embed_model = CohereEmbedding()
-    service_context = ServiceContext.from_defaults(embed_model=embed_model)
     s_engine = SubQuestionQueryEngine.from_defaults(
         question_gen=question_gen,
         query_engine_tools=query_engine_tools,
         use_async=False,
-        service_context=service_context,
     )
     query_embedding = embed_model.get_text_embedding(text=query)
     response = s_engine.query(QueryBundle(query_str=query, embedding=query_embedding))

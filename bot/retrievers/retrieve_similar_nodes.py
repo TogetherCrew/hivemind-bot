@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 
 from dateutil import parser
-from llama_index.embeddings import BaseEmbedding
-from llama_index.schema import NodeWithScore
-from llama_index.vector_stores import PGVectorStore, VectorStoreQueryResult
-from llama_index.vector_stores.postgres import DBEmbeddingRow
+from llama_index.core.embeddings import BaseEmbedding
+from llama_index.core.schema import NodeWithScore
+from llama_index.core.vector_stores.types import VectorStoreQueryResult
+from llama_index.vector_stores.postgres import PGVectorStore
+from llama_index.vector_stores.postgres.base import DBEmbeddingRow
 from sqlalchemy import Date, and_, cast, null, or_, select, text
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
