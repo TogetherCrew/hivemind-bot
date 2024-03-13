@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from dateutil import parser
+from llama_index.core.data_structs import Node
 from llama_index.core.embeddings import BaseEmbedding
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.vector_stores.types import VectorStoreQueryResult
@@ -155,6 +156,11 @@ class RetrieveSimilarNodes:
             score: float | None = None
             if query_result.similarities is not None:
                 score = query_result.similarities[index]
-            nodes_with_scores.append(NodeWithScore(node=node, score=score))
+            # `node` has type of legacy library, so we're updating it
+            # type(node) is `llama_index.legacy.schema.TextNode`
+            # type(node_new) would be `llama_index.core.schema.TextNode`
+            node_new = Node.from_dict(node.to_dict())
+            node_with_score = NodeWithScore(node=node_new, score=score)
+            nodes_with_scores.append(node_with_score)
 
         return nodes_with_scores
