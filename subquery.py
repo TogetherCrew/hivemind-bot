@@ -99,7 +99,7 @@ def query_multiple_source(
         raise NotImplementedError
 
     embed_model = CohereEmbedding()
-    llm = OpenAI("gpt-4")
+    llm = OpenAI("gpt-3.5-turbo")
     Settings.embed_model = embed_model
     Settings.llm = llm
 
