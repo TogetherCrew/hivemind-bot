@@ -1,12 +1,11 @@
 from guidance.models import OpenAIChat
-from llama_index.llms.openai import OpenAI
-from llama_index.core import Settings
-from llama_index.core import QueryBundle
+from llama_index.core import QueryBundle, Settings
 from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.query_engine import SubQuestionQueryEngine
-from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
+from llama_index.llms.openai import OpenAI
+from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine import prepare_discord_engine_auto_filter
 
