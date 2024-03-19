@@ -47,7 +47,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             query=query_str, filters=self._filters, date_interval=self._d
         )
 
-        context_str = self._prepare_context_str(similar_nodes, self.summary_nodes)
+        context_str = self._prepare_context_str(similar_nodes, summary_nodes=None)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
         logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
@@ -98,6 +98,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             index_summary : VectorStoreIndex
                 the vector store index for summary data
                 If not passed, it would just create one itself
+            summary_nodes_filters : list[dict[str, str]]
+                a list of filters to fetch the summary nodes
+                for default, not passing this would mean to use previous nodes
+                but if passed we would re-fetch nodes.
+                This could be benefitial in case we want to do some manual
+                processing with nodes
 
         Returns
         ---------
@@ -115,6 +121,8 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             "index_raw",
             cls._setup_vector_store_index(platform_table_name, dbname, testing),
         )
+        summary_nodes_filters = kwargs.get("summary_nodes_filters", None)
+
         retriever = index.as_retriever()
         cls._summary_vector_store = kwargs.get(
             "index_summary",
@@ -130,6 +138,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
 
         cls._similarity_top_k = similarity_top_k
         cls._filters = filters
+        cls._summary_nodes_filters = summary_nodes_filters
 
         return cls(
             retriever=retriever,
@@ -202,11 +211,19 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             table_name=platform_table_name + "_summary", dbname=dbname
         )
 
-        filters = platform_retriever.define_filters(
+        raw_nodes_filters = platform_retriever.define_filters(
             nodes,
             metadata_group1_key=level1_key,
             metadata_group2_key=level2_key,
             metadata_date_key=date_key,
+        )
+        summary_nodes_filters = platform_retriever.define_filters(
+            nodes,
+            metadata_group1_key=level1_key,
+            metadata_group2_key=level2_key,
+            metadata_date_key=date_key,
+            # we will always use thread summaries
+            and_filters={"type": "thread"},
         )
 
         # saving to add summaries to the context of prompt
@@ -222,18 +239,21 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         cls._d = d
         cls._platform_table_name = platform_table_name
 
-        logging.debug(f"COMMUNITY_ID: {community_id} | summary filters: {filters}")
+        logging.debug(
+            f"COMMUNITY_ID: {community_id} | raw filters: {raw_nodes_filters}"
+        )
 
         engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
             community_id=community_id,
             platform_table_name=platform_table_name,
-            filters=filters,
+            filters=raw_nodes_filters,
             index_summary=index_summary,
+            summary_nodes_filters=summary_nodes_filters,
         )
         return engine
 
     def _prepare_context_str(
-        self, raw_nodes: list[NodeWithScore], summary_nodes: list[NodeWithScore]
+        self, raw_nodes: list[NodeWithScore], summary_nodes: list[NodeWithScore] | None
     ) -> str:
         """
         prepare the prompt context using the raw_nodes for answers and summary_nodes for additional information
@@ -248,6 +268,30 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             context_str += self._utils_class.prepare_prompt_with_metadata_info(
                 nodes=raw_nodes
             )
+        elif summary_nodes is None:
+            retriever = RetrieveSimilarNodes(
+                self._summary_vector_store,
+                similarity_top_k=None,
+            )
+            # Note: `self._summary_nodes_filters` must be set before
+            fetched_summary_nodes = retriever.query_db(
+                query="",
+                filters=self._summary_nodes_filters,
+                aggregate_records=True,
+                group_by_metadata=["thread", "date"],
+                date_interval=self._d,
+            )
+            grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
+                fetched_summary_nodes
+            )
+            grouped_raw_nodes = self._utils_class.group_nodes_per_metadata(raw_nodes)
+            context_data, (
+                summary_nodes_to_fetch_filters,
+                _,
+            ) = self._utils_class.prepare_context_str_based_on_summaries(
+                grouped_raw_nodes, grouped_summary_nodes
+            )
+            context_str += context_data
         else:
             # grouping the data we have so we could
             # get them per each metadata without looping over them

@@ -7,7 +7,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.vector_stores.types import VectorStoreQueryResult
 from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.vector_stores.postgres.base import DBEmbeddingRow
-from sqlalchemy import Date, and_, cast, null, or_, select, text
+from sqlalchemy import Date, and_, cast, null, or_, select, text, func
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 
 
@@ -55,26 +55,51 @@ class RetrieveSimilarNodes:
                 Note: This would completely disable the similarity search and
                 it would just return the results with no ordering.
                 default is `False`. If `True` the query will be ignored and no embedding of it would be fetched
+            aggregate_records : bool
+                aggregate records and group by a given term in `group_by_metadata`
+            group_by_metadata : list[str]
+                do grouping by some property of `metadata_`
         """
         ignore_sort = kwargs.get("ignore_sort", False)
+        aggregate_records = kwargs.get("aggregate_records", False)
+        group_by_metadata = kwargs.get("group_by_metadata")
         self._vector_store._initialize()
 
-        if not ignore_sort:
-            embedding = self._embed_model.get_text_embedding(text=query)
+        if not aggregate_records:
+            stmt = select(  # type: ignore
+                self._vector_store._table_class.id,
+                self._vector_store._table_class.node_id,
+                self._vector_store._table_class.text,
+                self._vector_store._table_class.metadata_,
+                (
+                    self._vector_store._table_class.embedding.cosine_distance(
+                        self._embed_model.get_text_embedding(text=query)
+                    )
+                    if not ignore_sort
+                    else null()
+                ).label("distance"),
+            )
         else:
-            embedding = None
+            # manually creating metadata
+            metadata_grouping = []
+            for item in group_by_metadata:
+                metadata_grouping.append(item)
+                metadata_grouping.append(
+                    self._vector_store._table_class.metadata_.op("->>")(item)
+                )
 
-        stmt = select(  # type: ignore
-            self._vector_store._table_class.id,
-            self._vector_store._table_class.node_id,
-            self._vector_store._table_class.text,
-            self._vector_store._table_class.metadata_,
-            (
-                self._vector_store._table_class.embedding.cosine_distance(embedding)
-                if not ignore_sort
-                else null()
-            ).label("distance"),
-        )
+            stmt = select(
+                null().label("id"),
+                null().label("node_id"),
+                func.aggregate_strings(
+                    # default content key for llama-index nodes and documents
+                    # is `text`
+                    self._vector_store._table_class.metadata_.op("->>")("text"),
+                    "\n",
+                ).label("text"),
+                func.json_agg(func.json_build_object(metadata_grouping)),
+                null().label("embedding"),
+            )
 
         if not ignore_sort:
             stmt = stmt.order_by(text("distance asc"))
@@ -128,8 +153,13 @@ class RetrieveSimilarNodes:
 
             stmt = stmt.where(or_(*conditions))
 
-            if self._similarity_top_k is not None:
-                stmt = stmt.limit(self._similarity_top_k)
+        if self._similarity_top_k is not None:
+            if aggregate_records:
+                stmt.group_by(
+                    self._vector_store._table_class.metadata_.op("->>")(item)
+                    for item in group_by_metadata
+                )
+            stmt = stmt.limit(self._similarity_top_k)
 
         with self._vector_store._session() as session, session.begin():
             res = session.execute(stmt)

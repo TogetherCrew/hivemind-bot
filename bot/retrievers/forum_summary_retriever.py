@@ -69,6 +69,7 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
         metadata_group1_key: str,
         metadata_group2_key: str,
         metadata_date_key: str,
+        **kwargs,
     ) -> list[dict[str, str]]:
         """
         define dictionary filters based on metadata of retrieved nodes
@@ -77,6 +78,15 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
         ----------
         nodes : list[dict[llama_index.schema.NodeWithScore]]
             a list of retrieved similar nodes to define filters based
+        metadata_group1_key : str
+            the metadata name 1 to use
+        metadata_group2_key : str
+            the metadata name 2 to use
+        metadata_date_key : str
+            the date key in metadata
+        **kwargs :
+            and_filters : dict[str, str]
+                more `AND` filters to be applied to each
 
         Returns
         ---------
@@ -85,15 +95,19 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
             the dictionary would be applying `and`
             operation between keys and values of json metadata_
         """
+        and_filters: dict[str, str] | None = kwargs.get("and_filters", None)
         filters: list[dict[str, str]] = []
 
         for node in nodes:
-            # the filter made by given node
             filter: dict[str, str] = {}
             filter[metadata_group1_key] = node.metadata[metadata_group1_key]
             filter[metadata_group2_key] = node.metadata[metadata_group2_key]
-            # date filter
             filter[metadata_date_key] = node.metadata[metadata_date_key]
+
+            # if more and filters were given
+            if and_filters:
+                for key, value in and_filters.items():
+                    filter[key] = value
 
             filters.append(filter)
 
