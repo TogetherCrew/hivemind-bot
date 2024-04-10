@@ -278,7 +278,8 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                 query="",
                 filters=self._summary_nodes_filters,
                 aggregate_records=True,
-                group_by_metadata=["thread", "date"],
+                ignore_sort=True,
+                group_by_metadata=["thread", "date", "channel"],
                 date_interval=self._d,
             )
             grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(

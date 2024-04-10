@@ -7,8 +7,9 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.vector_stores.types import VectorStoreQueryResult
 from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.vector_stores.postgres.base import DBEmbeddingRow
-from sqlalchemy import Date, and_, cast, null, or_, select, text, func
+from sqlalchemy import Date, and_, cast, null, or_, select, text, literal, func
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from uuid import uuid1
 
 
 class RetrieveSimilarNodes:
@@ -80,7 +81,7 @@ class RetrieveSimilarNodes:
                 ).label("distance"),
             )
         else:
-            # manually creating metadata
+            # to manually create metadata
             metadata_grouping = []
             for item in group_by_metadata:
                 metadata_grouping.append(item)
@@ -90,15 +91,17 @@ class RetrieveSimilarNodes:
 
             stmt = select(
                 null().label("id"),
-                null().label("node_id"),
+                literal(str(uuid1())).label("node_id"),
                 func.aggregate_strings(
                     # default content key for llama-index nodes and documents
                     # is `text`
-                    self._vector_store._table_class.metadata_.op("->>")("text"),
+                    self._vector_store._table_class.text,
                     "\n",
                 ).label("text"),
-                func.json_agg(func.json_build_object(metadata_grouping)),
-                null().label("embedding"),
+                func.json_agg(func.json_build_object(*metadata_grouping)).label(
+                    "metadata_"
+                ),
+                null().label("distance"),
             )
 
         if not ignore_sort:
@@ -153,12 +156,14 @@ class RetrieveSimilarNodes:
 
             stmt = stmt.where(or_(*conditions))
 
+        if aggregate_records:
+            group_by_terms = [
+                self._vector_store._table_class.metadata_.op("->>")(item)
+                for item in group_by_metadata
+            ]
+            stmt = stmt.group_by(*group_by_terms)
+
         if self._similarity_top_k is not None:
-            if aggregate_records:
-                stmt.group_by(
-                    self._vector_store._table_class.metadata_.op("->>")(item)
-                    for item in group_by_metadata
-                )
             stmt = stmt.limit(self._similarity_top_k)
 
         with self._vector_store._session() as session, session.begin():
@@ -168,7 +173,11 @@ class RetrieveSimilarNodes:
             DBEmbeddingRow(
                 node_id=item.node_id,
                 text=item.text,
-                metadata=item.metadata_,
+                # in case of aggregation having null values
+                # the metadata might will have duplicate date
+                # so using the first index always will make it right
+                # in this case, always the metadata should be the same as group_by data
+                metadata=item.metadata_ if not aggregate_records else item.metadata_[0],
                 similarity=(1 - item.distance) if item.distance is not None else 0,
             )
             for item in res.all()
