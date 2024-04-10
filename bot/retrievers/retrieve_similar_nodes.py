@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from uuid import uuid1
 
 from dateutil import parser
 from llama_index.core.data_structs import Node
@@ -7,9 +8,8 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.vector_stores.types import VectorStoreQueryResult
 from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.vector_stores.postgres.base import DBEmbeddingRow
-from sqlalchemy import Date, and_, cast, null, or_, select, text, literal, func
+from sqlalchemy import Date, and_, cast, func, literal, null, or_, select, text
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
-from uuid import uuid1
 
 
 class RetrieveSimilarNodes:
@@ -63,7 +63,7 @@ class RetrieveSimilarNodes:
         """
         ignore_sort = kwargs.get("ignore_sort", False)
         aggregate_records = kwargs.get("aggregate_records", False)
-        group_by_metadata = kwargs.get("group_by_metadata")
+        group_by_metadata = kwargs.get("group_by_metadata", [])
         self._vector_store._initialize()
 
         if not aggregate_records:
