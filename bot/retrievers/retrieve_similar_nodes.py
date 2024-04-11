@@ -98,9 +98,7 @@ class RetrieveSimilarNodes:
                     self._vector_store._table_class.text,
                     "\n",
                 ).label("text"),
-                func.json_build_object(*metadata_grouping).label(
-                    "metadata_"
-                ),
+                func.json_build_object(*metadata_grouping).label("metadata_"),
                 null().label("distance"),
             )
 
