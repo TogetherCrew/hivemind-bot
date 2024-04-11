@@ -68,11 +68,13 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
         nodes: list[NodeWithScore],
         metadata_group1_key: str,
         metadata_group2_key: str,
-        metadata_date_key: str,
         **kwargs,
     ) -> list[dict[str, str]]:
         """
-        define dictionary filters based on metadata of retrieved nodes
+        Creates filter dictionaries based on node metadata.
+
+        Filters each node by values in specified metadata groups and an optional date key.
+        Additional and filters can also be provided.
 
         Parameters
         ----------
@@ -82,9 +84,10 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
             the metadata name 1 to use
         metadata_group2_key : str
             the metadata name 2 to use
-        metadata_date_key : str
-            the date key in metadata
         **kwargs :
+            metadata_date_key : str
+                the date key in metadata
+                default is `date`
             and_filters : dict[str, str]
                 more `AND` filters to be applied to each
 
@@ -96,19 +99,19 @@ class ForumBasedSummaryRetriever(BaseSummarySearch):
             operation between keys and values of json metadata_
         """
         and_filters: dict[str, str] | None = kwargs.get("and_filters", None)
+        metadata_date_key: str = kwargs.get("metadata_date_key", "date")
         filters: list[dict[str, str]] = []
 
         for node in nodes:
-            filter: dict[str, str] = {}
-            filter[metadata_group1_key] = node.metadata[metadata_group1_key]
-            filter[metadata_group2_key] = node.metadata[metadata_group2_key]
-            filter[metadata_date_key] = node.metadata[metadata_date_key]
-
+            filter_dict: dict[str, str] = {
+                metadata_group1_key: node.metadata[metadata_group1_key],
+                metadata_group2_key: node.metadata[metadata_group2_key],
+                metadata_date_key: node.metadata[metadata_date_key],
+            }
             # if more and filters were given
             if and_filters:
-                for key, value in and_filters.items():
-                    filter[key] = value
+                filter_dict.update(and_filters)
 
-            filters.append(filter)
+            filters.append(filter_dict)
 
         return filters
