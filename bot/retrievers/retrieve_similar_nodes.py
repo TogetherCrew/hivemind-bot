@@ -98,7 +98,7 @@ class RetrieveSimilarNodes:
                     self._vector_store._table_class.text,
                     "\n",
                 ).label("text"),
-                func.json_agg(func.json_build_object(*metadata_grouping)).label(
+                func.json_build_object(*metadata_grouping).label(
                     "metadata_"
                 ),
                 null().label("distance"),
@@ -173,11 +173,7 @@ class RetrieveSimilarNodes:
             DBEmbeddingRow(
                 node_id=item.node_id,
                 text=item.text,
-                # in case of aggregation having null values
-                # the metadata might will have duplicate date
-                # so using the first index always will make it right
-                # in this case, always the metadata should be the same as group_by data
-                metadata=item.metadata_ if not aggregate_records else item.metadata_[0],
+                metadata=item.metadata_,
                 similarity=(1 - item.distance) if item.distance is not None else 0,
             )
             for item in res.all()
