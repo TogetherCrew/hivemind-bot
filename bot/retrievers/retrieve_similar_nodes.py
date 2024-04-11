@@ -57,11 +57,17 @@ class RetrieveSimilarNodes:
                 Note: This would completely disable the similarity search and
                 it would just return the results with no ordering.
                 default is `False`. If `True` the query will be ignored and no embedding of it would be fetched
+            aggregate_records : bool
+                aggregate records and group by a given term in `group_by_metadata`
+            group_by_metadata : list[str]
+                do grouping by some property of `metadata_`
+        """
         ignore_sort = kwargs.get("ignore_sort", False)
         aggregate_records = kwargs.get("aggregate_records", False)
         group_by_metadata = kwargs.get("group_by_metadata", [])
         if not isinstance(group_by_metadata, list):
             raise ValueError("Expected 'group_by_metadata' to be a list.")
+        
         self._vector_store._initialize()
 
         if not aggregate_records:
