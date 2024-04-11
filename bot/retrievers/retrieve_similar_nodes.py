@@ -24,6 +24,7 @@ class RetrieveSimilarNodes:
         """Init params."""
         self._vector_store = vector_store
         self._embed_model = embed_model
+        print(f"type(embed_model): {type(embed_model)} | embed_model: {embed_model}")
         self._similarity_top_k = similarity_top_k
 
     def query_db(
@@ -31,7 +32,7 @@ class RetrieveSimilarNodes:
         query: str,
         filters: list[dict[str, str | dict | None]] | None = None,
         date_interval: int = 0,
-        **kwargs
+        **kwargs,
     ) -> list[NodeWithScore]:
         """
         query database with given filters (similarity search is also done)
