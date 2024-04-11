@@ -67,7 +67,7 @@ class RetrieveSimilarNodes:
         group_by_metadata = kwargs.get("group_by_metadata", [])
         if not isinstance(group_by_metadata, list):
             raise ValueError("Expected 'group_by_metadata' to be a list.")
-        
+
         self._vector_store._initialize()
 
         if not aggregate_records:
