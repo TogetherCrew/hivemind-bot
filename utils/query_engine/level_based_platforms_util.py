@@ -63,6 +63,7 @@ class LevelBasedPlatformUtils:
             str | None, dict[str | None, dict[str, list[NodeWithScore]]]
         ] = {}
         for node in nodes:
+            # logging.info(f"node.metadata {node.metadata}")
             level1_title = node.metadata[self.level1_key]
             level2_title = node.metadata[self.level2_key]
             date_str = node.metadata[self.date_key]
