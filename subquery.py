@@ -8,8 +8,8 @@ from llama_index.llms.openai import OpenAI
 from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine import (
-    prepare_discord_engine_auto_filter,
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
+    prepare_discord_engine_auto_filter,
 )
 
 

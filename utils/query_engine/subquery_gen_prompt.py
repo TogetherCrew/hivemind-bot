@@ -7,10 +7,6 @@ from llama_index.core.question_gen.types import SubQuestion
 from llama_index.core.tools.types import ToolMetadata
 
 
-# deprecated, kept for backward compatibility
-SubQuestionPrompt = PromptTemplate
-
-
 def build_tools_text(tools: Sequence[ToolMetadata]) -> str:
     tools_dict = {}
     for tool in tools:
