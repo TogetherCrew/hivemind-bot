@@ -7,7 +7,10 @@ from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from llama_index.llms.openai import OpenAI
 from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
-from utils.query_engine import prepare_discord_engine_auto_filter
+from utils.query_engine import (
+    DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
+    prepare_discord_engine_auto_filter,
+)
 
 
 def query_multiple_source(
@@ -106,6 +109,7 @@ def query_multiple_source(
     question_gen = GuidanceQuestionGenerator.from_defaults(
         guidance_llm=OpenAIChat("gpt-4"),
         verbose=False,
+        prompt_template_str=DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     )
     s_engine = SubQuestionQueryEngine.from_defaults(
         question_gen=question_gen,

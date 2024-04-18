@@ -24,7 +24,6 @@ class RetrieveSimilarNodes:
         """Init params."""
         self._vector_store = vector_store
         self._embed_model = embed_model
-        print(f"type(embed_model): {type(embed_model)} | embed_model: {embed_model}")
         self._similarity_top_k = similarity_top_k
 
     def query_db(
