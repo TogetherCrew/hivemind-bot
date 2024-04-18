@@ -1,7 +1,6 @@
 import json
 from typing import Sequence
 
-from llama_index.core.prompts.base import PromptTemplate
 from llama_index.core.prompts.guidance_utils import convert_to_handlebars
 from llama_index.core.question_gen.types import SubQuestion
 from llama_index.core.tools.types import ToolMetadata
