@@ -75,6 +75,7 @@ def ask_question_auto_search(
             query=question,
             community_id=community_id,
             discord=True,
+            github=True,
         )
 
         # source_nodes_dict: list[dict[str, Any]] = []
