@@ -2,7 +2,7 @@ from datetime import datetime
 from unittest import TestCase
 
 from bson import ObjectId
-from utils.data_souce_selector import DataSourceSelector
+from utils.data_source_selector import DataSourceSelector
 from utils.mongo import MongoSingleton
 
 
