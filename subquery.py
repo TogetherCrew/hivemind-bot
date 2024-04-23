@@ -9,6 +9,7 @@ from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
+    GitHubQueryEngine,
     prepare_discord_engine_auto_filter,
 )
 
@@ -64,11 +65,11 @@ def query_multiple_source(
     tools: list[ToolMetadata] = []
 
     discord_query_engine: BaseQueryEngine
+    github_query_engine: BaseQueryEngine
     # discourse_query_engine: BaseQueryEngine
     # gdrive_query_engine: BaseQueryEngine
     # notion_query_engine: BaseQueryEngine
     # telegram_query_engine: BaseQueryEngine
-    # github_query_engine: BaseQueryEngine
 
     # query engine perparation
     # tools_metadata and query_engine_tools
@@ -99,7 +100,17 @@ def query_multiple_source(
     if telegram:
         raise NotImplementedError
     if github:
-        raise NotImplementedError
+        github_query_engine = GitHubQueryEngine(community_id=community_id).prepare()
+        tool_metadata = ToolMetadata(
+            name="GitHub",
+            description="Hosts code repositories and project materials from the GitHub platform.",
+        )
+        query_engine_tools.append(
+            QueryEngineTool(
+                query_engine=github_query_engine,
+                metadata=tool_metadata,
+            )
+        )
 
     embed_model = CohereEmbedding()
     llm = OpenAI("gpt-3.5-turbo")

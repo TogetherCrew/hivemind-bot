@@ -13,8 +13,7 @@ from llama_index.core.response_synthesizers import (
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
-from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
-from tc_hivemind_backend.pg_vector_access import PGVectorAccess
+from utils.query_engine.base_engine import BaseEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
 
 qa_prompt = PromptTemplate(
@@ -29,7 +28,7 @@ qa_prompt = PromptTemplate(
 )
 
 
-class LevelBasedPlatformQueryEngine(CustomQueryEngine):
+class LevelBasedPlatformQueryEngine(CustomQueryEngine, BaseEngine):
     retriever: BaseRetriever
     response_synthesizer: BaseSynthesizer
     llm: OpenAI
@@ -335,22 +334,3 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         logging.debug(f"context_str of prompt\n" f"{context_str}")
 
         return context_str
-
-    @classmethod
-    def _setup_vector_store_index(
-        cls,
-        platform_table_name: str,
-        dbname: str,
-        testing: bool = False,
-    ) -> VectorStoreIndex:
-        """
-        prepare the vector_store for querying data
-        """
-        pg_vector = PGVectorAccess(
-            table_name=platform_table_name,
-            dbname=dbname,
-            testing=testing,
-            embed_model=CohereEmbedding(),
-        )
-        index = pg_vector.load_index()
-        return index
