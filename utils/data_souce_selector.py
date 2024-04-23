@@ -1,5 +1,6 @@
-from .mongo import MongoSingleton
 from bson import ObjectId
+
+from utils.mongo import MongoSingleton
 
 
 class DataSourceSelector:
