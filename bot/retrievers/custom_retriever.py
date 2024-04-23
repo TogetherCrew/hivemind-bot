@@ -1,5 +1,6 @@
 """
-We're going to override the `_build_node_list_from_query_result` since it is raising errors having the llama-index legacy & newer version together
+We're going to override the `_build_node_list_from_query_result`
+since it is raising errors having the llama-index legacy & newer version together
 """
 
 from llama_index.core.data_structs.data_structs import IndexDict
@@ -12,7 +13,6 @@ from llama_index.core.vector_stores.types import VectorStoreQueryResult
 
 
 class CustomVectorStoreRetriever(VectorIndexRetriever):
-
     def _build_node_list_from_query_result(
         self, query_result: VectorStoreQueryResult
     ) -> list[NodeWithScore]:

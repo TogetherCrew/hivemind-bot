@@ -1,8 +1,8 @@
-from utils.query_engine.base_engine import BaseEngine
-from llama_index.core.query_engine import RetrieverQueryEngine
 from bot.retrievers.custom_retriever import CustomVectorStoreRetriever
-from llama_index.core import get_response_synthesizer
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
+from llama_index.core import get_response_synthesizer
+from llama_index.core.query_engine import RetrieverQueryEngine
+from utils.query_engine.base_engine import BaseEngine
 
 
 class GitHubQueryEngine(BaseEngine):

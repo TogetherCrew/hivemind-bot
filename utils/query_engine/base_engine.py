@@ -4,7 +4,6 @@ from tc_hivemind_backend.pg_vector_access import PGVectorAccess
 
 
 class BaseEngine:
-
     @classmethod
     def _setup_vector_store_index(
         cls,

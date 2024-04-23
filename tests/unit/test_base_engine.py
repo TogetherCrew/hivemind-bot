@@ -4,7 +4,6 @@ from utils.query_engine.base_engine import BaseEngine
 
 
 class TestBaseEngine(TestCase):
-
     def test_setup_vector_store_index(self):
         """
         Tests that _setup_vector_store_index creates a PGVectorAccess object
