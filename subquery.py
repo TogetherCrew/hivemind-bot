@@ -103,7 +103,10 @@ def query_multiple_source(
         github_query_engine = GitHubQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="GitHub",
-            description="Hosts code repositories and project materials from the GitHub platform.",
+            description=(
+                "Hosts commits and conversations from Github issues and"
+                " pull requests from the selected repositories"
+            ),
         )
         query_engine_tools.append(
             QueryEngineTool(
