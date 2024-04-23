@@ -1,5 +1,4 @@
 from bson import ObjectId
-
 from utils.mongo import MongoSingleton
 
 
