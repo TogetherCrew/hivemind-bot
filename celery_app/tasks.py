@@ -17,6 +17,7 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
 from traceloop.sdk import Traceloop
+from utils.data_souce_selector import DataSourceSelector
 
 
 @app.task
@@ -71,11 +72,12 @@ def ask_question_auto_search(
         # )
         logging.info(f"{prefix}Querying the data sources!")
         # for now we have just the discord platform
+        selector = DataSourceSelector()
+        data_sources = selector.select_data_source(community_id)
         response, _ = query_multiple_source(
             query=question,
             community_id=community_id,
-            discord=True,
-            github=True,
+            **data_sources,
         )
 
         # source_nodes_dict: list[dict[str, Any]] = []
