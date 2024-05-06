@@ -19,33 +19,25 @@ class DataSourceSelector:
             for the given community
         """
         db_results = self._query_modules_db(community_id)
-        platforms = list(map(lambda data: data["platform"]["name"], db_results))
+        platforms = list(map(lambda data: data["name"], db_results))
         data_sources = dict.fromkeys(platforms, True)
         return data_sources
 
     def _query_modules_db(self, community_id: str) -> list[dict]:
         client = MongoSingleton.get_instance().get_client()
-
-        pipeline = [
-            {"$match": {"name": "hivemind", "communityId": ObjectId(community_id)}},
-            {"$unwind": "$options.platforms"},
+        hivemind_module = client["Core"]["modules"].find_one(
             {
-                "$lookup": {
-                    "from": "platforms",
-                    "localField": "options.platforms.platformId",
-                    "foreignField": "_id",
-                    "as": "platform",
-                }
+                "community": ObjectId(community_id),
+                "name": "hivemind",
             },
-            {"$unwind": "$platform"},
             {
-                "$project": {
-                    "_id": 0,
-                    "platform.name": 1,
-                }
+                "options.platforms.name": 1,
             },
-        ]
-        cursor = client["Core"]["modules"].aggregate(pipeline)
+        )
+        if hivemind_module is None:
+            raise ValueError(
+                f"No hivemind modules set for the given community id: {community_id}"
+            )
+        platforms = hivemind_module["options"]["platforms"]
 
-        data_sources = list(cursor)
-        return data_sources
+        return platforms
