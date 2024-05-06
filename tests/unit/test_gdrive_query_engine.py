@@ -4,7 +4,7 @@ from bot.retrievers.custom_retriever import CustomVectorStoreRetriever
 from utils.query_engine import GDriveQueryEngine
 
 
-class TestGitHubQueryEngine(TestCase):
+class TestGDriveQueryEngine(TestCase):
     def setUp(self) -> None:
         community_id = "sample_community"
         self.gdrive_query_engine = GDriveQueryEngine(community_id)
