@@ -95,7 +95,7 @@ def query_multiple_source(
     if discourse:
         raise NotImplementedError
     if gdrive:
-        github_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
+        gdrive_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="Google-Drive",
             description=(
@@ -105,7 +105,7 @@ def query_multiple_source(
         )
         query_engine_tools.append(
             QueryEngineTool(
-                query_engine=github_query_engine,
+                query_engine=gdrive_query_engine,
                 metadata=tool_metadata,
             )
         )
