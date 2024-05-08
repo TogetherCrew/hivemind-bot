@@ -1,6 +1,6 @@
 from bot.retrievers.custom_retriever import CustomVectorStoreRetriever
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
-from llama_index.core import get_response_synthesizer, VectorStoreIndex
+from llama_index.core import VectorStoreIndex, get_response_synthesizer
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.query_engine import RetrieverQueryEngine
 from tc_hivemind_backend.embeddings import CohereEmbedding
@@ -27,7 +27,6 @@ class BaseEngine:
         self.dbname = f"community_{self.community_id}"
 
     def prepare(self, testing=False):
-
         index = self._setup_vector_store_index(
             testing=testing,
         )
