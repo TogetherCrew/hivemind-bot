@@ -11,6 +11,7 @@ from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     GDriveQueryEngine,
     GitHubQueryEngine,
+    NotionQueryEngine,
     prepare_discord_engine_auto_filter,
 )
 
@@ -24,6 +25,7 @@ def query_multiple_source(
     notion: bool = False,
     telegram: bool = False,
     github: bool = False,
+    media_wiki: bool = False,
 ) -> tuple[str, list[NodeWithScore]]:
     """
     query multiple platforms and get an answer from the multiple
@@ -68,8 +70,9 @@ def query_multiple_source(
     discord_query_engine: BaseQueryEngine
     github_query_engine: BaseQueryEngine
     # discourse_query_engine: BaseQueryEngine
-    # gdrive_query_engine: BaseQueryEngine
-    # notion_query_engine: BaseQueryEngine
+    gdrive_query_engine: BaseQueryEngine
+    notion_query_engine: BaseQueryEngine
+    # media_wiki_query_engine: BaseQueryEngine
     # telegram_query_engine: BaseQueryEngine
 
     # query engine perparation
@@ -110,7 +113,19 @@ def query_multiple_source(
             )
         )
     if notion:
-        raise NotImplementedError
+        notion_query_engine = NotionQueryEngine(community_id=community_id)
+        tool_metadata = ToolMetadata(
+            name="Notion",
+            description=(
+                "Centralizes notes, wikis, project plans, and to-dos for the community."
+            ),
+        )
+        query_engine_tools.append(
+            QueryEngineTool(
+                query_engine=notion_query_engine,
+                metadata=tool_metadata,
+            )
+        )
     if telegram:
         raise NotImplementedError
     if github:
@@ -128,6 +143,8 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
+    if media_wiki:
+        raise NotImplementedError
 
     embed_model = CohereEmbedding()
     llm = OpenAI("gpt-3.5-turbo")
