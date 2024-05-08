@@ -204,8 +204,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )
 
         index_summary = base_engine._setup_vector_store_index(
-            table_name=platform_table_name + "_summary",
-            dbname=dbname,
             testing=False,
         )
         vector_store = index_summary._vector_store
