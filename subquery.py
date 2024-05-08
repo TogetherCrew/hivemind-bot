@@ -9,6 +9,7 @@ from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
+    GDriveQueryEngine,
     GitHubQueryEngine,
     prepare_discord_engine_auto_filter,
 )
@@ -94,7 +95,20 @@ def query_multiple_source(
     if discourse:
         raise NotImplementedError
     if gdrive:
-        raise NotImplementedError
+        gdrive_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
+        tool_metadata = ToolMetadata(
+            name="Google-Drive",
+            description=(
+                "Stores and manages documents, spreadsheets, presentations,"
+                " and other files for the community."
+            ),
+        )
+        query_engine_tools.append(
+            QueryEngineTool(
+                query_engine=gdrive_query_engine,
+                metadata=tool_metadata,
+            )
+        )
     if notion:
         raise NotImplementedError
     if telegram:
