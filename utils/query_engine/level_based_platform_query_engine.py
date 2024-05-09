@@ -28,7 +28,7 @@ qa_prompt = PromptTemplate(
 )
 
 
-class LevelBasedPlatformQueryEngine(CustomQueryEngine, BaseEngine):
+class LevelBasedPlatformQueryEngine(CustomQueryEngine):
     retriever: BaseRetriever
     response_synthesizer: BaseSynthesizer
     llm: OpenAI
@@ -116,17 +116,22 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine, BaseEngine):
         )
         llm = kwargs.get("llm", OpenAI("gpt-4"))
         qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
+        base_engine = BaseEngine(platform_table_name, community_id)
         index: VectorStoreIndex = kwargs.get(
             "index_raw",
-            cls._setup_vector_store_index(platform_table_name, dbname, testing),
+            base_engine._setup_vector_store_index(
+                testing=testing,
+            ),
         )
         summary_nodes_filters = kwargs.get("summary_nodes_filters", None)
 
         retriever = index.as_retriever()
         cls._summary_vector_store = kwargs.get(
             "index_summary",
-            cls._setup_vector_store_index(
-                platform_table_name + "_summary", dbname, testing
+            base_engine._setup_vector_store_index(
+                table_name=platform_table_name + "_summary",
+                dbname=dbname,
+                testing=testing,
             ),
         )._vector_store
 
@@ -193,8 +198,13 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine, BaseEngine):
         dbname = f"community_{community_id}"
         summary_similarity_top_k, _, d = load_hyperparams()
 
-        index_summary = cls._setup_vector_store_index(
-            platform_table_name + "_summary", dbname, False
+        base_engine = BaseEngine(
+            platform_table_name + "_summary",
+            community_id,
+        )
+
+        index_summary = base_engine._setup_vector_store_index(
+            testing=False,
         )
         vector_store = index_summary._vector_store
 
