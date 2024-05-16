@@ -1,8 +1,8 @@
+from bot.retrievers.utils.load_hyperparams import load_hyperparams
+from llama_index.core import VectorStoreIndex, get_response_synthesizer
 from llama_index.core.indices.vector_store.retrievers.retriever import (
     VectorIndexRetriever,
 )
-from bot.retrievers.utils.load_hyperparams import load_hyperparams
-from llama_index.core import VectorStoreIndex, get_response_synthesizer
 from llama_index.core.query_engine import RetrieverQueryEngine
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
 
