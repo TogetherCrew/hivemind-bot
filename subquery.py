@@ -26,7 +26,7 @@ def query_multiple_source(
     notion: bool = False,
     telegram: bool = False,
     github: bool = False,
-    media_wiki: bool = False,
+    mediaWiki: bool = False,
 ) -> tuple[str, list[NodeWithScore]]:
     """
     query multiple platforms and get an answer from the multiple
@@ -73,7 +73,7 @@ def query_multiple_source(
     # discourse_query_engine: BaseQueryEngine
     gdrive_query_engine: BaseQueryEngine
     notion_query_engine: BaseQueryEngine
-    media_wiki_query_engine: BaseQueryEngine
+    mediawiki_query_engine: BaseQueryEngine
     # telegram_query_engine: BaseQueryEngine
 
     # query engine perparation
@@ -144,7 +144,7 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
-    if media_wiki:
+    if mediaWiki:
         mediawiki_query_engine = MediaWikiQueryEngine(
             community_id=community_id
         ).prepare()
