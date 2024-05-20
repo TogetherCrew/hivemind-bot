@@ -34,7 +34,7 @@ services:
       - D_RETRIEVER_SEARCH=7
       - COHERE_API_KEY=some_credentials
       - OPENAI_API_KEY=some_credentials2
-      - QDRANT_HOST=localhost
+      - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - QDRANT_API_KEY=
     volumes:
