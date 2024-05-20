@@ -1,6 +1,8 @@
 from unittest import TestCase
 
-from llama_index.core.indices.vector_store.retrievers.retriever import VectorIndexRetriever
+from llama_index.core.indices.vector_store.retrievers.retriever import (
+    VectorIndexRetriever,
+)
 from utils.query_engine import NotionQueryEngine
 
 
