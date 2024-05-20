@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from bot.retrievers.custom_retriever import CustomVectorStoreRetriever
+from llama_index.core.indices.vector_store.retrievers.retriever import VectorIndexRetriever
 from utils.query_engine import GitHubQueryEngine
 
 
@@ -12,4 +12,4 @@ class TestGitHubQueryEngine(TestCase):
     def test_prepare_engine(self):
         github_query_engine = self.github_query_engine.prepare(testing=True)
         print(github_query_engine.__dict__)
-        self.assertIsInstance(github_query_engine.retriever, CustomVectorStoreRetriever)
+        self.assertIsInstance(github_query_engine.retriever, VectorIndexRetriever)
