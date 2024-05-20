@@ -13,7 +13,7 @@ from llama_index.core.response_synthesizers import (
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
-from utils.query_engine.base_engine import BaseEngine
+from utils.query_engine.base_pg_engine import BasePGEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
 
 qa_prompt = PromptTemplate(
@@ -116,7 +116,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )
         llm = kwargs.get("llm", OpenAI("gpt-4"))
         qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
-        base_engine = BaseEngine(platform_table_name, community_id)
+        base_engine = BasePGEngine(platform_table_name, community_id)
         index: VectorStoreIndex = kwargs.get(
             "index_raw",
             base_engine._setup_vector_store_index(
@@ -198,7 +198,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         dbname = f"community_{community_id}"
         summary_similarity_top_k, _, d = load_hyperparams()
 
-        base_engine = BaseEngine(
+        base_engine = BasePGEngine(
             platform_table_name + "_summary",
             community_id,
         )

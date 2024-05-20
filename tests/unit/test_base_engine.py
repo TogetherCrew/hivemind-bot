@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from utils.query_engine.base_engine import BaseEngine
+from utils.query_engine.base_qdrant_engine import BaseQdrantEngine
 
 
 class TestBaseEngine(TestCase):
@@ -11,7 +11,7 @@ class TestBaseEngine(TestCase):
         """
         platform_table_name = "test_table"
         community_id = "123456"
-        base_engine = BaseEngine(
+        base_engine = BaseQdrantEngine(
             platform_name=platform_table_name,
             community_id=community_id,
         )
