@@ -3,7 +3,7 @@ from unittest import TestCase
 from utils.query_engine.base_qdrant_engine import BaseQdrantEngine
 
 
-class TestBaseEngine(TestCase):
+class TestBaseQdrantEngine(TestCase):
     def test_setup_vector_store_index(self):
         """
         Tests that _setup_vector_store_index creates a PGVectorAccess object
@@ -19,6 +19,7 @@ class TestBaseEngine(TestCase):
             testing=True,
         )
 
-        expected_dbname = f"community_{community_id}"
-        self.assertIn(expected_dbname, base_engine.vector_store.connection_string)
-        self.assertEqual(base_engine.vector_store.table_name, platform_table_name)
+        expected_collection_name = f"{community_id}_{platform_table_name}"
+        self.assertEqual(
+            base_engine.vector_store.collection_name, expected_collection_name
+        )
