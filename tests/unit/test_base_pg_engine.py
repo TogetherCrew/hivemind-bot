@@ -1,9 +1,9 @@
 from unittest import TestCase
 
-from utils.query_engine.base_engine import BaseEngine
+from utils.query_engine.base_pg_engine import BasePGEngine
 
 
-class TestBaseEngine(TestCase):
+class TestPGBaseEngine(TestCase):
     def test_setup_vector_store_index(self):
         """
         Tests that _setup_vector_store_index creates a PGVectorAccess object
@@ -11,7 +11,7 @@ class TestBaseEngine(TestCase):
         """
         platform_table_name = "test_table"
         community_id = "123456"
-        base_engine = BaseEngine(
+        base_engine = BasePGEngine(
             platform_name=platform_table_name,
             community_id=community_id,
         )

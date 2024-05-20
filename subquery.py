@@ -11,6 +11,7 @@ from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     GDriveQueryEngine,
     GitHubQueryEngine,
+    MediaWikiQueryEngine,
     NotionQueryEngine,
     prepare_discord_engine_auto_filter,
 )
@@ -25,7 +26,7 @@ def query_multiple_source(
     notion: bool = False,
     telegram: bool = False,
     github: bool = False,
-    media_wiki: bool = False,
+    mediaWiki: bool = False,
 ) -> tuple[str, list[NodeWithScore]]:
     """
     query multiple platforms and get an answer from the multiple
@@ -72,7 +73,7 @@ def query_multiple_source(
     # discourse_query_engine: BaseQueryEngine
     gdrive_query_engine: BaseQueryEngine
     notion_query_engine: BaseQueryEngine
-    # media_wiki_query_engine: BaseQueryEngine
+    mediawiki_query_engine: BaseQueryEngine
     # telegram_query_engine: BaseQueryEngine
 
     # query engine perparation
@@ -143,8 +144,20 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
-    if media_wiki:
-        raise NotImplementedError
+    if mediaWiki:
+        mediawiki_query_engine = MediaWikiQueryEngine(
+            community_id=community_id
+        ).prepare()
+        tool_metadata = ToolMetadata(
+            name="WikiPedia",
+            description="Hosts articles about any information on internet",
+        )
+        query_engine_tools.append(
+            QueryEngineTool(
+                query_engine=mediawiki_query_engine,
+                metadata=tool_metadata,
+            )
+        )
 
     embed_model = CohereEmbedding()
     llm = OpenAI("gpt-3.5-turbo")

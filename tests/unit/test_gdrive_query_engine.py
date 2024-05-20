@@ -1,6 +1,8 @@
 from unittest import TestCase
 
-from bot.retrievers.custom_retriever import CustomVectorStoreRetriever
+from llama_index.core.indices.vector_store.retrievers.retriever import (
+    VectorIndexRetriever,
+)
 from utils.query_engine import GDriveQueryEngine
 
 
@@ -12,4 +14,4 @@ class TestGDriveQueryEngine(TestCase):
     def test_prepare_engine(self):
         gdrive_query_engine = self.gdrive_query_engine.prepare(testing=True)
         print(gdrive_query_engine.__dict__)
-        self.assertIsInstance(gdrive_query_engine.retriever, CustomVectorStoreRetriever)
+        self.assertIsInstance(gdrive_query_engine.retriever, VectorIndexRetriever)
