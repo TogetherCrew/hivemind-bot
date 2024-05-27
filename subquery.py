@@ -79,7 +79,7 @@ def query_multiple_source(
     # telegram_query_engine: BaseQueryEngine
 
     # wrapper for more clarity
-    check_collection = qdrant_utils.chech_collection_exist
+    check_collection = qdrant_utils.check_collection_exist
 
     # query engine perparation
     # tools_metadata and query_engine_tools

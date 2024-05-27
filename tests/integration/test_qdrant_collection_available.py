@@ -18,7 +18,7 @@ class TestQDrantAvailableCollection(TestCase):
 
     def test_no_collection_available(self):
         platform = "platform1"
-        available = self.qdrant_utils.chech_collection_exist(platform)
+        available = self.qdrant_utils.check_collection_exist(platform)
 
         self.assertIsInstance(available, bool)
         self.assertFalse(available)
@@ -32,7 +32,7 @@ class TestQDrantAvailableCollection(TestCase):
                 size=100, distance=models.Distance.COSINE
             ),
         )
-        available = self.qdrant_utils.chech_collection_exist(platform)
+        available = self.qdrant_utils.check_collection_exist(platform)
 
         self.assertIsInstance(available, bool)
         self.assertTrue(available)
@@ -52,7 +52,7 @@ class TestQDrantAvailableCollection(TestCase):
                 ),
             )
 
-        available = self.qdrant_utils.chech_collection_exist("platform4")
+        available = self.qdrant_utils.check_collection_exist("platform4")
 
         self.assertIsInstance(available, bool)
         self.assertFalse(available)
@@ -71,7 +71,7 @@ class TestQDrantAvailableCollection(TestCase):
                 ),
             )
 
-        available = self.qdrant_utils.chech_collection_exist(
+        available = self.qdrant_utils.check_collection_exist(
             platforms[0],
         )
 

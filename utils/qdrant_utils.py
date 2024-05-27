@@ -15,7 +15,7 @@ class QDrantUtils:
         self.qdrant_client = QdrantSingleton.get_instance().get_client()
         self.community_id = community_id
 
-    def chech_collection_exist(self, platform_name: str) -> bool:
+    def check_collection_exist(self, platform_name: str) -> bool:
         """
         check if the collection exist on qdrant database
 
