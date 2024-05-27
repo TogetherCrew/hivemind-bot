@@ -7,6 +7,7 @@ from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from llama_index.llms.openai import OpenAI
 from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from utils.qdrant_utils import QDrantUtils
 from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     GDriveQueryEngine,
@@ -15,7 +16,6 @@ from utils.query_engine import (
     NotionQueryEngine,
     prepare_discord_engine_auto_filter,
 )
-from utils.qdrant_utils import QDrantUtils
 
 
 def query_multiple_source(
