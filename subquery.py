@@ -114,7 +114,7 @@ def query_multiple_source(
             )
         )
     if notion:
-        notion_query_engine = NotionQueryEngine(community_id=community_id)
+        notion_query_engine = NotionQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="Notion",
             description=(
