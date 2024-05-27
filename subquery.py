@@ -7,6 +7,7 @@ from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from llama_index.llms.openai import OpenAI
 from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
+from utils.qdrant_utils import QDrantUtils
 from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     GDriveQueryEngine,
@@ -67,6 +68,7 @@ def query_multiple_source(
     """
     query_engine_tools: list[QueryEngineTool] = []
     tools: list[ToolMetadata] = []
+    qdrant_utils = QDrantUtils(community_id)
 
     discord_query_engine: BaseQueryEngine
     github_query_engine: BaseQueryEngine
@@ -75,6 +77,9 @@ def query_multiple_source(
     notion_query_engine: BaseQueryEngine
     mediawiki_query_engine: BaseQueryEngine
     # telegram_query_engine: BaseQueryEngine
+
+    # wrapper for more clarity
+    check_collection = qdrant_utils.check_collection_exist
 
     # query engine perparation
     # tools_metadata and query_engine_tools
@@ -98,7 +103,7 @@ def query_multiple_source(
 
     if discourse:
         raise NotImplementedError
-    if gdrive:
+    if gdrive and check_collection("gdrive"):
         gdrive_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="Google-Drive",
@@ -113,7 +118,7 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
-    if notion:
+    if notion and check_collection("notion"):
         notion_query_engine = NotionQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="Notion",
@@ -127,9 +132,9 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
-    if telegram:
+    if telegram and check_collection("telegram"):
         raise NotImplementedError
-    if github:
+    if github and check_collection("github"):
         github_query_engine = GitHubQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="GitHub",
@@ -144,7 +149,7 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
-    if mediaWiki:
+    if mediaWiki and check_collection("mediawiki"):
         mediawiki_query_engine = MediaWikiQueryEngine(
             community_id=community_id
         ).prepare()
