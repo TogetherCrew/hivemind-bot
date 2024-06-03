@@ -23,7 +23,7 @@ def query_multiple_source(
     community_id: str,
     discord: bool = False,
     discourse: bool = False,
-    gdrive: bool = False,
+    google: bool = False,
     notion: bool = False,
     telegram: bool = False,
     github: bool = False,
@@ -44,7 +44,7 @@ def query_multiple_source(
     discourse : bool
         if `True` then add the engine to the subquery_generator
         default is set to False
-    gdrive : bool
+    google : bool
         if `True` then add the engine to the subquery_generator
         default is set to False
     notion : bool
@@ -73,7 +73,7 @@ def query_multiple_source(
     discord_query_engine: BaseQueryEngine
     github_query_engine: BaseQueryEngine
     # discourse_query_engine: BaseQueryEngine
-    gdrive_query_engine: BaseQueryEngine
+    google_query_engine: BaseQueryEngine
     notion_query_engine: BaseQueryEngine
     mediawiki_query_engine: BaseQueryEngine
     # telegram_query_engine: BaseQueryEngine
@@ -103,8 +103,8 @@ def query_multiple_source(
 
     if discourse:
         raise NotImplementedError
-    if gdrive and check_collection("gdrive"):
-        gdrive_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
+    if google and check_collection("google"):
+        google_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="Google-Drive",
             description=(
@@ -114,7 +114,7 @@ def query_multiple_source(
         )
         query_engine_tools.append(
             QueryEngineTool(
-                query_engine=gdrive_query_engine,
+                query_engine=google_query_engine,
                 metadata=tool_metadata,
             )
         )
