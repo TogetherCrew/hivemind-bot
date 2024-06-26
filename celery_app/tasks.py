@@ -1,3 +1,4 @@
+import gc
 import json
 import logging
 import os
@@ -120,3 +121,5 @@ def ask_question_auto_search(
             queue_name=Queue.DISCORD_BOT,
             content=response_payload,
         )
+
+    gc.collect()
