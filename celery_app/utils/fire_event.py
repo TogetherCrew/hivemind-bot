@@ -37,3 +37,4 @@ def job_send(event: str, queue_name: str, content: dict[str, Any]) -> None:
         content=content,
     )
     logging.info("Published to RabbitMQ!")
+    rabbit_mq.connection.close()
