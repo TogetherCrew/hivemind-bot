@@ -37,4 +37,7 @@ def job_send(event: str, queue_name: str, content: dict[str, Any]) -> None:
         content=content,
     )
     logging.info("Published to RabbitMQ!")
-    rabbit_mq.connection.close()
+    try:
+        rabbit_mq.connection.close()
+    except Exception as e:
+        logging.error(f"Failed to close RabbitMQ connection: {e}")
