@@ -19,7 +19,6 @@ def query_llm(recieved_data: dict[str, Any]):
     """
     query the llm using the received data
     """
-    logging.info(f"RECIEVED DATA: {recieved_data}")
     interaction = json.loads(recieved_data["content"]["interaction"])
     recieved_input = ChatInputCommandInteraction.from_dict(interaction)
     # For now we just have one user input
