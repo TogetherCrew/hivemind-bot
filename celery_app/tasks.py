@@ -1,3 +1,4 @@
+import gc
 import json
 import logging
 import os
@@ -6,7 +7,6 @@ from typing import Any
 from celery_app.server import app
 from celery_app.utils.fire_event import job_send
 from dotenv import load_dotenv
-import gc
 from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
