@@ -4,6 +4,7 @@ import logging
 import os
 from typing import Any
 
+from celery.signals import task_postrun
 from celery_app.server import app
 from celery_app.utils.fire_event import job_send
 from dotenv import load_dotenv
@@ -122,4 +123,8 @@ def ask_question_auto_search(
             content=response_payload,
         )
 
+
+@task_postrun.connect
+def task_postrun_handler(sender=None, **kwargs):
+    # Trigger garbage collection after each task
     gc.collect()
