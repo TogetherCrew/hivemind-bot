@@ -32,13 +32,11 @@ def query_llm(recieved_data: dict[str, Any]):
 
     community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
     logging.info(f"COMMUNITY_ID: {community_id} | Sending job to Celery!")
-    result = ask_question_auto_search.delay(
+    ask_question_auto_search.delay(
         question=user_input,
         community_id=community_id,
         bot_given_info=recieved_data,
     )
-    # releasing memory (maybe?)
-    result.forget()
 
 
 @backoff.on_exception(
