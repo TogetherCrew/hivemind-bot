@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Any
 
-from celery.signals import task_postrun
+from celery.signals import task_postrun, worker_process_init
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
     InteractionCallbackData,
@@ -19,6 +19,16 @@ from utils.data_source_selector import DataSourceSelector
 from worker.utils.fire_event import job_send
 from worker.celery import app
 
+from dotenv import load_dotenv
+from traceloop.sdk import Traceloop
+import os
+
+
+@worker_process_init.connect(weak=False)
+def init_tracing():
+    load_dotenv()
+    otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
+    Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
 
 @app.task
 def ask_question_auto_search(
