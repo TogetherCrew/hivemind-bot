@@ -16,10 +16,10 @@ port = rabbit_creds["port"]
 
 
 def init_tracing():
-    logging.info("Initializing trace...")
+    logging.info("Initializing traceloop...")
     otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
     Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
-    logging.info("Trace initialized...")
+    logging.info("Traceloop initialized.")
 
 
 app = Celery(
@@ -29,5 +29,5 @@ app = Celery(
 )
 
 if __name__ == "__main__":
-    init_tracing()
     app.start()
+    init_tracing()
