@@ -1,4 +1,7 @@
 from celery import Celery
+from dotenv import load_dotenv
+from traceloop.sdk import Traceloop
+import os
 
 from utils.credentials import load_rabbitmq_credentials
 
@@ -16,4 +19,7 @@ app = Celery(
 # app.autodiscover_tasks(["celery_app"])
 
 if __name__ == "__main__":
+    load_dotenv()
+    otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
+    Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
     app.start()
