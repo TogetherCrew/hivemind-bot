@@ -1,4 +1,3 @@
-import logging
 from celery import Celery
 from utils.credentials import load_rabbitmq_credentials
 from utils.traceloop import init_tracing
@@ -18,9 +17,4 @@ app = Celery(
 
 
 if __name__ == "__main__":
-    logging.info("Starting app...")
-    print("Starting app...")
-    init_tracing()
     app.start()
-    logging.info("App started.")
-    print("App started.")

@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Any
 
-from celery.signals import task_postrun, worker_process_init
+from celery.signals import task_postrun, worker_init
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
     InteractionCallbackData,
@@ -18,6 +18,9 @@ from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
 from worker.utils.fire_event import job_send
 from worker.celery import app
+from utils.traceloop import init_tracing
+
+worker_init.connect(init_tracing)
 
 
 @app.task
