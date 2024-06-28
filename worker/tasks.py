@@ -19,11 +19,8 @@ from utils.data_source_selector import DataSourceSelector
 from worker.utils.fire_event import job_send
 from worker.celery import app
 
-from traceloop.sdk.decorators import task
-
 
 @app.task
-@task
 def ask_question_auto_search(
     question: str,
     community_id: str,
