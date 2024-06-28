@@ -22,7 +22,7 @@ from utils.traceloop import init_tracing
 
 
 @worker_init.connect
-def init():
+def init(sender=None, **kwargs):
     init_tracing()
 
 
