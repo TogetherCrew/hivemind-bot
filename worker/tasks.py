@@ -19,20 +19,9 @@ from utils.data_source_selector import DataSourceSelector
 from worker.utils.fire_event import job_send
 from worker.celery import app
 
-from dotenv import load_dotenv
-from traceloop.sdk import Traceloop
-import os
+from traceloop.sdk.decorators import task
 
-
-@worker_process_init.connect(weak=False)
-def init_tracing():
-    logging.info("Initializing trace...")
-    load_dotenv()
-    otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
-    Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
-    logging.info("Trace initialized...")
-
-
+@task()
 @app.task
 def ask_question_auto_search(
     question: str,
