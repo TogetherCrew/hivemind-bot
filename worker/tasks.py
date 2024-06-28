@@ -22,7 +22,7 @@ from worker.celery import app
 from traceloop.sdk.decorators import task
 
 
-@task()
+@task
 @app.task
 def ask_question_auto_search(
     question: str,
