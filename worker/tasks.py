@@ -3,7 +3,15 @@ import json
 import logging
 from typing import Any
 
-from celery.signals import task_postrun, worker_init
+from celery.signals import (
+    task_postrun,
+    worker_init,
+    celeryd_init,
+    worker_process_init,
+    worker_ready,
+    celeryd_after_setup,
+    task_prerun,
+)
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
     InteractionCallbackData,
@@ -19,11 +27,6 @@ from utils.data_source_selector import DataSourceSelector
 from worker.utils.fire_event import job_send
 from worker.celery import app
 from utils.traceloop import init_tracing
-
-
-@worker_init.connect
-def init(sender=None, **kwargs):
-    init_tracing()
 
 
 @app.task
@@ -125,6 +128,48 @@ def ask_question_auto_search(
             content=response_payload,
         )
         logging.info("FINISHED JOB WITH EXCEPTION")
+
+
+@celeryd_init.connect
+def celeryd_init(sender=None, **kwargs):
+    logging.info("celeryd_init start.")
+    init_tracing()
+    logging.info("celeryd_init end.")
+
+
+@celeryd_after_setup.connect
+def celeryd_after_setup(sender=None, **kwargs):
+    logging.info("celeryd_after_setup start.")
+    init_tracing()
+    logging.info("celeryd_after_setup end.")
+
+
+@worker_init.connect
+def worker_init(sender=None, **kwargs):
+    logging.info("worker_init start.")
+    init_tracing()
+    logging.info("worker_init end.")
+
+
+@worker_process_init.connect
+def worker_process_init(sender=None, **kwargs):
+    logging.info("worker_process_init start.")
+    init_tracing()
+    logging.info("worker_process_init end.")
+
+
+@worker_ready.connect
+def worker_ready(sender=None, **kwargs):
+    logging.info("worker_ready start.")
+    init_tracing()
+    logging.info("worker_ready end.")
+
+
+@task_prerun.connect
+def task_prerun(sender=None, **kwargs):
+    logging.info("task_prerun start.")
+    init_tracing()
+    logging.info("task_prerun end.")
 
 
 @task_postrun.connect
