@@ -9,7 +9,7 @@ host = rabbit_creds["host"]
 port = rabbit_creds["port"]
 
 app = Celery(
-    "worker",
+    "tasks",
     broker=f"pyamqp://{user}:{password}@{host}:{port}//",
     include=["worker.tasks"],
 )

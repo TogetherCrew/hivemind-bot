@@ -20,7 +20,7 @@ from traceloop.sdk import Traceloop
 from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
 from worker.utils.fire_event import job_send
-from worker.worker import app
+from worker.celery import app
 
 
 @app.task
