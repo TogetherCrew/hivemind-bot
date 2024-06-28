@@ -22,8 +22,8 @@ from worker.celery import app
 from traceloop.sdk.decorators import task
 
 
-@task
 @app.task
+@task
 def ask_question_auto_search(
     question: str,
     community_id: str,
