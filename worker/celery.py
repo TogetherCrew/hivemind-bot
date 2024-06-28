@@ -29,4 +29,5 @@ app = Celery(
 )
 
 if __name__ == "__main__":
+    init_tracing()
     app.start()
