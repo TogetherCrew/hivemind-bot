@@ -3,7 +3,7 @@ import logging
 from typing import Any
 
 import backoff
-from celery_app.tasks import ask_question_auto_search
+from worker.tasks import ask_question_auto_search
 from pika.exceptions import ConnectionClosedByBroker
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event

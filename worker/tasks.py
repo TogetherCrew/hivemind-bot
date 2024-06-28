@@ -5,8 +5,8 @@ import os
 from typing import Any
 
 from celery.signals import task_postrun
-from celery_app.server import app
-from celery_app.utils.fire_event import job_send
+from worker.worker import app
+from worker.utils.fire_event import job_send
 from dotenv import load_dotenv
 from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event

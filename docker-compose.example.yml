@@ -5,10 +5,9 @@ services:
     build:
       context: .
       target: prod
-      dockerfile: Dockerfile
+    command: python3 server.py
   worker:
     build:
       context: .
       target: prod
       dockerfile: Dockerfile
-    command: python3 worker.py

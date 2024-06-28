@@ -7,5 +7,8 @@ password = rabbit_creds["password"]
 host = rabbit_creds["host"]
 port = rabbit_creds["port"]
 
-app = Celery("celery_app/tasks", broker=f"pyamqp://{user}:{password}@{host}:{port}//")
-app.autodiscover_tasks(["celery_app"])
+app = Celery("tasks", broker=f"pyamqp://{user}:{password}@{host}:{port}//", include=["worker.tasks"])
+# app.autodiscover_tasks(["celery_app"])
+
+if __name__ == '__main__':
+    app.start()
