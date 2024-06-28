@@ -30,6 +30,7 @@ def init_tracing():
     otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
     Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
 
+
 @app.task
 def ask_question_auto_search(
     question: str,
