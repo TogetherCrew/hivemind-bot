@@ -20,7 +20,7 @@ from worker.utils.fire_event import job_send
 from worker.celery import app
 from utils.traceloop import init_tracing
 
-worker_init.connect(init_tracing)
+@worker_init.connect(init_tracing)
 
 
 @app.task
