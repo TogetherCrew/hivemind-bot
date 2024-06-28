@@ -6,9 +6,8 @@ import backoff
 from pika.exceptions import ConnectionClosedByBroker
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
-from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
-    ChatInputCommandInteraction,
-)
+from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import \
+    ChatInputCommandInteraction
 from tc_messageBroker.rabbit_mq.queue import Queue
 
 from utils.credentials import load_rabbitmq_credentials
