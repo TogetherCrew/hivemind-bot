@@ -130,32 +130,32 @@ def ask_question_auto_search(
         logging.info("FINISHED JOB WITH EXCEPTION")
 
 
-@celeryd_init.connect
-def celeryd_init_handler(sender=None, **kwargs):
-    logging.info("celeryd_init_handler start.")
-    init_tracing()
-    logging.info("celeryd_init_handler end.")
+# @celeryd_init.connect
+# def celeryd_init_handler(sender=None, **kwargs):
+#     logging.info("celeryd_init_handler start.")
+#     init_tracing()
+#     logging.info("celeryd_init_handler end.")
 
 
-@celeryd_after_setup.connect
-def celeryd_after_setup_handler(sender=None, **kwargs):
-    logging.info("celeryd_after_setup_handler start.")
-    init_tracing()
-    logging.info("celeryd_after_setup_handler end.")
+# @celeryd_after_setup.connect
+# def celeryd_after_setup_handler(sender=None, **kwargs):
+#     logging.info("celeryd_after_setup_handler start.")
+#     init_tracing()
+#     logging.info("celeryd_after_setup_handler end.")
 
 
-@worker_init.connect
-def worker_init_handler(sender=None, **kwargs):
-    logging.info("worker_init_handler start.")
-    init_tracing()
-    logging.info("worker_init_handler end.")
+# @worker_init.connect
+# def worker_init_handler(sender=None, **kwargs):
+#     logging.info("worker_init_handler start.")
+#     init_tracing()
+#     logging.info("worker_init_handler end.")
 
 
-@worker_process_init.connect
-def worker_process_init_handler(sender=None, **kwargs):
-    logging.info("worker_process_init_handler start.")
-    init_tracing()
-    logging.info("worker_process_init_handler end.")
+# @worker_process_init.connect
+# def worker_process_init_handler(sender=None, **kwargs):
+#     logging.info("worker_process_init_handler start.")
+#     init_tracing()
+#     logging.info("worker_process_init_handler end.")
 
 
 @worker_ready.connect
@@ -165,11 +165,11 @@ def worker_ready_handler(sender=None, **kwargs):
     logging.info("worker_ready_handler end.")
 
 
-@task_prerun.connect
-def task_prerun_handler(sender=None, **kwargs):
-    logging.info("task_prerun_handler start.")
-    init_tracing()
-    logging.info("task_prerun_handler end.")
+# @task_prerun.connect
+# def task_prerun_handler(sender=None, **kwargs):
+#     logging.info("task_prerun_handler start.")
+#     init_tracing()
+#     logging.info("task_prerun_handler end.")
 
 
 @task_postrun.connect
