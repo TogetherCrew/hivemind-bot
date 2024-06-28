@@ -158,18 +158,18 @@ def ask_question_auto_search(
 #     logging.info("worker_process_init_handler end.")
 
 
-@worker_ready.connect
-def worker_ready_handler(sender=None, **kwargs):
-    logging.info("worker_ready_handler start.")
-    init_tracing()
-    logging.info("worker_ready_handler end.")
-
-
-# @task_prerun.connect
-# def task_prerun_handler(sender=None, **kwargs):
-#     logging.info("task_prerun_handler start.")
+# @worker_ready.connect
+# def worker_ready_handler(sender=None, **kwargs):
+#     logging.info("worker_ready_handler start.")
 #     init_tracing()
-#     logging.info("task_prerun_handler end.")
+#     logging.info("worker_ready_handler end.")
+
+
+@task_prerun.connect
+def task_prerun_handler(sender=None, **kwargs):
+    logging.info("task_prerun_handler start.")
+    init_tracing()
+    logging.info("task_prerun_handler end.")
 
 
 @task_postrun.connect
