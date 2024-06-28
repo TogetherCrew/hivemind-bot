@@ -1,4 +1,5 @@
 from celery import Celery
+
 from utils.credentials import load_rabbitmq_credentials
 
 rabbit_creds = load_rabbitmq_credentials()

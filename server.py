@@ -3,16 +3,16 @@ import logging
 from typing import Any
 
 import backoff
-from worker.tasks import ask_question_auto_search
 from pika.exceptions import ConnectionClosedByBroker
 from tc_messageBroker import RabbitMQ
 from tc_messageBroker.rabbit_mq.event import Event
-from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
-    ChatInputCommandInteraction,
-)
+from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import \
+    ChatInputCommandInteraction
 from tc_messageBroker.rabbit_mq.queue import Queue
+
 from utils.credentials import load_rabbitmq_credentials
 from utils.fetch_community_id import fetch_community_id_by_guild_id
+from worker.tasks import ask_question_auto_search
 
 
 def query_llm(recieved_data: dict[str, Any]):

@@ -5,21 +5,20 @@ import os
 from typing import Any
 
 from celery.signals import task_postrun
-from worker.worker import app
-from worker.utils.fire_event import job_send
 from dotenv import load_dotenv
-from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event
-from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
-    InteractionCallbackData,
-)
-from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import (
-    ChatInputCommandInteraction,
-)
+from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import \
+    InteractionCallbackData
+from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction import \
+    ChatInputCommandInteraction
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
 from traceloop.sdk import Traceloop
+
+from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
+from worker.utils.fire_event import job_send
+from worker.worker import app
 
 
 @app.task
@@ -109,6 +108,7 @@ def ask_question_auto_search(
             queue_name=Queue.DISCORD_BOT,
             content=response_payload,
         )
+        logging.info("FINISHED JOB")
     except Exception as exp:
         logging.error(f"Exception {exp} | during processing the question {question}")
         response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
@@ -122,6 +122,7 @@ def ask_question_auto_search(
             queue_name=Queue.DISCORD_BOT,
             content=response_payload,
         )
+        logging.info("FINISHED JOB WITH EXCEPTION")
 
 
 @task_postrun.connect
