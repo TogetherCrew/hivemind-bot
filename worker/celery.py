@@ -22,6 +22,7 @@ def init_tracing():
     logging.info("Traceloop initialized.")
 
 
+init_tracing()
 app = Celery(
     "tasks",
     broker=f"pyamqp://{user}:{password}@{host}:{port}//",
@@ -30,4 +31,4 @@ app = Celery(
 
 if __name__ == "__main__":
     app.start()
-    init_tracing()
+    logging.info("App started.")
