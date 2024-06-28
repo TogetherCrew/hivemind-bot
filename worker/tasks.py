@@ -130,18 +130,18 @@ def ask_question_auto_search(
         logging.info("FINISHED JOB WITH EXCEPTION")
 
 
-@worker_ready.connect
-def worker_ready(sender=None, **kwargs):
-    logging.info("worker_ready start.")
-    init_tracing()
-    logging.info("worker_ready end.")
-
-
-# @task_prerun.connect
-# def task_prerun(sender=None, **kwargs):
-#     logging.info("task_prerun start.")
+# @worker_ready.connect
+# def worker_ready(sender=None, **kwargs):
+#     logging.info("worker_ready start.")
 #     init_tracing()
-#     logging.info("task_prerun end.")
+#     logging.info("worker_ready end.")
+
+
+@task_prerun.connect
+def task_prerun(sender=None, **kwargs):
+    logging.info("task_prerun start.")
+    init_tracing()
+    logging.info("task_prerun end.")
 
 
 @task_postrun.connect
