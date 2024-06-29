@@ -1,6 +1,5 @@
 from celery import Celery
 from utils.credentials import load_rabbitmq_credentials
-from utils.traceloop import init_tracing
 
 
 rabbit_creds = load_rabbitmq_credentials()
