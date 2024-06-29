@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from celery.signals import task_postrun, task_prerun
+from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
     InteractionCallbackData,
@@ -13,8 +14,6 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
 )
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
-
-from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
 from utils.traceloop import init_tracing
 from worker.celery import app

@@ -1,7 +1,8 @@
+import logging
+import os
+
 from dotenv import load_dotenv
 from traceloop.sdk import Traceloop
-import os
-import logging
 
 load_dotenv()
 

@@ -10,7 +10,6 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
     ChatInputCommandInteraction,
 )
 from tc_messageBroker.rabbit_mq.queue import Queue
-
 from utils.credentials import load_rabbitmq_credentials
 from utils.fetch_community_id import fetch_community_id_by_guild_id
 from worker.tasks import ask_question_auto_search
