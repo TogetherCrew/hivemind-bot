@@ -7,7 +7,9 @@ load_dotenv()
 
 
 def init_tracing():
-    logging.info("Initializing traceloop...")
     otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
-    Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
+    if not otel_endpoint:
+        logging.error("TRACELOOP_BASE_URL is not set.")
+        return
+    Traceloop.init(app_name="hivemind-worker", api_endpoint=otel_endpoint)
     logging.info("Traceloop initialized.")
