@@ -5,11 +5,6 @@ from typing import Any
 
 from celery.signals import (
     task_postrun,
-    worker_init,
-    celeryd_init,
-    worker_process_init,
-    worker_ready,
-    celeryd_after_setup,
     task_prerun,
 )
 from tc_messageBroker.rabbit_mq.event import Event
@@ -130,51 +125,13 @@ def ask_question_auto_search(
         logging.info("FINISHED JOB WITH EXCEPTION")
 
 
-# @celeryd_init.connect
-# def celeryd_init_handler(sender=None, **kwargs):
-#     logging.info("celeryd_init_handler start.")
-#     init_tracing()
-#     logging.info("celeryd_init_handler end.")
-
-
-# @celeryd_after_setup.connect
-# def celeryd_after_setup_handler(sender=None, **kwargs):
-#     logging.info("celeryd_after_setup_handler start.")
-#     init_tracing()
-#     logging.info("celeryd_after_setup_handler end.")
-
-
-# @worker_init.connect
-# def worker_init_handler(sender=None, **kwargs):
-#     logging.info("worker_init_handler start.")
-#     init_tracing()
-#     logging.info("worker_init_handler end.")
-
-
-# @worker_process_init.connect
-# def worker_process_init_handler(sender=None, **kwargs):
-#     logging.info("worker_process_init_handler start.")
-#     init_tracing()
-#     logging.info("worker_process_init_handler end.")
-
-
-# @worker_ready.connect
-# def worker_ready_handler(sender=None, **kwargs):
-#     logging.info("worker_ready_handler start.")
-#     init_tracing()
-#     logging.info("worker_ready_handler end.")
-
-
 @task_prerun.connect
 def task_prerun_handler(sender=None, **kwargs):
-    logging.info("task_prerun_handler start.")
+    # Initialize Traceloop for LLM
     init_tracing()
-    logging.info("task_prerun_handler end.")
 
 
 @task_postrun.connect
 def task_postrun_handler(sender=None, **kwargs):
-    logging.info("task_postrun_handler start.")
     # Trigger garbage collection after each task
     gc.collect()
-    logging.info("task_postrun_handler end.")
