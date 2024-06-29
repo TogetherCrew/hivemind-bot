@@ -1,13 +1,9 @@
 import gc
 import json
 import logging
-import os
 from typing import Any
 
-from celery.signals import task_postrun
-from celery_app.server import app
-from celery_app.utils.fire_event import job_send
-from dotenv import load_dotenv
+from celery.signals import task_postrun, task_prerun
 from subquery import query_multiple_source
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.payload.discord_bot.base_types.interaction_callback_data import (
@@ -18,8 +14,10 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
 )
 from tc_messageBroker.rabbit_mq.payload.payload import Payload
 from tc_messageBroker.rabbit_mq.queue import Queue
-from traceloop.sdk import Traceloop
 from utils.data_source_selector import DataSourceSelector
+from utils.traceloop import init_tracing
+from worker.celery import app
+from worker.utils.fire_event import job_send
 
 
 @app.task
@@ -46,9 +44,6 @@ def ask_question_auto_search(
         - `date`
         - `content`: which is the `ChatInputCommandInteraction` as a dictionary
     """
-    load_dotenv()
-    otel_endpoint = os.getenv("TRACELOOP_BASE_URL")
-    Traceloop.init(app_name="hivemind-server", api_endpoint=otel_endpoint)
 
     prefix = f"COMMUNITY_ID: {community_id} | "
     logging.info(f"{prefix}Processing question!")
@@ -122,6 +117,12 @@ def ask_question_auto_search(
             queue_name=Queue.DISCORD_BOT,
             content=response_payload,
         )
+
+
+@task_prerun.connect
+def task_prerun_handler(sender=None, **kwargs):
+    # Initialize Traceloop for LLM
+    init_tracing()
 
 
 @task_postrun.connect
