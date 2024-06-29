@@ -104,7 +104,6 @@ def ask_question_auto_search(
             queue_name=Queue.DISCORD_BOT,
             content=response_payload,
         )
-        logging.info("FINISHED JOB")
     except Exception as exp:
         logging.error(f"Exception {exp} | during processing the question {question}")
         response_payload = Payload.DISCORD_BOT.INTERACTION_RESPONSE.Edit(
@@ -118,7 +117,6 @@ def ask_question_auto_search(
             queue_name=Queue.DISCORD_BOT,
             content=response_payload,
         )
-        logging.info("FINISHED JOB WITH EXCEPTION")
 
 
 @task_prerun.connect
