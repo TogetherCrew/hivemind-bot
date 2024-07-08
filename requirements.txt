@@ -15,7 +15,7 @@ neo4j>=5.14.1, <6.0.0
 coverage>=7.3.3, <8.0.0
 pytest>=7.4.3, <8.0.0
 python-dotenv==1.0.0
-tc-hivemind-backend==1.2.0
+tc-hivemind-backend==1.2.2
 llama-index-question-gen-guidance==0.1.2
 llama-index-vector-stores-postgres==0.1.2
 celery>=5.3.6, <6.0.0
