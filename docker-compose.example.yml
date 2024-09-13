@@ -42,6 +42,8 @@ services:
       timeout: 30s
       retries: 2
       start_period: 40s
+    ports:
+      - 5672:5672
   redis:
     image: bitnami/redis
     environment:

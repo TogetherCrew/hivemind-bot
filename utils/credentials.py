@@ -42,15 +42,22 @@ def load_rabbitmq_credentials() -> dict[str, str]:
             `password` : str
             `host` : str
             `port` : int
+            `url` : str
     """
     load_dotenv()
 
     rabbitmq_creds = {}
 
-    rabbitmq_creds["user"] = os.getenv("RABBIT_USER", "")
-    rabbitmq_creds["password"] = os.getenv("RABBIT_PASSWORD", "")
-    rabbitmq_creds["host"] = os.getenv("RABBIT_HOST", "")
-    rabbitmq_creds["port"] = os.getenv("RABBIT_PORT", "")
+    user = os.getenv("RABBIT_USER", "")
+    password = os.getenv("RABBIT_PASSWORD", "")
+    host = os.getenv("RABBIT_HOST", "")
+    port = os.getenv("RABBIT_PORT", "")
+
+    rabbitmq_creds["user"] = user
+    rabbitmq_creds["password"] = password
+    rabbitmq_creds["host"] = host
+    rabbitmq_creds["port"] = port
+    rabbitmq_creds["url"] = f"amqp://{user}:{password}@{host}:{port}"
 
     return rabbitmq_creds
 
