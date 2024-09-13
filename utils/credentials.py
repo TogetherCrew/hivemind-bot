@@ -79,3 +79,35 @@ def load_mongo_credentials() -> dict[str, str]:
     mongo_creds["port"] = os.getenv("MONGODB_PORT", "")
 
     return mongo_creds
+
+def load_redis_credentials() -> dict[str, str]:
+    """
+    load redis db credentials from .env
+
+    Returns:
+    ---------
+    redis_creds : dict[str, Any]
+        redis credentials
+        a dictionary representative of
+            `user`: str
+            `password` : str
+            `host` : str
+            `port` : int
+            `url` : str
+    """
+    load_dotenv()
+    
+    redis_creds = {}
+
+    user = os.getenv("REDIS_USER", "")
+    password = os.getenv("REDIS_PASSWORD", "")
+    host = os.getenv("REDIS_HOST", "")
+    port = os.getenv("REDIS_PORT", "")
+
+    redis_creds["user"] = user
+    redis_creds["password"] = password
+    redis_creds["host"] = host
+    redis_creds["port"] = port
+    redis_creds["url"] = f"redis://{user}:{password}@{host}:{port}"
+
+    return redis_creds
