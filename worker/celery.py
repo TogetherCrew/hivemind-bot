@@ -13,7 +13,7 @@ redis_creds = load_redis_credentials()
 app = Celery(
     "tasks",
     broker=f"pyamqp://{user}:{password}@{host}:{port}//",
-    backend=redis_creds['url'],
+    backend=redis_creds["url"],
     include=["worker.tasks"],
 )
 

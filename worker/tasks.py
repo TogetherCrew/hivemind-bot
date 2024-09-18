@@ -21,13 +21,14 @@ from worker.utils.fire_event import job_send
 
 
 @app.task
-def ask_question_auto_search(
+def ask_question_auto_search_discord_interaction(
     question: str,
     community_id: str,
     bot_given_info: dict[str, Any],
 ) -> None:
     """
     this task is for the case that the user asks a question
+    and use the discord interaction schema
     it would first retrieve the search metadata from summaries
     then perform a query on the filetred raw data to find answer
 
@@ -69,13 +70,7 @@ def ask_question_auto_search(
         # )
         logging.info(f"{prefix}Querying the data sources!")
         # for now we have just the discord platform
-        selector = DataSourceSelector()
-        data_sources = selector.select_data_source(community_id)
-        response, _ = query_multiple_source(
-            query=question,
-            community_id=community_id,
-            **data_sources,
-        )
+        response = query_data_sources(community_id=community_id, query=question)
 
         # source_nodes_dict: list[dict[str, Any]] = []
         # for node in source_nodes:
@@ -119,6 +114,15 @@ def ask_question_auto_search(
         )
 
 
+@app.task
+def ask_question_auto_search(
+    community_id: str,
+    query: str,
+) -> str:
+    response = query_data_sources(community_id=community_id, query=query)
+    return response
+
+
 @task_prerun.connect
 def task_prerun_handler(sender=None, **kwargs):
     # Initialize Traceloop for LLM
@@ -129,3 +133,35 @@ def task_prerun_handler(sender=None, **kwargs):
 def task_postrun_handler(sender=None, **kwargs):
     # Trigger garbage collection after each task
     gc.collect()
+
+
+def query_data_sources(
+    community_id: str,
+    query: str,
+) -> str:
+    """
+    ask questions with auto select platforms
+
+    Parameters
+    -------------
+    community_id : str
+        the community id data to use for answering
+    query : str
+        the user query to ask llm
+
+    Returns
+    ---------
+    response : str
+        the LLM's response
+    """
+    logging.info(f"COMMUNITY_ID: {community_id} Finding data sources to query to!")
+    selector = DataSourceSelector()
+    data_sources = selector.select_data_source(community_id)
+    logging.info(f"Quering data sources: {data_sources}!")
+    response, _ = query_multiple_source(
+        query=query,
+        community_id=community_id,
+        **data_sources,
+    )
+
+    return response

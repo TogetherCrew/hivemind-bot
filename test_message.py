@@ -14,9 +14,7 @@ async def main() -> None:
 
         channel = await connection.channel()
 
-        payload = {
-            "m": { "hello": "world!" }
-        }
+        payload = {"question": "what is AI?", "community_id": "9999999999999"}
 
         body = json.dumps(payload).encode("utf-8")
 

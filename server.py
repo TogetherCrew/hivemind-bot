@@ -12,7 +12,7 @@ from tc_messageBroker.rabbit_mq.payload.discord_bot.chat_input_interaction impor
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
 from utils.fetch_community_id import fetch_community_id_by_guild_id
-from worker.tasks import ask_question_auto_search
+from worker.tasks import ask_question_auto_search_discord_interaction
 
 
 def query_llm(recieved_data: dict[str, Any]):
@@ -32,7 +32,7 @@ def query_llm(recieved_data: dict[str, Any]):
 
     community_id = fetch_community_id_by_guild_id(guild_id=recieved_input.guild_id)
     logging.info(f"COMMUNITY_ID: {community_id} | Sending job to Celery!")
-    ask_question_auto_search.delay(
+    ask_question_auto_search_discord_interaction.delay(
         question=user_input,
         community_id=community_id,
         bot_given_info=recieved_data,

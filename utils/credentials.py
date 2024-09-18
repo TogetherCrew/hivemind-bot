@@ -87,6 +87,7 @@ def load_mongo_credentials() -> dict[str, str]:
 
     return mongo_creds
 
+
 def load_redis_credentials() -> dict[str, str]:
     """
     load redis db credentials from .env
@@ -103,7 +104,7 @@ def load_redis_credentials() -> dict[str, str]:
             `url` : str
     """
     load_dotenv()
-    
+
     redis_creds = {}
 
     user = os.getenv("REDIS_USER", "")
