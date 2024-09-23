@@ -1,8 +1,7 @@
-from worker.tasks import ask_question_auto_search
 from celery.result import AsyncResult
-from pydantic import BaseModel
 from fastapi import APIRouter
-from typing import Any
+from pydantic import BaseModel
+from worker.tasks import ask_question_auto_search
 
 
 class Payload(BaseModel):

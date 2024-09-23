@@ -1,6 +1,5 @@
 from celery import Celery
-from utils.credentials import load_rabbitmq_credentials
-from utils.credentials import load_redis_credentials
+from utils.credentials import load_rabbitmq_credentials, load_redis_credentials
 
 rabbit_creds = load_rabbitmq_credentials()
 user = rabbit_creds["user"]

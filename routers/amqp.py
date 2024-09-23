@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from pydantic import BaseModel
-from faststream.rabbit.fastapi import RabbitRouter, Logger  # type: ignore
+from faststream.rabbit.fastapi import Logger, RabbitRouter  # type: ignore
 from faststream.rabbit.schemas.queue import RabbitQueue
-from utils.credentials import load_rabbitmq_credentials
-from tc_messageBroker.rabbit_mq.queue import Queue
+from pydantic import BaseModel
 from tc_messageBroker.rabbit_mq.event import Event
+from tc_messageBroker.rabbit_mq.queue import Queue
+from utils.credentials import load_rabbitmq_credentials
 from worker.tasks import query_data_sources
 
 rabbitmq_creds = load_rabbitmq_credentials()
