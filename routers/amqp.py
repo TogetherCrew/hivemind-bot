@@ -28,21 +28,24 @@ class Payload(BaseModel):
 @router.publisher(queue=RabbitQueue(Queue.DISCORD_BOT, durable=True))
 async def ask(payload: Payload, logger: Logger):
     if payload.event == Event.HIVEMIND.INTERACTION_CREATED:
-        question = payload.content.question
-        community_id = payload.content.community_id
+        try:
+            question = payload.content.question
+            community_id = payload.content.community_id
 
-        logger.info(f"COMMUNITY_ID: {community_id} Received job")
-        response = query_data_sources(community_id=community_id, query=question)
-        logger.info(f"COMMUNITY_ID: {community_id} Job finished")
+            logger.info(f"COMMUNITY_ID: {community_id} Received job")
+            response = query_data_sources(community_id=community_id, query=question)
+            logger.info(f"COMMUNITY_ID: {community_id} Job finished")
 
-        response_payload = Payload(
-            event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
-            date=str(datetime.now()),
-            content={"response": response},
-        )
+            response_payload = Payload(
+                event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
+                date=str(datetime.now()),
+                content={"response": response},
+            )
+            return response_payload
+        except Exception as e:
+            logger.error(f"Errors While processing job! {e}")
     else:
-        raise NotImplementedError(
+        logger.error(
             f"No more event available for {Queue.HIVEMIND} queue! "
             f"Received event: `{payload.event}`"
         )
-    return response_payload
