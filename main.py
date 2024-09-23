@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from routers.http import router as httpRouter
 from routers.amqp import router as amqpRouter
+from routers.http import router as httpRouter
 
 app = FastAPI()
 
