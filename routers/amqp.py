@@ -3,6 +3,7 @@ from datetime import datetime
 from faststream.rabbit.fastapi import Logger, RabbitRouter  # type: ignore
 from faststream.rabbit.schemas.queue import RabbitQueue
 from pydantic import BaseModel
+from schema import PayloadModel, InputModel, OutputModel
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
@@ -13,15 +14,10 @@ rabbitmq_creds = load_rabbitmq_credentials()
 router = RabbitRouter(rabbitmq_creds["url"])
 
 
-class Content(BaseModel):
-    question: str
-    community_id: str
-
-
 class Payload(BaseModel):
     event: str
     date: datetime | str
-    content: Content | dict
+    content: PayloadModel
 
 
 @router.subscriber(queue=RabbitQueue(name=Queue.HIVEMIND, durable=True))
@@ -29,19 +25,25 @@ class Payload(BaseModel):
 async def ask(payload: Payload, logger: Logger):
     if payload.event == Event.HIVEMIND.INTERACTION_CREATED:
         try:
-            question = payload.content.question
-            community_id = payload.content.community_id
+            question = payload.content.input.message
+            community_id = payload.content.input.community_id
 
             logger.info(f"COMMUNITY_ID: {community_id} Received job")
             response = query_data_sources(community_id=community_id, query=question)
             logger.info(f"COMMUNITY_ID: {community_id} Job finished")
 
-            response_payload = Payload(
-                event=Event.DISCORD_BOT.INTERACTION_RESPONSE.EDIT,
-                date=str(datetime.now()),
-                content={"response": response},
+            response_payload = PayloadModel(
+                input=InputModel(message=response, community_id=community_id),
+                output=OutputModel(destination=payload.content.output.destination),
+                metadata=payload.content.metadata,
+                session_id=payload.content.session_id,
             )
-            return response_payload
+            result = Payload(
+                event=payload.content.output.destination,
+                date=str(datetime.now()),
+                content=response_payload.model_dump(),
+            )
+            return result
         except Exception as e:
             logger.error(f"Errors While processing job! {e}")
     else:
