@@ -1,24 +1,28 @@
 from pydantic import BaseModel
 
 
-class InputModel(BaseModel):
-    message: str | None = None
-    community_id: str | None = None
+class DestinationModel(BaseModel):
+    queue: str
+    event: str
 
 
-class OutputModel(BaseModel):
-    destination: str | None = None
+class RouteModel(BaseModel):
+    source: str
+    destination: DestinationModel | None
 
 
-class FiltersModel(BaseModel):
-    username: list[str] | None = None
-    resource: str | None = None
-    dataSourceA: dict[str, list[str] | None] | None = None
+class QuestionModel(BaseModel):
+    message: str
+    filters: dict | None
+
+
+class ResponseModel(BaseModel):
+    message: str
 
 
 class PayloadModel(BaseModel):
-    input: InputModel
-    output: OutputModel
-    metadata: dict
-    session_id: str | None = None
-    filters: FiltersModel | None = None
+    communityId: str
+    route: RouteModel
+    question: QuestionModel
+    response: ResponseModel
+    metadata: dict | None

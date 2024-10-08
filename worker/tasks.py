@@ -120,7 +120,11 @@ def ask_question_auto_search(
     query: str,
 ) -> str:
     response = query_data_sources(community_id=community_id, query=query)
-    return response
+    return {
+        "community_id": community_id,
+        "question": query,
+        "response": response,
+    }
 
 
 @task_prerun.connect

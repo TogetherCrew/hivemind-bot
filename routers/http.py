@@ -5,7 +5,8 @@ from worker.tasks import ask_question_auto_search
 
 
 class Payload(BaseModel):
-    query: str
+    question: str
+    response: str | None = None
     community_id: str
     # bot_given_info: dict[str, Any]
 
@@ -15,7 +16,12 @@ router = APIRouter()
 
 @router.post("/ask")
 async def ask(payload: Payload):
-    task = ask_question_auto_search.delay(**payload.model_dump())
+    query = payload.question
+    community_id = payload.community_id
+    task = ask_question_auto_search.delay(
+        community_id=community_id,
+        query=query,
+    )
     return {"id": task.id}
 
 
