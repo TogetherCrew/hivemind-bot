@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import Logger, RabbitRouter  # type: ignore
+from faststream.rabbit import RabbitBroker
 from faststream.rabbit.schemas.queue import RabbitQueue
 from pydantic import BaseModel
 from schema import AMQPPayload, ResponseModel
@@ -54,7 +54,7 @@ async def ask(payload: Payload, logger: Logger):
                     message=result, queue=payload.content.route.destination.queue
                 )
         except Exception as e:
-            logger.error(f"Errors While processing job! {e}")
+            logger.exception(f"Errors While processing job! {e}")
     else:
         logger.error(
             f"No such `{payload.event}` event available for {Queue.HIVEMIND} queue!"
