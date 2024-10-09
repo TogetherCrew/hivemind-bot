@@ -14,6 +14,7 @@ from worker.tasks import query_data_sources
 rabbitmq_creds = load_rabbitmq_credentials()
 
 router = RabbitRouter(rabbitmq_creds["url"])
+broker = RabbitBroker(url=rabbitmq_creds["url"])
 
 
 class Payload(BaseModel):
@@ -49,10 +50,9 @@ async def ask(payload: Payload, logger: Logger):
                 date=str(datetime.now()),
                 content=response_payload.model_dump(),
             )
-            async with RabbitBroker(url=rabbitmq_creds["url"]) as broker:
-                await broker.publish(
-                    message=result, queue=payload.content.route.destination.queue
-                )
+            await broker.publish(
+                message=result, queue=payload.content.route.destination.queue
+            )
         except Exception as e:
             logger.exception(f"Errors While processing job! {e}")
     else:
