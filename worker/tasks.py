@@ -118,7 +118,7 @@ def ask_question_auto_search_discord_interaction(
 def ask_question_auto_search(
     community_id: str,
     query: str,
-) -> str:
+) -> dict[str, str]:
     response = query_data_sources(community_id=community_id, query=query)
     return {
         "community_id": community_id,
