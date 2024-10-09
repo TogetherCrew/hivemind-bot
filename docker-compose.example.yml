@@ -1,13 +1,50 @@
 ---
 
 services:
-  server:
+  api:
     build:
       context: .
       target: prod
-    command: python3 server.py
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - 8000:8000
+    environment:
+      - RABBIT_USER=root
+      - RABBIT_PASSWORD=pass
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - REDIS_PASSWORD=pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./:/project/
   worker:
     build:
       context: .
       target: prod
       dockerfile: Dockerfile
+    environment:
+      - RABBIT_USER=root
+      - RABBIT_PASSWORD=pass
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - REDIS_PASSWORD=pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+  rabbitmq:
+    image: "rabbitmq:3-management-alpine"
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=pass
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 2
+      start_period: 40s
+    ports:
+      - 5672:5672
+  redis:
+    image: bitnami/redis
+    environment:
+      - REDIS_PASSWORD=pass
