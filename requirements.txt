@@ -27,3 +27,4 @@ backoff==2.2.1
 fastapi[standard]==0.114.1
 faststream==0.5.23
 aio_pika==9.4.0
+mongomock==4.2.0.post1
