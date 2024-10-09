@@ -13,16 +13,23 @@ class RouteModel(BaseModel):
 
 class QuestionModel(BaseModel):
     message: str
-    filters: dict | None
+    filters: dict | None = None
 
 
 class ResponseModel(BaseModel):
     message: str
 
 
-class PayloadModel(BaseModel):
+class AMQPPayload(BaseModel):
     communityId: str
     route: RouteModel
     question: QuestionModel
     response: ResponseModel
     metadata: dict | None
+
+
+class HTTPPayload(BaseModel):
+    communityId: str
+    question: QuestionModel
+    response: ResponseModel | None = None
+    taskId: str
