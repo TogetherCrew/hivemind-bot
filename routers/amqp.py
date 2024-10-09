@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from faststream.rabbit.fastapi import Logger, RabbitRouter  # type: ignore
 from faststream.rabbit import RabbitBroker
+from faststream.rabbit.fastapi import Logger, RabbitRouter  # type: ignore
 from faststream.rabbit.schemas.queue import RabbitQueue
 from pydantic import BaseModel
 from schema import AMQPPayload, ResponseModel

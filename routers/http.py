@@ -1,7 +1,7 @@
 from celery.result import AsyncResult
 from fastapi import APIRouter
 from pydantic import BaseModel
-from schema import QuestionModel, HTTPPayload, ResponseModel
+from schema import HTTPPayload, QuestionModel, ResponseModel
 from utils.persist_payload import PersistPayload
 from worker.tasks import ask_question_auto_search
 

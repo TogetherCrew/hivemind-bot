@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
-import mongomock
 
-from schema import AMQPPayload, QuestionModel, ResponseModel, HTTPPayload
+import mongomock
+from schema import AMQPPayload, HTTPPayload, QuestionModel, ResponseModel
 from utils.persist_payload import PersistPayload
 
 

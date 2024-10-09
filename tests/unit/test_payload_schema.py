@@ -1,6 +1,6 @@
 from unittest import TestCase
-from pydantic import ValidationError
 
+from pydantic import ValidationError
 from schema.payload import AMQPPayload
 
 

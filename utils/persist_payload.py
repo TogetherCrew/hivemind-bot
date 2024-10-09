@@ -1,7 +1,7 @@
 import logging
 
-from utils.mongo import MongoSingleton
 from schema import AMQPPayload, HTTPPayload
+from utils.mongo import MongoSingleton
 
 
 class PersistPayload:
