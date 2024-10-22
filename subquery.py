@@ -14,6 +14,7 @@ from utils.query_engine import (
     GitHubQueryEngine,
     MediaWikiQueryEngine,
     NotionQueryEngine,
+    TelegramQueryEngine,
     prepare_discord_engine_auto_filter,
 )
 
@@ -133,7 +134,21 @@ def query_multiple_source(
             )
         )
     if telegram and check_collection("telegram"):
-        raise NotImplementedError
+        telegram_query_engine = TelegramQueryEngine(community_id=community_id).prepare()
+        tool_metadata = ToolMetadata(
+            name="Telegram",
+            description=(
+                "Contains messages, conversations, and media from the Telegram platform,"
+                " used for group discussions within the community."
+            ),
+        )
+        query_engine_tools.append(
+            QueryEngineTool(
+                query_engine=telegram_query_engine,
+                metadata=tool_metadata,
+            )
+        )
+
     if github and check_collection("github"):
         github_query_engine = GitHubQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
