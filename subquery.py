@@ -14,6 +14,7 @@ from utils.query_engine import (
     GitHubQueryEngine,
     MediaWikiQueryEngine,
     NotionQueryEngine,
+    TelegramQueryEngine,
     prepare_discord_engine_auto_filter,
 )
 
@@ -133,7 +134,7 @@ def query_multiple_source(
             )
         )
     if telegram and check_collection("telegram"):
-        telegram_query_engine = GitHubQueryEngine(community_id=community_id).prepare()
+        telegram_query_engine = TelegramQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="Telegram",
             description=(
