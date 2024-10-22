@@ -24,7 +24,7 @@ class AMQPPayload(BaseModel):
     communityId: str
     route: RouteModel
     question: QuestionModel
-    response: ResponseModel
+    response: ResponseModel | None = None
     metadata: dict | None
 
 
