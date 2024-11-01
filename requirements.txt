@@ -24,6 +24,6 @@ tc-messageBroker==1.7.1
 traceloop-sdk==0.14.1
 backoff==2.2.1
 fastapi[standard]==0.114.1
-faststream==0.5.23
+faststream==0.5.28
 aio_pika==9.4.0
 mongomock==4.2.0.post1
