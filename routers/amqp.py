@@ -25,7 +25,7 @@ class Payload(BaseModel):
 
 @router.subscriber(queue=RabbitQueue(name=Queue.HIVEMIND, durable=True))
 async def ask(payload: Payload, logger: Logger):
-    if payload.event == Event.HIVEMIND.INTERACTION_CREATED:
+    if payload.event == Event.HIVEMIND.QUESTION_RECEIVED:
         try:
             question = payload.content.question.message
             community_id = payload.content.communityId
