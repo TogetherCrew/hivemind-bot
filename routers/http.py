@@ -37,16 +37,20 @@ async def ask(payload: RequestPayload):
 @router.get("/status")
 async def status(task_id: str):
     task = AsyncResult(task_id)
+    if task.status == "SUCCESS":
+        # persisting the data updates in db
+        persister = PersistPayload()
 
-    # persisting the data updates in db
-    persister = PersistPayload()
+        http_payload = HTTPPayload(
+            communityId=task.result["community_id"],
+            question=QuestionModel(message=task.result["question"]),
+            response=ResponseModel(message=task.result["response"]),
+            taskId=task.id,
+        )
+        persister.persist_http(http_payload, update=True)
 
-    http_payload = HTTPPayload(
-        communityId=task.result["community_id"],
-        question=QuestionModel(message=task.result["question"]),
-        response=ResponseModel(message=task.result["response"]),
-        taskId=task.id,
-    )
-    persister.persist_http(http_payload, update=True)
+        results = {"id": task.id, "status": task.status, "result": task.result}
+    else:
+        results = {"id": task.id, "status": task.status}
 
-    return {"id": task.id, "status": task.status, "result": task.result}
+    return results

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from schema import AMQPPayload, HTTPPayload
 from utils.mongo import MongoSingleton
@@ -24,7 +25,11 @@ class PersistPayload:
         community_id = payload.communityId
         try:
             self.client[self.db][self.internal_msgs_collection].insert_one(
-                payload.model_dump()
+                {
+                    **payload.model_dump(),
+                    "createdAt": datetime.now(),
+                    "updatedAt": datetime.now(),
+                }
             )
             logging.info(
                 f"Payload for community id: {community_id} persisted successfully!"
@@ -60,7 +65,12 @@ class PersistPayload:
             else:
                 self.client[self.db][self.external_msgs_collection].update_one(
                     {"taskId": payload.taskId},
-                    {"$set": {"response": payload.response.model_dump()}},
+                    {
+                        "$set": {
+                            "response": payload.response.model_dump(),
+                            "updatedAt": datetime.now(),
+                        }
+                    },
                     upsert=True,
                 )
                 logging.info(
