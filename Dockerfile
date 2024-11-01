@@ -8,5 +8,8 @@ FROM base AS test
 RUN chmod +x docker-entrypoint.sh
 CMD ["./docker-entrypoint.sh"]
 
+FROM base AS dev-server
+CMD ["fastapi", "run", "dev", "--port", "3000"]
+
 FROM base AS prod
 CMD ["celery", "-A", "worker", "worker", "-l", "INFO"]
