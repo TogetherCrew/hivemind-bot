@@ -56,7 +56,11 @@ class PersistPayload:
         try:
             if not update:
                 self.client[self.db][self.external_msgs_collection].insert_one(
-                    payload.model_dump()
+                    {
+                        **payload.model_dump(),
+                        "createdAt": datetime.now().replace(tzinfo=timezone.utc),
+                        "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
+                    }
                 )
                 logging.info(
                     "Added HTTP Payload for community id: "
