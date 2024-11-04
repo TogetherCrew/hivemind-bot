@@ -69,7 +69,10 @@ class PersistPayload:
                         "$set": {
                             "response": payload.response.model_dump(),
                             "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
-                        }
+                        },
+                        "$setOnInsert": {
+                            "createdAt": datetime.now().replace(tzinfo=timezone.utc),
+                        },
                     },
                     upsert=True,
                 )
