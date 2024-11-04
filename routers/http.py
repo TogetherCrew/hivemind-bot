@@ -1,3 +1,5 @@
+import logging
+
 from celery.result import AsyncResult
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -38,8 +40,6 @@ async def ask(payload: RequestPayload):
 async def status(task_id: str):
     task = AsyncResult(task_id)
     if task.status == "SUCCESS":
-        # persisting the data updates in db
-        persister = PersistPayload()
 
         http_payload = HTTPPayload(
             communityId=task.result["community_id"],
@@ -47,7 +47,13 @@ async def status(task_id: str):
             response=ResponseModel(message=task.result["response"]),
             taskId=task.id,
         )
-        persister.persist_http(http_payload, update=True)
+
+        # persisting the data updates in db
+        try:
+            persister = PersistPayload()
+            persister.persist_http(http_payload, update=True)
+        except Exception as e:
+            logging.error(f"Failed to persist task result: {e}")
 
         results = {"id": task.id, "status": task.status, "result": task.result}
     else:

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from schema import AMQPPayload, HTTPPayload
 from utils.mongo import MongoSingleton
@@ -27,8 +27,8 @@ class PersistPayload:
             self.client[self.db][self.internal_msgs_collection].insert_one(
                 {
                     **payload.model_dump(),
-                    "createdAt": datetime.now(),
-                    "updatedAt": datetime.now(),
+                    "createdAt": datetime.now().replace(tzinfo=timezone.utc),
+                    "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
                 }
             )
             logging.info(
@@ -68,7 +68,7 @@ class PersistPayload:
                     {
                         "$set": {
                             "response": payload.response.model_dump(),
-                            "updatedAt": datetime.now(),
+                            "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
                         }
                     },
                     upsert=True,
