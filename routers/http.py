@@ -40,7 +40,6 @@ async def ask(payload: RequestPayload):
 async def status(task_id: str):
     task = AsyncResult(task_id)
     if task.status == "SUCCESS":
-
         http_payload = HTTPPayload(
             communityId=task.result["community_id"],
             question=QuestionModel(message=task.result["question"]),
