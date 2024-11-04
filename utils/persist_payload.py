@@ -78,9 +78,7 @@ class PersistPayload:
                     {"taskId": payload.taskId},
                     {
                         "$set": {
-                            "communityId": payload.communityId,
-                            "question": payload.question.model_dump(),
-                            "response": payload.response.model_dump(),
+                            **payload.model_dump(),
                             "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
                         }
                     },
