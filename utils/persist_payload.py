@@ -63,16 +63,24 @@ class PersistPayload:
                     f"{community_id} persisted successfully!"
                 )
             else:
+                # Check if createdAt needs to be set if it doesn't exist
+                self.client[self.db][self.external_msgs_collection].update_one(
+                    {"taskId": payload.taskId, "createdAt": {"$exists": False}},
+                    {
+                        "$set": {
+                            "createdAt": datetime.now().replace(tzinfo=timezone.utc)
+                        }
+                    },
+                )
+
+                # Update or upsert the main document
                 self.client[self.db][self.external_msgs_collection].update_one(
                     {"taskId": payload.taskId},
                     {
                         "$set": {
-                            "response": payload.response.model_dump(),
+                            **payload.model_dump(),
                             "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
-                        },
-                        "$setOnInsert": {
-                            "createdAt": datetime.now().replace(tzinfo=timezone.utc),
-                        },
+                        }
                     },
                     upsert=True,
                 )
