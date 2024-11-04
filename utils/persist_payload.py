@@ -65,15 +65,32 @@ class PersistPayload:
             else:
                 self.client[self.db][self.external_msgs_collection].update_one(
                     {"taskId": payload.taskId},
-                    {
-                        "$set": {
-                            "response": payload.response.model_dump(),
-                            "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
+                    [
+                        {
+                            "$set": {
+                                "response": payload.response.model_dump(),
+                                "updatedAt": {
+                                    "$cond": {
+                                        "if": {"$ifNull": ["$updatedAt", False]},
+                                        "then": "$updatedAt",
+                                        "else": datetime.now().replace(
+                                            tzinfo=timezone.utc
+                                        ),
+                                    }
+                                },
+                            }
                         },
-                        "$setOnInsert": {
-                            "createdAt": datetime.now().replace(tzinfo=timezone.utc),
+                        {
+                            "$set": {
+                                "createdAt": {
+                                    "$ifNull": [
+                                        "$createdAt",
+                                        datetime.now().replace(tzinfo=timezone.utc),
+                                    ]
+                                }
+                            }
                         },
-                    },
+                    ],
                     upsert=True,
                 )
                 logging.info(
