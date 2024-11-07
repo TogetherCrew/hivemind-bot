@@ -10,11 +10,11 @@ from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
 from utils.persist_payload import PersistPayload
 from worker.tasks import query_data_sources
+from worker.utils.fire_event import job_send
 
 rabbitmq_creds = load_rabbitmq_credentials()
 
 router = RabbitRouter(rabbitmq_creds["url"])
-broker = RabbitBroker(url=rabbitmq_creds["url"])
 
 
 class Payload(BaseModel):
@@ -50,8 +50,9 @@ async def ask(payload: Payload, logger: Logger):
                 date=str(datetime.now()),
                 content=response_payload.model_dump(),
             )
-            await broker.publish(
-                message=result, queue=payload.content.route.destination.queue
+            job_send(
+                message=result,
+                queue_name=payload.content.route.destination.queue,
             )
         except Exception as e:
             logger.exception(f"Errors While processing job! {e}")
