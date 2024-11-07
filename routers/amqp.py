@@ -45,14 +45,15 @@ async def ask(payload: Payload, logger: Logger):
             persister = PersistPayload()
             persister.persist_amqp(response_payload)
 
-            result = Payload(
-                event=payload.content.route.destination.event,
-                date=str(datetime.now()),
-                content=response_payload.model_dump(),
-            )
+            # result = Payload(
+            #     event=payload.content.route.destination.event,
+            #     date=str(datetime.now()),
+            #     content=response_payload.model_dump(),
+            # )
             job_send(
-                message=result,
+                event=payload.content.route.destination.event,
                 queue_name=payload.content.route.destination.queue,
+                content=response_payload.model_dump(),
             )
         except Exception as e:
             logger.exception(f"Errors While processing job! {e}")
