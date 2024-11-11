@@ -10,6 +10,7 @@ from llama_index.core.indices.vector_store.retrievers.retriever import (
 )
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
 from schema.type import DataType
+from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 
 
 qa_prompt = PromptTemplate(
@@ -42,26 +43,93 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             )
         else:
             summary_nodes = self.summary_retriever.retrieve(query_str)
+            utils = QdrantEngineUtils(
+                metadata_date_key=self.metadata_date_key,
+                metadata_date_format=self.metadata_date_format,
+                date_margin=self._date_margin,
+            )
             # the filters that will be applied on qdrant
-            should_filters = []
-            for node in summary_nodes:
-                date_value = node.metadata[self.metadata_date_key]
-            # TODO: filter on raw data for extraction
-            # and then prepare the prompt
+            dates = [
+                node.metadata[self.metadata_date_summary_key] for node in summary_nodes
+            ]
+            should_filters = utils.define_raw_data_filters(dates=dates)
+            _, raw_data_top_k, _ = load_hyperparams()
+
+            # retrieve based on summary nodes
+            retriever: BaseRetriever = self._vector_store_index.as_retriever(
+                {"qdrant_filters": should_filters},
+                similarity_top_k=raw_data_top_k,
+            )
+            raw_nodes = retriever.retrieve(query_str)
+
+            context_str = utils.combine_nodes_for_prompt(summary_nodes, raw_nodes)
+
+            response = self.llm.complete(
+                qa_prompt.format(context_str=context_str, query_str=query_str)
+            )
 
         return str(response)
 
     @classmethod
     def setup_engine(
         cls,
-        use_summary: bool,
         llm: OpenAI,
         synthesizer: BaseSynthesizer,
         qa_prompt: PromptTemplate,
         platform_name: str,
         community_id: str,
-        metadata_date_key: str | None = None,
-        metadata_date_format: DataType | None = None,
+    ):
+        """
+        setup the custom query engine on qdrant data
+
+        Parameters
+        ------------
+        llm : OpenAI
+            the llm to be used for RAG pipeline
+        synthesizer : BaseSynthesizer
+            the process of generating response using an LLM
+        qa_prompt : PromptTemplate
+            the prompt template to be filled and passed to an LLM
+        platform_name : str
+            specifying the platform data to identify the data collection
+        community_id : str
+            specifying community_id to identify the data collection
+        """
+        collection_name = f"{community_id}_{platform_name}"
+
+        _, raw_data_top_k, date_margin = load_hyperparams()
+        cls._date_margin = date_margin
+
+        cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
+            collection_name=collection_name
+        )
+        retriever = VectorIndexRetriever(
+            index=cls._vector_store_index,
+            similarity_top_k=raw_data_top_k,
+        )
+
+        cls.summary_retriever = None
+
+        return cls(
+            retriever=retriever,
+            response_synthesizer=synthesizer,
+            llm=llm,
+            qa_prompt=qa_prompt,
+        )
+
+    @classmethod
+    def _prepare_engine_with_summaries(
+        cls,
+        llm: OpenAI,
+        synthesizer: BaseSynthesizer,
+        qa_prompt: PromptTemplate,
+        platform_name: str,
+        community_id: str,
+        metadata_date_key: str,
+        metadata_date_format: DataType,
+        metadata_date_summary_key: str,
+        metadata_date_summary_format: DataType,
+        summary_metadata_to_use: list[str],
     ):
         """
         setup the custom query engine on qdrant data
@@ -81,47 +149,42 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         platform_name : str
             specifying the platform data to identify the data collection
         community_id : str
-            specifying community_id to identify the data collection      
-        metadata_date_key : str | None
+            specifying community_id to identify the data collection
+        metadata_date_summary_key : str | None
             the date key name in summary documents' metadata
             In case of `use_summary` equal to be true this shuold be passed
-        metadata_date_format : DataType | None
+        metadata_date_summary_format : DataType | None
             the date format in metadata
             In case of `use_summary` equal to be true this shuold be passed
+            NOTE: this should be always a string for the filtering of it to work.
         """
-        if use_summary and (metadata_date_key is None or metadata_date_format is None):
-            raise ValueError(
-                "`metadata_date_key` and `metadata_date_format` "
-                "should be given in case if use_summary=True!"
-            )
-
         collection_name = f"{community_id}_{platform_name}"
+        summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
+        cls._date_margin = date_margin
+        cls._raw_data_top_k = raw_data_top_k
 
-        summary_data_top_k, raw_data_top_k, interval_margin = load_hyperparams()
-        cls._interval_margin = interval_margin
-
-        vector_store_index = cls._setup_vector_store_index(
+        cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
         )
         retriever = VectorIndexRetriever(
-            index=vector_store_index,
+            index=cls._vector_store_index,
             similarity_top_k=raw_data_top_k,
         )
 
-        if use_summary:
-            summary_collection_name = collection_name + "_summary"
-            summary_vector_store_index = cls._setup_vector_store_index(
-                collection_name=summary_collection_name
-            )
+        summary_collection_name = collection_name + "_summary"
+        summary_vector_store_index = cls._setup_vector_store_index(
+            collection_name=summary_collection_name
+        )
 
-            cls.summary_retriever = VectorIndexRetriever(
-                index=summary_vector_store_index,
-                similarity_top_k=summary_data_top_k,
-            )
-            cls.metadata_date_key = metadata_date_key
-            cls.metadata_date_format = metadata_date_format
-        else:
-            cls.summary_retriever = None
+        cls.summary_retriever = VectorIndexRetriever(
+            index=summary_vector_store_index,
+            similarity_top_k=summary_data_top_k,
+        )
+        cls.metadata_date_summary_key = metadata_date_summary_key
+        cls.metadata_date_summary_format = metadata_date_summary_format
+        cls.metadata_date_key = metadata_date_key
+        cls.metadata_date_format = metadata_date_format
+        cls.summary_metadata_to_use = summary_metadata_to_use
 
         return cls(
             retriever=retriever,
