@@ -1,11 +1,12 @@
 import logging
 
 from celery.result import AsyncResult
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from schema import HTTPPayload, QuestionModel, ResponseModel
 from utils.persist_payload import PersistPayload
 from worker.tasks import ask_question_auto_search
+from services.api_key import api_key_header
 
 
 class RequestPayload(BaseModel):
@@ -16,7 +17,7 @@ class RequestPayload(BaseModel):
 router = APIRouter()
 
 
-@router.post("/ask")
+@router.post("/ask", dependencies=[Depends(api_key_header)])
 async def ask(payload: RequestPayload):
     query = payload.question.message
     community_id = payload.communityId
@@ -36,7 +37,7 @@ async def ask(payload: RequestPayload):
     return {"id": task.id}
 
 
-@router.get("/status")
+@router.get("/status", dependencies=[Depends(api_key_header)])
 async def status(task_id: str):
     task = AsyncResult(task_id)
     if task.status == "SUCCESS":
