@@ -1,8 +1,6 @@
-from fastapi import Security, HTTPException
+from fastapi import HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
-from typing import List
 from starlette.status import HTTP_401_UNAUTHORIZED
-
 from utils.mongo import MongoSingleton
 
 # List of valid API keys - in production, this should be stored securely
@@ -19,7 +17,7 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
             status_code=HTTP_401_UNAUTHORIZED, detail="No API key provided"
         )
 
-    if api_key_header not in validator(api_key_header):
+    if api_key_header not in validator.validate(api_key_header):
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
     return api_key_header

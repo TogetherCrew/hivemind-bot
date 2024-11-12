@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from utils.mongo import MongoSingleton
 from services.api_key import ValidateAPIKey
+from utils.mongo import MongoSingleton
 
 
 class TestValidateToken(TestCase):

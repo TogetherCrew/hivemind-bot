@@ -4,9 +4,9 @@ from celery.result import AsyncResult
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from schema import HTTPPayload, QuestionModel, ResponseModel
+from services.api_key import api_key_header
 from utils.persist_payload import PersistPayload
 from worker.tasks import ask_question_auto_search
-from services.api_key import api_key_header
 
 
 class RequestPayload(BaseModel):
