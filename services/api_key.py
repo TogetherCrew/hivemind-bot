@@ -10,6 +10,24 @@ api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 
 async def get_api_key(api_key_header: str = Security(api_key_header)):
+    """
+    Dependency function to validate API key
+
+    Parameters
+    -------------
+    api_key_header : str
+        the api key passed to the header
+
+    Raises
+    ------
+    HTTPException
+        If API key is missing or invalid
+
+    Returns
+    -------
+    api_key_header : str
+        The validated API key
+    """
     validator = ValidateAPIKey()
 
     if not api_key_header:
@@ -17,7 +35,8 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
             status_code=HTTP_401_UNAUTHORIZED, detail="No API key provided"
         )
 
-    if not validator.validate(api_key_header):
+    valid = await validator.validate(api_key_header)
+    if not valid:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
     return api_key_header
@@ -29,7 +48,7 @@ class ValidateAPIKey:
         self.db = "hivemind"
         self.tokens_collection = "tokens"
 
-    def validate(self, api_key: str) -> bool:
+    async def validate(self, api_key: str) -> bool:
         """
         check if the api key is available in mongodb or not
 

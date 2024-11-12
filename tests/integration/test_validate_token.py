@@ -1,30 +1,49 @@
-from unittest import TestCase
-
+from unittest import IsolatedAsyncioTestCase
 from services.api_key import ValidateAPIKey
 from utils.mongo import MongoSingleton
 
 
-class TestValidateToken(TestCase):
-    def setUp(self) -> None:
+class TestValidateToken(IsolatedAsyncioTestCase):
+    async def asyncSetUp(self) -> None:
+        """
+        Set up test case with a test database
+        """
         self.client = MongoSingleton.get_instance().get_client()
         self.validator = ValidateAPIKey()
 
-        # changing the db so not to overlap with the right ones
+        # Using test database to avoid affecting production data
         self.validator.db = "hivemind_test"
         self.validator.tokens_collection = "tokens_test"
 
+        # Clean start for each test
+        self.clean_database()
+
+    async def asyncTearDown(self) -> None:
+        """
+        Clean up test database after each test
+        """
+        self.clean_database()
+
+    def clean_database(self) -> None:
+        """
+        Helper method to clean the test database
+        """
         self.client.drop_database(self.validator.db)
 
-    def tearDown(self) -> None:
-        self.client.drop_database(self.validator.db)
-
-    def test_no_token_available(self):
+    async def test_no_token_available(self):
+        """
+        Test validation when no tokens exist in database
+        """
         api_key = "1234"
-        valid = self.validator.validate(api_key)
+        valid = await self.validator.validate(api_key)
 
         self.assertEqual(valid, False)
 
-    def test_no_matching_token_available(self):
+    async def test_no_matching_token_available(self):
+        """
+        Test validation when tokens exist but none match
+        """
+        # Insert test tokens - no await needed as this is synchronous
         self.client[self.validator.db][self.validator.tokens_collection].insert_many(
             [
                 {
@@ -44,13 +63,18 @@ class TestValidateToken(TestCase):
                 },
             ]
         )
+
         api_key = "1234"
-        valid = self.validator.validate(api_key)
+        valid = await self.validator.validate(api_key)
 
         self.assertEqual(valid, False)
 
-    def test_single_token_available(self):
+    async def test_single_token_available(self):
+        """
+        Test validation when matching token exists
+        """
         api_key = "1234"
+
         self.client[self.validator.db][self.validator.tokens_collection].insert_many(
             [
                 {
@@ -70,6 +94,15 @@ class TestValidateToken(TestCase):
                 },
             ]
         )
-        valid = self.validator.validate(api_key)
+
+        valid = await self.validator.validate(api_key)
 
         self.assertEqual(valid, True)
+
+    async def test_validation_with_empty_api_key(self):
+        """
+        Test validation with empty API key
+        """
+        valid = await self.validator.validate("")
+
+        self.assertEqual(valid, False)
