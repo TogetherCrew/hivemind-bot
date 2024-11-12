@@ -8,8 +8,8 @@ from schema import AMQPPayload, ResponseModel
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
-from utils.traceloop import init_tracing
 from utils.persist_payload import PersistPayload
+from utils.traceloop import init_tracing
 from worker.tasks import query_data_sources
 from worker.utils.fire_event import job_send
 
