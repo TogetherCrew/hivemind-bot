@@ -17,7 +17,7 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
             status_code=HTTP_401_UNAUTHORIZED, detail="No API key provided"
         )
 
-    if api_key_header not in validator.validate(api_key_header):
+    if not validator.validate(api_key_header):
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
     return api_key_header
