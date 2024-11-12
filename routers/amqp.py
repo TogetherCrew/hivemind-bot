@@ -9,6 +9,7 @@ from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
 from utils.persist_payload import PersistPayload
+from utils.traceloop import init_tracing
 from worker.tasks import query_data_sources
 from worker.utils.fire_event import job_send
 
@@ -29,7 +30,7 @@ async def ask(payload: Payload, logger: Logger):
         try:
             question = payload.content.question.message
             community_id = payload.content.communityId
-
+            init_tracing()
             logger.info(f"COMMUNITY_ID: {community_id} Received job")
             response = query_data_sources(community_id=community_id, query=question)
             logger.info(f"COMMUNITY_ID: {community_id} Job finished")
@@ -45,11 +46,6 @@ async def ask(payload: Payload, logger: Logger):
             persister = PersistPayload()
             persister.persist_amqp(response_payload)
 
-            # result = Payload(
-            #     event=payload.content.route.destination.event,
-            #     date=str(datetime.now()),
-            #     content=response_payload.model_dump(),
-            # )
             job_send(
                 event=payload.content.route.destination.event,
                 queue_name=payload.content.route.destination.queue,
