@@ -9,7 +9,7 @@ API_KEY_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 
-async def get_api_key(api_key_header: str = Security(api_key_header)):
+async def validate_token(api_key_header: str = Security(api_key_header)) -> str | None:
     """
     Dependency function to validate API key
 
@@ -25,8 +25,9 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
 
     Returns
     -------
-    api_key_header : str
-        The validated API key
+    community : str | None
+        if the key was available in mongo collection, then return community id
+        else, the token is not valid and return None
     """
     validator = ValidateAPIKey()
 
@@ -35,11 +36,11 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
             status_code=HTTP_401_UNAUTHORIZED, detail="No API key provided"
         )
 
-    valid = await validator.validate(api_key_header)
-    if not valid:
+    community = await validator.validate(api_key_header)
+    if not community:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid API key")
 
-    return api_key_header
+    return community
 
 
 class ValidateAPIKey:
@@ -48,7 +49,7 @@ class ValidateAPIKey:
         self.db = "hivemind"
         self.tokens_collection = "tokens"
 
-    async def validate(self, api_key: str) -> bool:
+    async def validate(self, api_key: str) -> str | None:
         """
         check if the api key is available in mongodb or not
 
@@ -59,12 +60,12 @@ class ValidateAPIKey:
 
         Returns
         ---------
-        valid : bool
-            if the key was available in mongo collection, then return True
-            else, the token is not valid and return False
+        community : str | None
+            if the key was available in mongo collection, then return community id
+            else, the token is not valid and return None
         """
         document = self.client[self.db][self.tokens_collection].find_one(
             {"token": api_key}
         )
 
-        return True if document else False
+        return document["community"] if document else None

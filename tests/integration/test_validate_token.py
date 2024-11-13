@@ -36,9 +36,9 @@ class TestValidateToken(IsolatedAsyncioTestCase):
         Test validation when no tokens exist in database
         """
         api_key = "1234"
-        valid = await self.validator.validate(api_key)
+        community = await self.validator.validate(api_key)
 
-        self.assertEqual(valid, False)
+        self.assertIsNone(community)
 
     async def test_no_matching_token_available(self):
         """
@@ -50,25 +50,28 @@ class TestValidateToken(IsolatedAsyncioTestCase):
                 {
                     "id": 1,
                     "token": "1111",
+                    "community": "AAAA",
                     "options": {},
                 },
                 {
                     "id": 2,
                     "token": "2222",
+                    "community": "BBBB",
                     "options": {},
                 },
                 {
                     "id": 3,
                     "token": "3333",
+                    "community": "CCCC",
                     "options": {},
                 },
             ]
         )
 
         api_key = "1234"
-        valid = await self.validator.validate(api_key)
+        community = await self.validator.validate(api_key)
 
-        self.assertEqual(valid, False)
+        self.assertIsNone(community)
 
     async def test_single_token_available(self):
         """
@@ -81,29 +84,33 @@ class TestValidateToken(IsolatedAsyncioTestCase):
                 {
                     "id": 1,
                     "token": api_key,
+                    "community": "AAAA",
                     "options": {},
                 },
                 {
                     "id": 2,
                     "token": "2222",
+                    "community": "BBBB",
                     "options": {},
                 },
                 {
                     "id": 3,
                     "token": "3333",
+                    "community": "CCCC",
                     "options": {},
                 },
             ]
         )
 
-        valid = await self.validator.validate(api_key)
+        community = await self.validator.validate(api_key)
 
-        self.assertEqual(valid, True)
+        self.assertIsNotNone(community)
+        self.assertEqual(community, "AAAA")
 
     async def test_validation_with_empty_api_key(self):
         """
         Test validation with empty API key
         """
-        valid = await self.validator.validate("")
+        community = await self.validator.validate("")
 
-        self.assertEqual(valid, False)
+        self.assertIsNone(community)
