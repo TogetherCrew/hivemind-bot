@@ -1,10 +1,11 @@
 import logging
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from schema import HTTPPayload, QuestionModel, ResponseModel
 from services.api_key import validate_token
+from starlette.status import HTTP_403_FORBIDDEN
 from utils.persist_payload import PersistPayload
 from worker.tasks import ask_question_auto_search
 
@@ -45,6 +46,11 @@ async def status(
 ):
     task = AsyncResult(task_id)
     if task.status == "SUCCESS":
+        if task.result["community_id"] != community_id:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="Task belongs to another community!",
+            )
         http_payload = HTTPPayload(
             communityId=community_id,
             question=QuestionModel(message=task.result["question"]),
