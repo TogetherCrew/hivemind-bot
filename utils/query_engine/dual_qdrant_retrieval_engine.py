@@ -73,7 +73,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         cls,
         llm: OpenAI,
         synthesizer: BaseSynthesizer,
-        qa_prompt: PromptTemplate,
         platform_name: str,
         community_id: str,
     ):
@@ -120,14 +119,12 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         cls,
         llm: OpenAI,
         synthesizer: BaseSynthesizer,
-        qa_prompt: PromptTemplate,
         platform_name: str,
         community_id: str,
         metadata_date_key: str,
         metadata_date_format: DataType,
         metadata_date_summary_key: str,
         metadata_date_summary_format: DataType,
-        summary_metadata_to_use: list[str],
     ):
         """
         setup the custom query engine on qdrant data
@@ -142,8 +139,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             the llm to be used for RAG pipeline
         synthesizer : BaseSynthesizer
             the process of generating response using an LLM
-        qa_prompt : PromptTemplate
-            the prompt template to be filled and passed to an LLM
         platform_name : str
             specifying the platform data to identify the data collection
         community_id : str
@@ -182,7 +177,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         cls.metadata_date_summary_format = metadata_date_summary_format
         cls.metadata_date_key = metadata_date_key
         cls.metadata_date_format = metadata_date_format
-        cls.summary_metadata_to_use = summary_metadata_to_use
 
         return cls(
             retriever=retriever,
