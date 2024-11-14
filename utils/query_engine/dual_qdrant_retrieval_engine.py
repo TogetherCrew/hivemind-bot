@@ -3,7 +3,6 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core import PromptTemplate, VectorStoreIndex
 from llama_index.core.query_engine import CustomQueryEngine
 from llama_index.core.retrievers import BaseRetriever
-from llama_index.core import get_response_synthesizer
 from llama_index.core.response_synthesizers import BaseSynthesizer
 from llama_index.core.indices.vector_store.retrievers.retriever import (
     VectorIndexRetriever,
@@ -38,9 +37,8 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         if self.summary_retriever is None:
             nodes = self.retriever.retrieve(query_str)
             context_str = "\n\n".join([n.node.get_content() for n in nodes])
-            response = self.llm.complete(
-                qa_prompt.format(context_str=context_str, query_str=query_str)
-            )
+            prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
+            response = self.llm.complete(prompt)
         else:
             summary_nodes = self.summary_retriever.retrieve(query_str)
             utils = QdrantEngineUtils(
@@ -52,21 +50,21 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             dates = [
                 node.metadata[self.metadata_date_summary_key] for node in summary_nodes
             ]
-            should_filters = utils.define_raw_data_filters(dates=dates)
+            filter = utils.define_raw_data_filters(dates=dates)
             _, raw_data_top_k, _ = load_hyperparams()
 
             # retrieve based on summary nodes
             retriever: BaseRetriever = self._vector_store_index.as_retriever(
-                {"qdrant_filters": should_filters},
+                vector_store_kwargs={"qdrant_filters": filter},
                 similarity_top_k=raw_data_top_k,
             )
             raw_nodes = retriever.retrieve(query_str)
 
             context_str = utils.combine_nodes_for_prompt(summary_nodes, raw_nodes)
 
-            response = self.llm.complete(
-                qa_prompt.format(context_str=context_str, query_str=query_str)
-            )
+            prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
+
+            response = self.llm.complete(prompt)
 
         return str(response)
 
@@ -118,7 +116,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         )
 
     @classmethod
-    def _prepare_engine_with_summaries(
+    def setup_engine_with_summaries(
         cls,
         llm: OpenAI,
         synthesizer: BaseSynthesizer,
@@ -193,8 +191,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             qa_prompt=qa_prompt,
         )
 
+    @classmethod
     def _setup_vector_store_index(
-        self,
+        cls,
         collection_name: str,
     ) -> VectorStoreIndex:
         """

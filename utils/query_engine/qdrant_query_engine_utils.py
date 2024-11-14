@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 
@@ -17,7 +18,7 @@ class QdrantEngineUtils:
         self.metadata_date_format = metadata_date_format
         self.date_margin = date_margin
 
-    def define_raw_data_filters(self, dates: list[str]) -> list[models.FieldCondition]:
+    def define_raw_data_filters(self, dates: list[str]) -> models.Filter:
         """
         define the filters to be applied on raw data given the dates
 
@@ -29,10 +30,10 @@ class QdrantEngineUtils:
 
         Returns
         ---------
-        should_filters : list[models.FieldCondition]
+        filter : models.Filter
             the filters to be applied on raw data
         """
-        should_filters: set[models.FieldCondition] = set()
+        should_filters: list[models.FieldCondition] = []
         expanded_dates: set[datetime] = set()
 
         # accounting for the date margin
@@ -58,7 +59,7 @@ class QdrantEngineUtils:
                     "raw data metadata `date` shouldn't be anything other than FLOAT or INTEGER"
                 )
 
-            should_filters.add(
+            should_filters.append(
                 models.FieldCondition(
                     key=self.metadata_date_key,
                     range=models.Range(
@@ -68,7 +69,9 @@ class QdrantEngineUtils:
                 )
             )
 
-        return list(should_filters)
+        filter = models.Filter(should=should_filters)
+
+        return filter
 
     def combine_nodes_for_prompt(
         self,
@@ -103,18 +106,24 @@ class QdrantEngineUtils:
                 raw_nodes_by_date[date_str] = []
             raw_nodes_by_date[date_str].append(raw_node)
 
-        # Build the combined prompt
-        combined_sections = []
-
+        # A summary could be separated into multiple nodes
+        # combining them together
+        combined_summaries: dict[str, str] = defaultdict(str)
         for summary_node in summary_nodes:
             date = summary_node.metadata["date"]
             summary_text = summary_node.text
 
             summaries = summary_text.split("\n")
             summary_bullets = set(summaries)
-            summary_bullets.remove("")
+            if "" in summary_bullets:
+                summary_bullets.remove("")
+            combined_summaries[date] += "\n".join(summary_bullets)
 
-            section = f"date: {date}\n\nSummary:\n" + "\n".join(summary_bullets) + "\n"
+        # Build the combined prompt
+        combined_sections = []
+
+        for date, summary_bullets in combined_summaries.items():
+            section = f"Date: {date}\nSummary:\n" + summary_bullets + "\n\n"
 
             if date in raw_nodes_by_date:
                 raw_texts = [node.text for node in raw_nodes_by_date[date]]
@@ -122,4 +131,4 @@ class QdrantEngineUtils:
 
             combined_sections.append(section)
 
-        return "\n\n" + "\n\n".join(combined_sections)
+        return "\n\n".join(combined_sections)
