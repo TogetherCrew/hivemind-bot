@@ -1,6 +1,5 @@
 from guidance.models import OpenAIChat
 from llama_index.core import QueryBundle, Settings
-from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
@@ -14,6 +13,7 @@ from utils.query_engine import (
     GitHubQueryEngine,
     MediaWikiQueryEngine,
     NotionQueryEngine,
+    TelegramDualQueryEngine,
     TelegramQueryEngine,
     prepare_discord_engine_auto_filter,
 )
@@ -71,14 +71,6 @@ def query_multiple_source(
     tools: list[ToolMetadata] = []
     qdrant_utils = QDrantUtils(community_id)
 
-    discord_query_engine: BaseQueryEngine
-    github_query_engine: BaseQueryEngine
-    # discourse_query_engine: BaseQueryEngine
-    google_query_engine: BaseQueryEngine
-    notion_query_engine: BaseQueryEngine
-    mediawiki_query_engine: BaseQueryEngine
-    # telegram_query_engine: BaseQueryEngine
-
     # wrapper for more clarity
     check_collection = qdrant_utils.check_collection_exist
 
@@ -134,7 +126,16 @@ def query_multiple_source(
             )
         )
     if telegram and check_collection("telegram"):
-        telegram_query_engine = TelegramQueryEngine(community_id=community_id).prepare()
+        # checking if the summaries was available
+        if check_collection("telegram_summary"):
+            telegram_query_engine = TelegramDualQueryEngine(
+                community_id=community_id
+            ).prepare()
+        else:
+            telegram_query_engine = TelegramQueryEngine(
+                community_id=community_id
+            ).prepare()
+
         tool_metadata = ToolMetadata(
             name="Telegram",
             description=(
