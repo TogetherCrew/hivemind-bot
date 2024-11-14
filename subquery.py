@@ -1,6 +1,5 @@
 from guidance.models import OpenAIChat
 from llama_index.core import QueryBundle, Settings
-from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.query_engine import SubQuestionQueryEngine
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
@@ -71,14 +70,6 @@ def query_multiple_source(
     query_engine_tools: list[QueryEngineTool] = []
     tools: list[ToolMetadata] = []
     qdrant_utils = QDrantUtils(community_id)
-
-    discord_query_engine: BaseQueryEngine
-    github_query_engine: BaseQueryEngine
-    # discourse_query_engine: BaseQueryEngine
-    google_query_engine: BaseQueryEngine
-    notion_query_engine: BaseQueryEngine
-    mediawiki_query_engine: BaseQueryEngine
-    # telegram_query_engine: BaseQueryEngine
 
     # wrapper for more clarity
     check_collection = qdrant_utils.check_collection_exist

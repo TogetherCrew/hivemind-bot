@@ -1,5 +1,4 @@
-from llama_index.core import Settings
-from llama_index.core import get_response_synthesizer
+from llama_index.core import Settings, get_response_synthesizer
 from llama_index.core.query_engine import BaseQueryEngine
 
 from schema.type import DataType

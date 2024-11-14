@@ -1,5 +1,5 @@
-from llama_index.core import Settings
-from llama_index.core import get_response_synthesizer
+from llama_index.core import Settings, get_response_synthesizer
+from llama_index.core.query_engine import BaseQueryEngine
 
 from .dual_qdrant_retrieval_engine import DualQdrantRetrievalEngine
 
@@ -22,7 +22,7 @@ class BaseQdrantEngine:
         self.platform_name = platform_name
         self.community_id = community_id
 
-    def prepare(self, testing=False):
+    def prepare(self, testing=False) -> BaseQueryEngine:
         engine = DualQdrantRetrievalEngine.setup_engine(
             llm=Settings.llm,
             synthesizer=get_response_synthesizer(),
