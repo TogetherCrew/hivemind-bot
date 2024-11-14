@@ -1,10 +1,10 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
-from dateutil.parser import parse
 
+from dateutil.parser import parse
 from llama_index.core.schema import NodeWithScore
-from schema.type import DataType
 from qdrant_client.http import models
+from schema.type import DataType
 
 
 class QdrantEngineUtils:

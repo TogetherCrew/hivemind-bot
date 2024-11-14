@@ -1,9 +1,8 @@
 from llama_index.core import Settings, get_response_synthesizer
 from llama_index.core.query_engine import BaseQueryEngine
-
 from schema.type import DataType
-from utils.query_engine.base_qdrant_engine import BaseQdrantEngine
 from utils.query_engine import DualQdrantRetrievalEngine
+from utils.query_engine.base_qdrant_engine import BaseQdrantEngine
 
 
 class TelegramQueryEngine(BaseQdrantEngine):

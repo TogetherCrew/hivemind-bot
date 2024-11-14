@@ -1,16 +1,15 @@
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
-from llama_index.llms.openai import OpenAI
 from llama_index.core import PromptTemplate, VectorStoreIndex
-from llama_index.core.query_engine import CustomQueryEngine
-from llama_index.core.retrievers import BaseRetriever
-from llama_index.core.response_synthesizers import BaseSynthesizer
 from llama_index.core.indices.vector_store.retrievers.retriever import (
     VectorIndexRetriever,
 )
-from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
+from llama_index.core.query_engine import CustomQueryEngine
+from llama_index.core.response_synthesizers import BaseSynthesizer
+from llama_index.core.retrievers import BaseRetriever
+from llama_index.llms.openai import OpenAI
 from schema.type import DataType
+from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
 from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
-
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"
@@ -33,7 +32,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     qa_prompt: PromptTemplate
 
     def custom_query(self, query_str: str):
-
         if self.summary_retriever is None:
             nodes = self.retriever.retrieve(query_str)
             context_str = "\n\n".join([n.node.get_content() for n in nodes])
