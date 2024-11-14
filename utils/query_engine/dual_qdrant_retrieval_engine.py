@@ -33,37 +33,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
     def custom_query(self, query_str: str):
         if self.summary_retriever is None:
-            nodes = self.retriever.retrieve(query_str)
-            context_str = "\n\n".join([n.node.get_content() for n in nodes])
-            prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
-            response = self.llm.complete(prompt)
+            response = self._process_basic_query(query_str)
         else:
-            summary_nodes = self.summary_retriever.retrieve(query_str)
-            utils = QdrantEngineUtils(
-                metadata_date_key=self.metadata_date_key,
-                metadata_date_format=self.metadata_date_format,
-                date_margin=self._date_margin,
-            )
-            # the filters that will be applied on qdrant
-            dates = [
-                node.metadata[self.metadata_date_summary_key] for node in summary_nodes
-            ]
-            filter = utils.define_raw_data_filters(dates=dates)
-            _, raw_data_top_k, _ = load_hyperparams()
-
-            # retrieve based on summary nodes
-            retriever: BaseRetriever = self._vector_store_index.as_retriever(
-                vector_store_kwargs={"qdrant_filters": filter},
-                similarity_top_k=raw_data_top_k,
-            )
-            raw_nodes = retriever.retrieve(query_str)
-
-            context_str = utils.combine_nodes_for_prompt(summary_nodes, raw_nodes)
-
-            prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
-
-            response = self.llm.complete(prompt)
-
+            response = self._process_summary_query(query_str)
         return str(response)
 
     @classmethod
@@ -199,3 +171,40 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         qdrant_vector = QDrantVectorAccess(collection_name=collection_name)
         index = qdrant_vector.load_index()
         return index
+
+    def _process_basic_query(self, query_str: str) -> str:
+        nodes = self.retriever.retrieve(query_str)
+        context_str = "\n\n".join([n.node.get_content() for n in nodes])
+        prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
+        response = self.llm.complete(prompt)
+        return response
+
+    def _process_summary_query(self, query_str: str) -> str:
+        summary_nodes = self.summary_retriever.retrieve(query_str)
+        utils = QdrantEngineUtils(
+            metadata_date_key=self.metadata_date_key,
+            metadata_date_format=self.metadata_date_format,
+            date_margin=self._date_margin,
+        )
+
+        dates = [
+            node.metadata[self.metadata_date_summary_key]
+            for node in summary_nodes
+            if self.metadata_date_summary_key in node.metadata
+        ]
+
+        if not dates:
+            return self._process_basic_query(query_str)
+
+        filter = utils.define_raw_data_filters(dates=dates)
+
+        retriever: BaseRetriever = self._vector_store_index.as_retriever(
+            vector_store_kwargs={"qdrant_filters": filter},
+            similarity_top_k=self._raw_data_top_k,
+        )
+        raw_nodes = retriever.retrieve(query_str)
+
+        context_str = utils.combine_nodes_for_prompt(summary_nodes, raw_nodes)
+        prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
+        response = self.llm.complete(prompt)
+        return response

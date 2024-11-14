@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dateutil.parser import parse
 from llama_index.core.schema import NodeWithScore
@@ -48,10 +48,10 @@ class QdrantEngineUtils:
         for day_value in expanded_dates:
             next_day = day_value + timedelta(days=1)
 
-            if self.metadata_date_format is DataType.INTEGER:
+            if self.metadata_date_format == DataType.INTEGER:
                 gte_value = int(day_value.timestamp())
                 lte_value = int(next_day.timestamp())
-            elif self.metadata_date_format is DataType.FLOAT:
+            elif self.metadata_date_format == DataType.FLOAT:
                 gte_value = day_value.timestamp()
                 lte_value = next_day.timestamp()
             else:
@@ -100,7 +100,11 @@ class QdrantEngineUtils:
 
         for raw_node in raw_nodes:
             timestamp = raw_node.metadata[self.metadata_date_key]
-            date_str = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
+            date_str = (
+                datetime.fromtimestamp(timestamp)
+                .replace(tzinfo=timezone.utc)
+                .strftime("%Y-%m-%d")
+            )
 
             if date_str not in raw_nodes_by_date:
                 raw_nodes_by_date[date_str] = []
