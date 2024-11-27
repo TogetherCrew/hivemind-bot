@@ -15,6 +15,7 @@ from utils.query_engine import (
     NotionQueryEngine,
     TelegramDualQueryEngine,
     TelegramQueryEngine,
+    WebsiteQueryEngine,
     prepare_discord_engine_auto_filter,
 )
 
@@ -29,6 +30,7 @@ def query_multiple_source(
     telegram: bool = False,
     github: bool = False,
     mediaWiki: bool = False,
+    website: bool = False,
 ) -> tuple[str, list[NodeWithScore]]:
     """
     query multiple platforms and get an answer from the multiple
@@ -176,6 +178,22 @@ def query_multiple_source(
         query_engine_tools.append(
             QueryEngineTool(
                 query_engine=mediawiki_query_engine,
+                metadata=tool_metadata,
+            )
+        )
+
+    if website and check_collection("website"):
+        website_query_engine = WebsiteQueryEngine(community_id=community_id).prepare()
+        tool_metadata = ToolMetadata(
+            name="Website",
+            description=(
+                "Hosts a diverse collection of crawled data from various "
+                "online sources to facilitate community insights and analysis."
+            ),
+        )
+        query_engine_tools.append(
+            QueryEngineTool(
+                query_engine=website_query_engine,
                 metadata=tool_metadata,
             )
         )
