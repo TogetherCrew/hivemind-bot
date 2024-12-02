@@ -1,7 +1,8 @@
 import unittest
+
 from llama_index.core.query_engine import SubQuestionAnswerPair
-from llama_index.core.schema import TextNode, NodeWithScore
 from llama_index.core.question_gen.types import SubQuestion
+from llama_index.core.schema import NodeWithScore, TextNode
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 
 

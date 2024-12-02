@@ -1,5 +1,6 @@
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import PromptTemplate, VectorStoreIndex
+from llama_index.core.base.response.schema import Response
 from llama_index.core.indices.vector_store.retrievers.retriever import (
     VectorIndexRetriever,
 )
@@ -7,7 +8,6 @@ from llama_index.core.query_engine import CustomQueryEngine
 from llama_index.core.response_synthesizers import BaseSynthesizer
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore
-from llama_index.core.base.response.schema import Response
 from llama_index.llms.openai import OpenAI
 from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
