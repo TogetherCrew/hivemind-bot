@@ -9,6 +9,7 @@ from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.celery import app
 
+
 @app.task
 def ask_question_auto_search(
     community_id: str,
@@ -18,7 +19,9 @@ def ask_question_auto_search(
         response, references = query_data_sources(
             community_id=community_id, query=query
         )
-        answer_sources = PrepareAnswerSources(threshold=0.7).prepare_answer_sources(nodes=references)
+        answer_sources = PrepareAnswerSources(threshold=0.7).prepare_answer_sources(
+            nodes=references
+        )
     except Exception:
         response = "Sorry, We cannot process your question at the moment."
         answer_sources = ""
