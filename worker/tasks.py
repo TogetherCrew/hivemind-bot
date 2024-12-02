@@ -24,7 +24,7 @@ def ask_question_auto_search(
         )
     except Exception:
         response = "Sorry, We cannot process your question at the moment."
-        answer_sources = ""
+        answer_sources = None
         logging.error(
             f"Errors raised while processing the question for community: {community_id}!"
         )
