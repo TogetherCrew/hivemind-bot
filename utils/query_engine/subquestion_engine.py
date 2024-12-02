@@ -1,4 +1,3 @@
-from typing import Sequence
 from typing import List, Optional, Sequence, cast
 
 from llama_index.core.async_utils import run_async_tasks
@@ -8,7 +7,7 @@ from llama_index.core.callbacks.schema import CBEventType, EventPayload
 from llama_index.core.query_engine import SubQuestionAnswerPair, SubQuestionQueryEngine
 from llama_index.core.question_gen.types import BaseQuestionGenerator
 from llama_index.core.response_synthesizers import BaseSynthesizer
-from llama_index.core.schema import QueryBundle, NodeWithScore
+from llama_index.core.schema import NodeWithScore, QueryBundle
 from llama_index.core.tools.query_engine import QueryEngineTool
 from llama_index.core.utils import get_color_mapping, print_text
 
