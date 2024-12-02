@@ -15,6 +15,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
 from utils.query_engine.base_pg_engine import BasePGEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
+from llama_index.core.base.response.schema import Response
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"
@@ -51,7 +52,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         response = self.llm.complete(fmt_qa_prompt)
         logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
 
-        return str(response)
+        return Response(response=str(response), source_nodes=similar_nodes)
 
     @classmethod
     def prepare_platform_engine(

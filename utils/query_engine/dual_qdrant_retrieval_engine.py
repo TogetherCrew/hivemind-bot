@@ -6,6 +6,8 @@ from llama_index.core.indices.vector_store.retrievers.retriever import (
 from llama_index.core.query_engine import CustomQueryEngine
 from llama_index.core.response_synthesizers import BaseSynthesizer
 from llama_index.core.retrievers import BaseRetriever
+from llama_index.core.schema import NodeWithScore
+from llama_index.core.base.response.schema import Response
 from llama_index.llms.openai import OpenAI
 from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
@@ -36,7 +38,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             response = self._process_basic_query(query_str)
         else:
             response = self._process_summary_query(query_str)
-        return str(response)
+        return response
 
     @classmethod
     def setup_engine(
@@ -172,14 +174,16 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         index = qdrant_vector.load_index()
         return index
 
-    def _process_basic_query(self, query_str: str) -> str:
-        nodes = self.retriever.retrieve(query_str)
+    def _process_basic_query(self, query_str: str) -> Response:
+        nodes: list[NodeWithScore] = self.retriever.retrieve(query_str)
         context_str = "\n\n".join([n.node.get_content() for n in nodes])
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
-        return response
 
-    def _process_summary_query(self, query_str: str) -> str:
+        # return final_response
+        return Response(response=str(response), source_nodes=nodes)
+
+    def _process_summary_query(self, query_str: str) -> Response:
         summary_nodes = self.summary_retriever.retrieve(query_str)
         utils = QdrantEngineUtils(
             metadata_date_key=self.metadata_date_key,
@@ -207,4 +211,5 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         context_str = utils.combine_nodes_for_prompt(summary_nodes, raw_nodes)
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
-        return response
+
+        return Response(response=str(response), source_nodes=raw_nodes)

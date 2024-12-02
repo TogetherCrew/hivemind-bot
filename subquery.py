@@ -1,6 +1,6 @@
 from guidance.models import OpenAIChat
 from llama_index.core import QueryBundle, Settings
-from llama_index.core.query_engine import SubQuestionQueryEngine
+from llama_index.core.base.response.schema import RESPONSE_TYPE
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from llama_index.llms.openai import OpenAI
@@ -9,6 +9,7 @@ from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.qdrant_utils import QDrantUtils
 from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
+    CustomSubQuestionQueryEngine,
     GDriveQueryEngine,
     GitHubQueryEngine,
     MediaWikiQueryEngine,
@@ -208,12 +209,17 @@ def query_multiple_source(
         verbose=False,
         prompt_template_str=DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     )
-    s_engine = SubQuestionQueryEngine.from_defaults(
+    s_engine = CustomSubQuestionQueryEngine.from_defaults(
         question_gen=question_gen,
         query_engine_tools=query_engine_tools,
         use_async=False,
+        verbose=False,
     )
     query_embedding = embed_model.get_text_embedding(text=query)
-    response = s_engine.query(QueryBundle(query_str=query, embedding=query_embedding))
 
-    return response.response, response.source_nodes
+    result: tuple[RESPONSE_TYPE, list[NodeWithScore]] = s_engine.query(
+        QueryBundle(query_str=query, embedding=query_embedding)
+    )
+    response, source_nodes = result
+
+    return response.response, source_nodes
