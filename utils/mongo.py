@@ -40,6 +40,6 @@ def config_mogno_creds(mongo_creds: dict[str, Any]):
     host = mongo_creds["host"]
     port = mongo_creds["port"]
 
-    connection = f"mongodb://{user}:{password}@{host}:{port}"
+    connection = f"mongodb://{user}:{password}@{host}:{port}?directConnection=true"
 
     return connection

@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from faststream.rabbit import RabbitBroker
 from faststream.rabbit.fastapi import Logger, RabbitRouter  # type: ignore
 from faststream.rabbit.schemas.queue import RabbitQueue
 from pydantic import BaseModel
@@ -9,6 +8,7 @@ from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
 from utils.persist_payload import PersistPayload
+from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.tasks import query_data_sources
 from worker.utils.fire_event import job_send
@@ -32,14 +32,19 @@ async def ask(payload: Payload, logger: Logger):
             community_id = payload.content.communityId
             init_tracing()
             logger.info(f"COMMUNITY_ID: {community_id} Received job")
-            response = query_data_sources(community_id=community_id, query=question)
+            response, references = query_data_sources(
+                community_id=community_id, query=question
+            )
+            prepare_answer = PrepareAnswerSources(threshold=0.7)
+            answer_reference = prepare_answer.prepare_answer_sources(nodes=references)
+
             logger.info(f"COMMUNITY_ID: {community_id} Job finished")
 
             response_payload = AMQPPayload(
                 communityId=community_id,
                 route=payload.content.route,
                 question=payload.content.question,
-                response=ResponseModel(message=response),
+                response=ResponseModel(message=f"{response}\n\n{answer_reference}"),
                 metadata=payload.content.metadata,
             )
             # dumping the whole payload of question & answer to db

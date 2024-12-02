@@ -4,6 +4,7 @@ from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import VectorStoreIndex
+from llama_index.core.base.response.schema import Response
 from llama_index.core.prompts import PromptTemplate
 from llama_index.core.query_engine import CustomQueryEngine
 from llama_index.core.response_synthesizers import (
@@ -51,7 +52,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         response = self.llm.complete(fmt_qa_prompt)
         logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
 
-        return str(response)
+        return Response(response=str(response), source_nodes=similar_nodes)
 
     @classmethod
     def prepare_platform_engine(
