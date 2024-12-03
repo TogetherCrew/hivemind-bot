@@ -19,9 +19,7 @@ def ask_question_auto_search(
         response, references = query_data_sources(
             community_id=community_id, query=query
         )
-        answer_sources = PrepareAnswerSources().prepare_answer_sources(
-            nodes=references
-        )
+        answer_sources = PrepareAnswerSources().prepare_answer_sources(nodes=references)
     except Exception:
         response = "Sorry, We cannot process your question at the moment."
         answer_sources = None
