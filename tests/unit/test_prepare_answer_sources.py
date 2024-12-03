@@ -8,7 +8,7 @@ from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 
 class TestPrepareAnswerSources(unittest.TestCase):
     def setUp(self) -> None:
-        self.prepare = PrepareAnswerSources(threshold=0.7)
+        self.prepare = PrepareAnswerSources(threshold=0.7, max_refs_per_source=3)
 
     def test_empty_nodes_list(self):
         """Test with an empty list of nodes."""
@@ -41,8 +41,8 @@ class TestPrepareAnswerSources(unittest.TestCase):
         expected = (
             "References:\n"
             "github:\n"
-            "[1] https://github.com/repo1\n"
-            "[2] https://github.com/repo2"
+            "[1] https://github.com/repo2\n"  # Higher score (0.9) should come first
+            "[2] https://github.com/repo1"
         )
         self.assertEqual(result, expected)
 
@@ -104,8 +104,8 @@ class TestPrepareAnswerSources(unittest.TestCase):
         expected = (
             "References:\n"
             "github:\n"
-            "[1] https://github.com/repo1\n"
-            "[2] https://github.com/repo3"
+            "[1] https://github.com/repo3\n"  # Highest score (0.9) should come first
+            "[2] https://github.com/repo1"
         )
         self.assertEqual(result, expected)
 
@@ -211,3 +211,90 @@ class TestPrepareAnswerSources(unittest.TestCase):
         self.assertEqual(
             result, ("References:\n" "github:\n" "[1] https://github.com/repo2")
         )
+
+    def test_max_refs_per_source_limit(self):
+        """Test that the number of references per source respects the max_refs_per_source limit."""
+        nodes = [
+            SubQuestionAnswerPair(
+                sub_q=SubQuestion(tool_name="github", sub_question="Question"),
+                sources=[
+                    NodeWithScore(
+                        node=TextNode(
+                            text="content 1",
+                            metadata={"url": "https://github.com/repo1"},
+                        ),
+                        score=0.8,
+                    ),
+                    NodeWithScore(
+                        node=TextNode(
+                            text="content 2",
+                            metadata={"url": "https://github.com/repo2"},
+                        ),
+                        score=0.9,
+                    ),
+                    NodeWithScore(
+                        node=TextNode(
+                            text="content 3",
+                            metadata={"url": "https://github.com/repo3"},
+                        ),
+                        score=0.85,
+                    ),
+                    NodeWithScore(
+                        node=TextNode(
+                            text="content 4",
+                            metadata={"url": "https://github.com/repo4"},
+                        ),
+                        score=0.75,
+                    ),
+                ],
+            )
+        ]
+        result = self.prepare.prepare_answer_sources(nodes)
+        expected = (
+            "References:\n"
+            "github:\n"
+            "[1] https://github.com/repo2\n"  # Highest score (0.9)
+            "[2] https://github.com/repo3\n"  # Second highest (0.85)
+            "[3] https://github.com/repo1"  # Third highest (0.8)
+        )
+        self.assertEqual(result, expected)
+
+    def test_custom_max_refs_per_source(self):
+        """Test with a custom max_refs_per_source value."""
+        prepare_custom = PrepareAnswerSources(threshold=0.7, max_refs_per_source=2)
+        nodes = [
+            SubQuestionAnswerPair(
+                sub_q=SubQuestion(tool_name="github", sub_question="Question"),
+                sources=[
+                    NodeWithScore(
+                        node=TextNode(
+                            text="content 1",
+                            metadata={"url": "https://github.com/repo1"},
+                        ),
+                        score=0.8,
+                    ),
+                    NodeWithScore(
+                        node=TextNode(
+                            text="content 2",
+                            metadata={"url": "https://github.com/repo2"},
+                        ),
+                        score=0.9,
+                    ),
+                    NodeWithScore(
+                        node=TextNode(
+                            text="content 3",
+                            metadata={"url": "https://github.com/repo3"},
+                        ),
+                        score=0.85,
+                    ),
+                ],
+            )
+        ]
+        result = prepare_custom.prepare_answer_sources(nodes)
+        expected = (
+            "References:\n"
+            "github:\n"
+            "[1] https://github.com/repo2\n"  # Highest score (0.9)
+            "[2] https://github.com/repo3"  # Second highest (0.85)
+        )
+        self.assertEqual(result, expected)
