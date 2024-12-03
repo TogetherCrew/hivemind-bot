@@ -4,7 +4,7 @@ from llama_index.core.schema import NodeWithScore
 
 
 class PrepareAnswerSources:
-    def __init__(self, threshold: float = 0.7) -> None:
+    def __init__(self, threshold: float = 0.5) -> None:
         self.threshold = threshold
 
     def prepare_answer_sources(self, nodes: list[NodeWithScore]) -> str:
