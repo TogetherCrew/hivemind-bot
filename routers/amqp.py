@@ -35,7 +35,7 @@ async def ask(payload: Payload, logger: Logger):
             response, references = query_data_sources(
                 community_id=community_id, query=question
             )
-            prepare_answer = PrepareAnswerSources(threshold=0.7)
+            prepare_answer = PrepareAnswerSources()
             answer_reference = prepare_answer.prepare_answer_sources(nodes=references)
 
             logger.info(f"COMMUNITY_ID: {community_id} Job finished")

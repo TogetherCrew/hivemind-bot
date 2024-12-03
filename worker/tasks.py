@@ -19,7 +19,7 @@ def ask_question_auto_search(
         response, references = query_data_sources(
             community_id=community_id, query=query
         )
-        answer_sources = PrepareAnswerSources(threshold=0.7).prepare_answer_sources(
+        answer_sources = PrepareAnswerSources().prepare_answer_sources(
             nodes=references
         )
     except Exception:
