@@ -1,27 +1,15 @@
-numpy
-pymongo
-python-dotenv
-pgvector
-asyncpg
-psycopg2-binary
-sqlalchemy[asyncio]
 async-sqlalchemy
 python-pptx
-tc-neo4j-lib
+tc-neo4j-lib==2.0.4
 google-api-python-client
 unstructured
-cohere
-neo4j>=5.14.1, <6.0.0
-coverage>=7.3.3, <8.0.0
-pytest>=7.4.3, <8.0.0
-python-dotenv==1.0.0
-tc-hivemind-backend==1.4.2
+tc-hivemind-backend==1.4.2.post1
 llama-index-question-gen-guidance==0.1.2
-llama-index-vector-stores-postgres==0.1.2
+llama-index-vector-stores-postgres
 celery[redis]>=5.3.6, <6.0.0
 guidance==0.1.14
 tc-messageBroker==1.7.1
-traceloop-sdk==0.14.1
+traceloop-sdk==0.33.12
 backoff==2.2.1
 fastapi[standard]==0.114.1
 faststream==0.5.28
