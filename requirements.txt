@@ -1,3 +1,5 @@
+numpy==1.26.4
+pandas==2.2.3
 async-sqlalchemy
 python-pptx
 tc-neo4j-lib==2.0.4
@@ -9,7 +11,7 @@ llama-index-vector-stores-postgres
 celery[redis]>=5.3.6, <6.0.0
 guidance==0.1.14
 tc-messageBroker==1.7.1
-traceloop-sdk==0.33.12
+traceloop-sdk==0.31.0
 backoff==2.2.1
 fastapi[standard]==0.114.1
 faststream==0.5.28
