@@ -1,15 +1,19 @@
 from typing import List, Optional, Sequence, cast
 
+import llama_index.core.instrumentation as instrument
 from llama_index.core.async_utils import run_async_tasks
 from llama_index.core.base.response.schema import RESPONSE_TYPE
 from llama_index.core.callbacks.base import CallbackManager
 from llama_index.core.callbacks.schema import CBEventType, EventPayload
+from llama_index.core.instrumentation.events.query import QueryEndEvent, QueryStartEvent
 from llama_index.core.query_engine import SubQuestionAnswerPair, SubQuestionQueryEngine
 from llama_index.core.question_gen.types import BaseQuestionGenerator
 from llama_index.core.response_synthesizers import BaseSynthesizer
 from llama_index.core.schema import NodeWithScore, QueryBundle
 from llama_index.core.tools.query_engine import QueryEngineTool
 from llama_index.core.utils import get_color_mapping, print_text
+
+dispatcher = instrument.get_dispatcher(__name__)
 
 
 class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
@@ -74,7 +78,16 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
 
         return response, qa_pairs_all
 
+    @dispatcher.span
     def query(
         self, str_or_query_bundle: str | QueryBundle
     ) -> tuple[RESPONSE_TYPE, list[NodeWithScore]]:
-        return super().query(str_or_query_bundle)
+        dispatcher.event(QueryStartEvent(query=str_or_query_bundle))
+        with self.callback_manager.as_trace("query"):
+            if isinstance(str_or_query_bundle, str):
+                str_or_query_bundle = QueryBundle(str_or_query_bundle)
+            query_result, qa_pairs_all = self._query(str_or_query_bundle)
+        dispatcher.event(
+            QueryEndEvent(query=str_or_query_bundle, response=query_result)
+        )
+        return query_result, qa_pairs_all
