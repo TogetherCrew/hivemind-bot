@@ -11,8 +11,8 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
 from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
-from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 from utils.globals import RETRIEVER_THRESHOLD
+from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"

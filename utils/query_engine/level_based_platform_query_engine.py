@@ -14,9 +14,9 @@ from llama_index.core.response_synthesizers import (
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
+from utils.globals import RETRIEVER_THRESHOLD
 from utils.query_engine.base_pg_engine import BasePGEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
-from utils.globals import RETRIEVER_THRESHOLD
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"
