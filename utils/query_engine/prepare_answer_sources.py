@@ -1,17 +1,20 @@
 import logging
 
 from llama_index.core.schema import NodeWithScore
+from utils.globals import REFERENCE_SCORE_THRESHOLD
 
 
 class PrepareAnswerSources:
-    def __init__(self, threshold: float = 0.5, max_refs_per_source: int = 3) -> None:
+    def __init__(
+        self, threshold: float = REFERENCE_SCORE_THRESHOLD, max_refs_per_source: int = 3
+    ) -> None:
         """
         Initialize the PrepareAnswerSources class.
 
         Parameters
         ----------
         threshold : float, optional
-            Minimum score threshold for including a node's URL, by default 0.5
+            Minimum score threshold for including a node's URL, by default 0.5 set in globals file
         max_refs_per_source : int, optional
             Maximum number of references to include per data source, by default 3
         """
