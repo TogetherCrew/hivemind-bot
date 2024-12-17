@@ -5,6 +5,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from llama_index.llms.openai import OpenAI
 from llama_index.question_gen.guidance import GuidanceQuestionGenerator
+from tc_hivemind_backend.db.utils.preprocess_text import BasePreprocessor
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
 from utils.qdrant_utils import QDrantUtils
 from utils.query_engine import (
@@ -19,7 +20,7 @@ from utils.query_engine import (
     WebsiteQueryEngine,
     prepare_discord_engine_auto_filter,
 )
-
+from utils.globals import INVALID_QUERY_RESPONSE
 
 def query_multiple_source(
     query: str,
@@ -198,6 +199,10 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
+    if not BasePreprocessor().extract_main_content(text=query):
+        response = INVALID_QUERY_RESPONSE
+        source_nodes = []
+        return response, source_nodes
 
     embed_model = CohereEmbedding()
     llm = OpenAI("gpt-4o-mini")

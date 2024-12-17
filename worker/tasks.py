@@ -5,6 +5,7 @@ from celery.signals import task_postrun, task_prerun
 from llama_index.core.schema import NodeWithScore
 from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
+from utils.globals import QUERY_ERROR_MESSAGE
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.celery import app
@@ -21,7 +22,7 @@ def ask_question_auto_search(
         )
         answer_sources = PrepareAnswerSources().prepare_answer_sources(nodes=references)
     except Exception:
-        response = "Sorry, We cannot process your question at the moment."
+        response = QUERY_ERROR_MESSAGE
         answer_sources = None
         logging.error(
             f"Errors raised while processing the question for community: {community_id}!"
