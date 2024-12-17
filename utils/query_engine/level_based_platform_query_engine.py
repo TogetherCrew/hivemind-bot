@@ -47,9 +47,13 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         similar_nodes = retriever.query_db(
             query=query_str, filters=self._filters, date_interval=self._d
         )
-        similar_nodes_filtered = [node for node in similar_nodes if node.score >= RETRIEVER_THRESHOLD]
+        similar_nodes_filtered = [
+            node for node in similar_nodes if node.score >= RETRIEVER_THRESHOLD
+        ]
 
-        context_str = self._prepare_context_str(similar_nodes_filtered, summary_nodes=None)
+        context_str = self._prepare_context_str(
+            similar_nodes_filtered, summary_nodes=None
+        )
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
         logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")

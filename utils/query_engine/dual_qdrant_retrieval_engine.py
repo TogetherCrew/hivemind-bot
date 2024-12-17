@@ -187,7 +187,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
     def _process_summary_query(self, query_str: str) -> Response:
         summary_nodes = self.summary_retriever.retrieve(query_str)
-        summary_nodes_filtered = [node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD]
+        summary_nodes_filtered = [
+            node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD
+        ]
         utils = QdrantEngineUtils(
             metadata_date_key=self.metadata_date_key,
             metadata_date_format=self.metadata_date_format,
@@ -211,9 +213,13 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         )
         raw_nodes = retriever.retrieve(query_str)
 
-        raw_nodes_filtered = [node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD]
+        raw_nodes_filtered = [
+            node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD
+        ]
 
-        context_str = utils.combine_nodes_for_prompt(summary_nodes_filtered, raw_nodes_filtered)
+        context_str = utils.combine_nodes_for_prompt(
+            summary_nodes_filtered, raw_nodes_filtered
+        )
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
 

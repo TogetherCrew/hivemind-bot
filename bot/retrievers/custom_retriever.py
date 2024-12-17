@@ -51,7 +51,7 @@ class CustomVectorStoreRetriever(VectorIndexRetriever):
             score: float | None = None
             if query_result.similarities is not None:
                 score = query_result.similarities[ind]
-            
+
             if score is not None and score >= RETRIEVER_THRESHOLD:
                 # This is the part we updated
                 node_new = Node.from_dict(node.to_dict())
