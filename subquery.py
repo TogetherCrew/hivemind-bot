@@ -7,7 +7,7 @@ from llama_index.llms.openai import OpenAI
 from llama_index.question_gen.guidance import GuidanceQuestionGenerator
 from tc_hivemind_backend.db.utils.preprocess_text import BasePreprocessor
 from tc_hivemind_backend.embeddings.cohere import CohereEmbedding
-from utils.globals import INVALID_QUERY_RESPONSE
+from utils.globals import INVALID_QUERY_RESPONSE, NO_ANSWER_REFERENCE
 from utils.qdrant_utils import QDrantUtils
 from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
@@ -228,4 +228,7 @@ def query_multiple_source(
     )
     response, source_nodes = result
 
-    return response.response, source_nodes
+    if source_nodes == []:
+        return NO_ANSWER_REFERENCE, source_nodes
+    else:
+        return response.response, source_nodes
