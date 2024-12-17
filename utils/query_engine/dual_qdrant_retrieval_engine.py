@@ -11,6 +11,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
 from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
+from utils.globals import RETRIEVER_THRESHOLD
 from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 
 qa_prompt = PromptTemplate(
@@ -176,15 +177,19 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
     def _process_basic_query(self, query_str: str) -> Response:
         nodes: list[NodeWithScore] = self.retriever.retrieve(query_str)
-        context_str = "\n\n".join([n.node.get_content() for n in nodes])
+        nodes_filtered = [node for node in nodes if node.score >= RETRIEVER_THRESHOLD]
+        context_str = "\n\n".join([n.node.get_content() for n in nodes_filtered])
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
 
         # return final_response
-        return Response(response=str(response), source_nodes=nodes)
+        return Response(response=str(response), source_nodes=nodes_filtered)
 
     def _process_summary_query(self, query_str: str) -> Response:
         summary_nodes = self.summary_retriever.retrieve(query_str)
+        summary_nodes_filtered = [
+            node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD
+        ]
         utils = QdrantEngineUtils(
             metadata_date_key=self.metadata_date_key,
             metadata_date_format=self.metadata_date_format,
@@ -193,7 +198,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
         dates = [
             node.metadata[self.metadata_date_summary_key]
-            for node in summary_nodes
+            for node in summary_nodes_filtered
             if self.metadata_date_summary_key in node.metadata
         ]
 
@@ -208,8 +213,14 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         )
         raw_nodes = retriever.retrieve(query_str)
 
-        context_str = utils.combine_nodes_for_prompt(summary_nodes, raw_nodes)
+        raw_nodes_filtered = [
+            node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD
+        ]
+
+        context_str = utils.combine_nodes_for_prompt(
+            summary_nodes_filtered, raw_nodes_filtered
+        )
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
 
-        return Response(response=str(response), source_nodes=raw_nodes)
+        return Response(response=str(response), source_nodes=raw_nodes_filtered)

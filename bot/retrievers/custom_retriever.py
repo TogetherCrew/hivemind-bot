@@ -10,6 +10,7 @@ from llama_index.core.indices.vector_store.retrievers.retriever import (
 )
 from llama_index.core.schema import Node, NodeWithScore, ObjectType
 from llama_index.core.vector_stores.types import VectorStoreQueryResult
+from utils.globals import RETRIEVER_THRESHOLD
 
 
 class CustomVectorStoreRetriever(VectorIndexRetriever):
@@ -50,10 +51,12 @@ class CustomVectorStoreRetriever(VectorIndexRetriever):
             score: float | None = None
             if query_result.similarities is not None:
                 score = query_result.similarities[ind]
-            # This is the part we updated
-            node_new = Node.from_dict(node.to_dict())
-            node_with_score = NodeWithScore(node=node_new, score=score)
 
-            node_with_scores.append(node_with_score)
+            if score is not None and score >= RETRIEVER_THRESHOLD:
+                # This is the part we updated
+                node_new = Node.from_dict(node.to_dict())
+                node_with_score = NodeWithScore(node=node_new, score=score)
+
+                node_with_scores.append(node_with_score)
 
         return node_with_scores
