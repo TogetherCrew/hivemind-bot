@@ -16,6 +16,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
 from utils.query_engine.base_pg_engine import BasePGEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
+from utils.globals import RETRIEVER_THRESHOLD
 
 qa_prompt = PromptTemplate(
     "Context information is below.\n"
@@ -46,13 +47,14 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         similar_nodes = retriever.query_db(
             query=query_str, filters=self._filters, date_interval=self._d
         )
+        similar_nodes_filtered = [node for node in similar_nodes if node.score >= RETRIEVER_THRESHOLD]
 
-        context_str = self._prepare_context_str(similar_nodes, summary_nodes=None)
+        context_str = self._prepare_context_str(similar_nodes_filtered, summary_nodes=None)
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
         logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
 
-        return Response(response=str(response), source_nodes=similar_nodes)
+        return Response(response=str(response), source_nodes=similar_nodes_filtered)
 
     @classmethod
     def prepare_platform_engine(
