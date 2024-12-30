@@ -219,8 +219,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             vector_store,
             summary_similarity_top_k,
         )
-        # getting nodes of just thread summaries
-        nodes = retriever.query_db(query, [{"type": "thread"}])
+        if platform_table_name != "discourse":
+            # getting nodes of just thread summaries
+            nodes = retriever.query_db(query, [{"type": "thread"}])
+        else:
+            # getting the category summaries
+            nodes = retriever.query_db(query, [{"topic": {"ne": None}}])
 
         # For summaries data a posfix `summary` would be added
         platform_retriever = ForumBasedSummaryRetriever(
