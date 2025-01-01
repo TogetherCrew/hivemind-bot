@@ -20,6 +20,7 @@ from utils.query_engine import (
     TelegramQueryEngine,
     WebsiteQueryEngine,
     prepare_discord_engine_auto_filter,
+    prepare_discourse_engine_auto_filter,
 )
 
 
@@ -100,7 +101,21 @@ def query_multiple_source(
         )
 
     if discourse:
-        raise NotImplementedError
+        discourse_query_engine = prepare_discourse_engine_auto_filter(
+            community_id,
+            query,
+        )
+        tool_metadata = ToolMetadata(
+            name="Discourse",
+            description="Contains messages and summaries of discussions from the Discourse platform of the community, structured to capture key interactions and insights.",
+        )
+        tools.append(tool_metadata)
+        query_engine_tools.append(
+            QueryEngineTool(
+                query_engine=discourse_query_engine,
+                metadata=tool_metadata,
+            )
+        )
     if google and check_collection("google"):
         google_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
