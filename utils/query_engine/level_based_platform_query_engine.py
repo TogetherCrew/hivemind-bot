@@ -52,7 +52,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         ]
 
         context_str = self._prepare_context_str(
-            similar_nodes_filtered, summary_nodes=None
+            raw_nodes=similar_nodes_filtered, summary_nodes=None
         )
         fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(fmt_qa_prompt)
@@ -219,8 +219,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             vector_store,
             summary_similarity_top_k,
         )
-        # getting nodes of just thread summaries
-        nodes = retriever.query_db(query, [{"type": "thread"}])
+        if platform_table_name != "discourse":
+            # getting nodes of just thread summaries
+            nodes = retriever.query_db(query, [{"type": "thread"}])
+        else:
+            # getting the category summaries
+            nodes = retriever.query_db(query, [{"topic": {"ne": None}}])
 
         # For summaries data a posfix `summary` would be added
         platform_retriever = ForumBasedSummaryRetriever(
@@ -239,7 +243,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             metadata_group2_key=level2_key,
             metadata_date_key=date_key,
             # we will always use thread summaries
-            and_filters={"type": "thread"},
+            and_filters={"type": "thread"} if "discord" in platform_table_name else {},
         )
 
         # saving to add summaries to the context of prompt
@@ -295,13 +299,15 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                 filters=self._summary_nodes_filters,
                 aggregate_records=True,
                 ignore_sort=True,
-                group_by_metadata=["thread", "date", "channel"],
+                group_by_metadata=[self._level1_key, self._date_key, self._level2_key],
                 date_interval=self._d,
             )
             grouped_summary_nodes = self._utils_class.group_nodes_per_metadata(
                 fetched_summary_nodes
             )
             grouped_raw_nodes = self._utils_class.group_nodes_per_metadata(raw_nodes)
+            # print("grouped_summary_nodes", grouped_summary_nodes)
+            # print("grouped_raw_nodes", grouped_raw_nodes)
             context_data, (
                 summary_nodes_to_fetch_filters,
                 _,

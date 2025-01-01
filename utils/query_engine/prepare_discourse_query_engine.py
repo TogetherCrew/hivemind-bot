@@ -69,5 +69,6 @@ def prepare_discourse_engine_auto_filter(
         level1_key="category",
         level2_key="topic",
         date_key="date",
+        include_summary_context=True,
     )
     return engine
