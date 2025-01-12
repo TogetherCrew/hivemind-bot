@@ -13,7 +13,7 @@ from utils.query_engine import (
     DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     CustomSubQuestionQueryEngine,
     GDriveQueryEngine,
-    GitHubQueryEngine,
+    GitHubDualQueryEngine,
     MediaWikiQueryEngine,
     NotionQueryEngine,
     TelegramDualQueryEngine,
@@ -171,7 +171,7 @@ def query_multiple_source(
         )
 
     if github and check_collection("github"):
-        github_query_engine = GitHubQueryEngine(community_id=community_id).prepare()
+        github_query_engine = GitHubDualQueryEngine(community_id=community_id).prepare()
         tool_metadata = ToolMetadata(
             name="GitHub",
             description=(
