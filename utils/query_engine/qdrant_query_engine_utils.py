@@ -18,7 +18,7 @@ class QdrantEngineUtils:
         self.metadata_date_format = metadata_date_format
         self.date_margin = date_margin
 
-    def define_raw_data_filters(self, dates: list[str]) -> models.Filter:
+    def define_raw_data_filters(self, dates: list[str | float]) -> models.Filter:
         """
         define the filters to be applied on raw data given the dates
 
@@ -38,7 +38,14 @@ class QdrantEngineUtils:
 
         # accounting for the date margin
         for date in dates:
-            day_value = parse(date)
+            if isinstance(date, str):
+                day_value = parse(date)
+            elif isinstance(date, float):
+                # if it was timestamp
+                day_value = datetime.fromtimestamp(date)
+            else:
+                raise ValueError(f"Type {type(date)} date is not supported!")
+
             expanded_dates.add(day_value)
 
             for i in range(1, self.date_margin + 1):
@@ -56,7 +63,10 @@ class QdrantEngineUtils:
                 lte_value = next_day.timestamp()
             else:
                 raise ValueError(
-                    "raw data metadata `date` shouldn't be anything other than FLOAT or INTEGER"
+                    (
+                        "raw data metadata `date` shouldn't be anything other than FLOAT or INTEGER"
+                        f"! The Current given one is: {self.metadata_date_format}"
+                    )
                 )
 
             should_filters.append(
