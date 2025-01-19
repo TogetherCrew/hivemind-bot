@@ -11,7 +11,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
 from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
-from utils.globals import RETRIEVER_THRESHOLD, REFERENCE_SCORE_THRESHOLD
+from utils.globals import REFERENCE_SCORE_THRESHOLD, RETRIEVER_THRESHOLD
 from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 
 qa_prompt = PromptTemplate(

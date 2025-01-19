@@ -5,7 +5,7 @@ from celery.signals import task_postrun, task_prerun
 from llama_index.core.schema import NodeWithScore
 from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
-from utils.globals import QUERY_ERROR_MESSAGE, NO_DATA_SOURCE_SELECTED
+from utils.globals import NO_DATA_SOURCE_SELECTED, QUERY_ERROR_MESSAGE
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.celery import app
