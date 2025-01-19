@@ -14,7 +14,7 @@ from llama_index.core.response_synthesizers import (
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
-from utils.globals import RETRIEVER_THRESHOLD
+from utils.globals import RETRIEVER_THRESHOLD, REFERENCE_SCORE_THRESHOLD
 from utils.query_engine.base_pg_engine import BasePGEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
 
@@ -50,13 +50,26 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         similar_nodes_filtered = [
             node for node in similar_nodes if node.score >= RETRIEVER_THRESHOLD
         ]
+        raw_scores = [
+            node.score
+            for node in similar_nodes_filtered
+            if node.score >= REFERENCE_SCORE_THRESHOLD
+        ]
 
-        context_str = self._prepare_context_str(
-            raw_nodes=similar_nodes_filtered, summary_nodes=None
-        )
-        fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
-        response = self.llm.complete(fmt_qa_prompt)
-        logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
+        if raw_scores != [] and self._summary_scores != []:
+            context_str = self._prepare_context_str(
+                raw_nodes=similar_nodes_filtered, summary_nodes=None
+            )
+            fmt_qa_prompt = qa_prompt.format(
+                context_str=context_str, query_str=query_str
+            )
+            response = self.llm.complete(fmt_qa_prompt)
+            logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
+        else:
+            raise ValueError(
+                f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
+                " Returning empty response"
+            )
 
         return Response(response=str(response), source_nodes=similar_nodes_filtered)
 
@@ -249,8 +262,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         # saving to add summaries to the context of prompt
         if include_summary_context:
             cls.summary_nodes = nodes
+            cls._summary_scores = [
+                node.score for node in nodes if node.score >= REFERENCE_SCORE_THRESHOLD
+            ]
         else:
             cls.summary_nodes = []
+            cls._summary_scores = []
 
         cls._utils_class = LevelBasedPlatformUtils(level1_key, level2_key, date_key)
         cls._level1_key = level1_key
