@@ -5,7 +5,7 @@ from celery.signals import task_postrun, task_prerun
 from llama_index.core.schema import NodeWithScore
 from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
-from utils.globals import QUERY_ERROR_MESSAGE
+from utils.globals import QUERY_ERROR_MESSAGE, NO_DATA_SOURCE_SELECTED
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.celery import app
@@ -72,11 +72,16 @@ def query_data_sources(
     logging.info(f"COMMUNITY_ID: {community_id} Finding data sources to query to!")
     selector = DataSourceSelector()
     data_sources = selector.select_data_source(community_id)
-    logging.info(f"Quering data sources: {data_sources}!")
-    response, references = query_multiple_source(
-        query=query,
-        community_id=community_id,
-        **data_sources,
-    )
+    if data_sources:
+        logging.info(f"Quering data sources: {data_sources}!")
+        response, references = query_multiple_source(
+            query=query,
+            community_id=community_id,
+            **data_sources,
+        )
+    else:
+        logging.info(f"No data source selected!")
+        response = NO_DATA_SOURCE_SELECTED
+        references = []
 
     return response, references
