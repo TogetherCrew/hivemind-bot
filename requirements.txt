@@ -1,10 +1,10 @@
 numpy==1.26.4
 pandas==2.2.3
-async-sqlalchemy
-python-pptx
+async-sqlalchemy==1.0.0
+python-pptx==1.0.2
 tc-neo4j-lib==2.0.4
-google-api-python-client
-unstructured
+google-api-python-client==2.156.0
+unstructured==0.16.11
 tc-hivemind-backend==1.4.2.post1
 llama-index-question-gen-guidance==0.1.2
 llama-index-vector-stores-postgres
@@ -17,3 +17,4 @@ fastapi[standard]==0.114.1
 faststream==0.5.28
 aio_pika==9.4.0
 mongomock==4.2.0.post1
+pydantic==2.9.2
