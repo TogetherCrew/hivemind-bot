@@ -61,6 +61,9 @@ async def ask(payload: Payload, logger: Logger):
             persister = PersistPayload()
             persister.persist_amqp(response_payload)
 
+            if response is None:
+                raise ValueError("not confident in answering!")
+
             job_send(
                 event=payload.content.route.destination.event,
                 queue_name=payload.content.route.destination.queue,

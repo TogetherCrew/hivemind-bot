@@ -21,7 +21,7 @@ class PrepareAnswerSources:
         self.threshold = threshold
         self.max_refs_per_source = max_refs_per_source
 
-    def prepare_answer_sources(self, nodes: list[NodeWithScore]) -> str:
+    def prepare_answer_sources(self, nodes: list[NodeWithScore | None]) -> str:
         """
         Prepares a formatted string containing source URLs organized by tool name from the provided nodes.
 
@@ -70,9 +70,11 @@ class PrepareAnswerSources:
             logging.error("No reference nodes available! returning empty string.")
             return ""
 
+        cleaned_nodes = [n for n in nodes if n is not None]
+
         # link of places that we got the answer from
         all_sources: str = "References:\n"
-        for tool_nodes in nodes:
+        for tool_nodes in cleaned_nodes:
             # platform name
             tool_name = tool_nodes.sub_q.tool_name
 
