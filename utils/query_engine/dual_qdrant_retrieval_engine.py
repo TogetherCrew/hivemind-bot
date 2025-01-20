@@ -11,7 +11,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
 from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
-from utils.globals import RETRIEVER_THRESHOLD
+from utils.globals import REFERENCE_SCORE_THRESHOLD, RETRIEVER_THRESHOLD
 from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 
 qa_prompt = PromptTemplate(
@@ -48,6 +48,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         synthesizer: BaseSynthesizer,
         platform_name: str,
         community_id: str,
+        enable_answer_skipping: bool,
     ):
         """
         setup the custom query engine on qdrant data
@@ -69,6 +70,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
         _, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
+        cls._enable_answer_skipping = enable_answer_skipping
 
         cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
@@ -98,6 +100,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         metadata_date_format: DataType,
         metadata_date_summary_key: str,
         metadata_date_summary_format: DataType,
+        enable_answer_skipping: bool,
     ):
         """
         setup the custom query engine on qdrant data
@@ -123,11 +126,15 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             the date format in metadata
             In case of `use_summary` equal to be true this shuold be passed
             NOTE: this should be always a string for the filtering of it to work.
+        enable_answer_skipping : bool
+            skip answering questions with non-relevant retrieved nodes
+            having this, it could provide `None` for response and source_nodes
         """
         collection_name = f"{community_id}_{platform_name}"
         summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
         cls._raw_data_top_k = raw_data_top_k
+        cls._enable_answer_skipping = enable_answer_skipping
 
         cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
@@ -178,6 +185,17 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     def _process_basic_query(self, query_str: str) -> Response:
         nodes: list[NodeWithScore] = self.retriever.retrieve(query_str)
         nodes_filtered = [node for node in nodes if node.score >= RETRIEVER_THRESHOLD]
+
+        raw_scores = [
+            node.score for node in nodes if node.score >= REFERENCE_SCORE_THRESHOLD
+        ]
+
+        if not raw_scores and self._enable_answer_skipping:
+            raise ValueError(
+                f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
+                " Returning empty response"
+            )
+
         context_str = "\n\n".join([n.node.get_content() for n in nodes_filtered])
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
@@ -217,10 +235,28 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD
         ]
 
-        context_str = utils.combine_nodes_for_prompt(
-            summary_nodes_filtered, raw_nodes_filtered
-        )
-        prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
-        response = self.llm.complete(prompt)
+        # Checking nodes threshold
+        summary_scores = [
+            node.score
+            for node in summary_nodes_filtered
+            if node.score >= REFERENCE_SCORE_THRESHOLD
+        ]
+        raw_scores = [
+            node.score
+            for node in raw_nodes_filtered
+            if node.score >= REFERENCE_SCORE_THRESHOLD
+        ]
+        if not summary_scores and not raw_scores and self._enable_answer_skipping:
+            raise ValueError(
+                f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
+                " Returning empty response"
+            )
+        else:
+            # if we had something above our threshold then try to answer
+            context_str = utils.combine_nodes_for_prompt(
+                summary_nodes_filtered, raw_nodes_filtered
+            )
+            prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
+            response = self.llm.complete(prompt)
 
-        return Response(response=str(response), source_nodes=raw_nodes_filtered)
+            return Response(response=str(response), source_nodes=raw_nodes_filtered)

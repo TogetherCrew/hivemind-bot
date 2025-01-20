@@ -2,7 +2,7 @@ from typing import List, Optional, Sequence, cast
 
 import llama_index.core.instrumentation as instrument
 from llama_index.core.async_utils import run_async_tasks
-from llama_index.core.base.response.schema import RESPONSE_TYPE
+from llama_index.core.base.response.schema import RESPONSE_TYPE, Response
 from llama_index.core.callbacks.base import CallbackManager
 from llama_index.core.callbacks.schema import CBEventType, EventPayload
 from llama_index.core.instrumentation.events.query import QueryEndEvent, QueryStartEvent
@@ -64,15 +64,19 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
 
             # filter out sub questions that failed
             qa_pairs: List[SubQuestionAnswerPair] = list(filter(None, qa_pairs_all))
+            if qa_pairs:
+                nodes = [self._construct_node(pair) for pair in qa_pairs]
 
-            nodes = [self._construct_node(pair) for pair in qa_pairs]
-
-            source_nodes = [node for qa_pair in qa_pairs for node in qa_pair.sources]
-            response = self._response_synthesizer.synthesize(
-                query=query_bundle,
-                nodes=nodes,
-                additional_source_nodes=source_nodes,
-            )
+                source_nodes = [
+                    node for qa_pair in qa_pairs for node in qa_pair.sources
+                ]
+                response = self._response_synthesizer.synthesize(
+                    query=query_bundle,
+                    nodes=nodes,
+                    additional_source_nodes=source_nodes,
+                )
+            else:
+                response = Response(response=None, source_nodes=[])
 
             query_event.on_end(payload={EventPayload.RESPONSE: response})
 

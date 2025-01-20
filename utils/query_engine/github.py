@@ -16,7 +16,7 @@ class GitHubDualQueryEngine:
         self.platform_name = "github"
         self.community_id = community_id
 
-    def prepare(self) -> BaseQueryEngine:
+    def prepare(self, enable_answer_skipping: bool) -> BaseQueryEngine:
         engine = DualQdrantRetrievalEngine.setup_engine_with_summaries(
             llm=Settings.llm,
             synthesizer=get_response_synthesizer(),
@@ -26,5 +26,6 @@ class GitHubDualQueryEngine:
             metadata_date_format=DataType.FLOAT,
             metadata_date_summary_key="date",
             metadata_date_summary_format=DataType.FLOAT,
+            enable_answer_skipping=enable_answer_skipping,
         )
         return engine

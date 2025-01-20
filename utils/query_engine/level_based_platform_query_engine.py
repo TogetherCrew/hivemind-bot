@@ -14,7 +14,7 @@ from llama_index.core.response_synthesizers import (
 from llama_index.core.retrievers import BaseRetriever
 from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
-from utils.globals import RETRIEVER_THRESHOLD
+from utils.globals import REFERENCE_SCORE_THRESHOLD, RETRIEVER_THRESHOLD
 from utils.query_engine.base_pg_engine import BasePGEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
 
@@ -50,13 +50,26 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         similar_nodes_filtered = [
             node for node in similar_nodes if node.score >= RETRIEVER_THRESHOLD
         ]
+        raw_scores = [
+            node.score
+            for node in similar_nodes_filtered
+            if node.score >= REFERENCE_SCORE_THRESHOLD
+        ]
 
-        context_str = self._prepare_context_str(
-            raw_nodes=similar_nodes_filtered, summary_nodes=None
-        )
-        fmt_qa_prompt = qa_prompt.format(context_str=context_str, query_str=query_str)
-        response = self.llm.complete(fmt_qa_prompt)
-        logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
+        if not raw_scores and not self._summary_scores and self._enable_answer_skipping:
+            raise ValueError(
+                f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
+                " Returning empty response"
+            )
+        else:
+            context_str = self._prepare_context_str(
+                raw_nodes=similar_nodes_filtered, summary_nodes=None
+            )
+            fmt_qa_prompt = qa_prompt.format(
+                context_str=context_str, query_str=query_str
+            )
+            response = self.llm.complete(fmt_qa_prompt)
+            logging.debug(f"fmt_qa_prompt:\n{fmt_qa_prompt}")
 
         return Response(response=str(response), source_nodes=similar_nodes_filtered)
 
@@ -110,6 +123,10 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                 but if passed we would re-fetch nodes.
                 This could be benefitial in case we want to do some manual
                 processing with nodes
+            enable_answer_skipping : bool
+                skip answering questions with non-relevant retrieved nodes
+                having this, it could provide `None` for response and source_nodes
+
 
         Returns
         ---------
@@ -142,6 +159,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             ),
         )._vector_store
 
+        cls._enable_answer_skipping = kwargs.get("enable_answer_skipping", False)
         _, similarity_top_k, d = load_hyperparams()
         cls._d = d
 
@@ -166,6 +184,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         platform_table_name: str,
         level1_key: str,
         level2_key: str,
+        enable_answer_skipping: bool,
         date_key: str = "date",
         include_summary_context: bool = False,
     ) -> "LevelBasedPlatformQueryEngine":
@@ -196,6 +215,9 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         date_key : str
             the day key which the date is saved under the field in postgresql table.
             for default is is `date` which was the one that we used previously
+        enable_answer_skipping : bool
+            skip answering questions with non-relevant retrieved nodes
+            having this, it could provide `None` for response and source_nodes
 
         Returns
         ---------
@@ -249,8 +271,12 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         # saving to add summaries to the context of prompt
         if include_summary_context:
             cls.summary_nodes = nodes
+            cls._summary_scores = [
+                node.score for node in nodes if node.score >= REFERENCE_SCORE_THRESHOLD
+            ]
         else:
             cls.summary_nodes = []
+            cls._summary_scores = []
 
         cls._utils_class = LevelBasedPlatformUtils(level1_key, level2_key, date_key)
         cls._level1_key = level1_key
@@ -269,6 +295,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             filters=raw_nodes_filters,
             index_summary=index_summary,
             summary_nodes_filters=summary_nodes_filters,
+            enable_answer_skipping=enable_answer_skipping,
         )
         return engine
 
@@ -306,8 +333,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
                 fetched_summary_nodes
             )
             grouped_raw_nodes = self._utils_class.group_nodes_per_metadata(raw_nodes)
-            # print("grouped_summary_nodes", grouped_summary_nodes)
-            # print("grouped_raw_nodes", grouped_raw_nodes)
+
             context_data, (
                 summary_nodes_to_fetch_filters,
                 _,

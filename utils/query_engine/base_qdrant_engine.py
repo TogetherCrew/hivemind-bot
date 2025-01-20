@@ -22,12 +22,15 @@ class BaseQdrantEngine:
         self.platform_name = platform_name
         self.community_id = community_id
 
-    def prepare(self, testing=False) -> BaseQueryEngine:
+    def prepare(
+        self, enable_answer_skipping: bool = False, testing=False
+    ) -> BaseQueryEngine:
         engine = DualQdrantRetrievalEngine.setup_engine(
             llm=Settings.llm,
             synthesizer=get_response_synthesizer(),
             platform_name=self.platform_name,
             community_id=self.community_id,
+            enable_answer_skipping=enable_answer_skipping,
         )
 
         return engine

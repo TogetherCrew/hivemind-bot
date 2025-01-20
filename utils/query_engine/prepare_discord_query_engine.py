@@ -6,6 +6,7 @@ from .level_based_platform_query_engine import LevelBasedPlatformQueryEngine
 def prepare_discord_engine(
     community_id: str,
     filters: list[dict[str, str]],
+    enable_answer_skipping: bool,
     **kwargs,
 ) -> BaseQueryEngine:
     """
@@ -37,6 +38,7 @@ def prepare_discord_engine(
         platform_table_name="discord",
         filters=filters,
         testing=testing,
+        enable_answer_skipping=enable_answer_skipping,
     )
     return query_engine
 
@@ -44,6 +46,7 @@ def prepare_discord_engine(
 def prepare_discord_engine_auto_filter(
     community_id: str,
     query: str,
+    enable_answer_skipping: bool,
 ) -> BaseQueryEngine:
     """
     get the query engine and do the filtering automatically.
@@ -64,7 +67,6 @@ def prepare_discord_engine_auto_filter(
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-
     engine = LevelBasedPlatformQueryEngine.prepare_engine_auto_filter(
         community_id=community_id,
         query=query,
@@ -73,5 +75,6 @@ def prepare_discord_engine_auto_filter(
         level2_key="thread",
         date_key="date",
         include_summary_context=True,
+        enable_answer_skipping=enable_answer_skipping,
     )
     return engine

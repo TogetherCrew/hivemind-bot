@@ -27,6 +27,7 @@ class TestPrepareDiscordEngine(unittest.TestCase):
         query_engine = prepare_discord_engine(
             community_id,
             filters=filters,
+            enable_answer_skipping=False,
             testing=True,
         )
 

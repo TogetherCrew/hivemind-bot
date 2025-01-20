@@ -27,14 +27,8 @@ from utils.query_engine import (
 def query_multiple_source(
     query: str,
     community_id: str,
-    discord: bool = False,
-    discourse: bool = False,
-    google: bool = False,
-    notion: bool = False,
-    telegram: bool = False,
-    github: bool = False,
-    mediaWiki: bool = False,
-    website: bool = False,
+    enable_answer_skipping: bool,
+    **kwargs,
 ) -> tuple[str, list[NodeWithScore]]:
     """
     query multiple platforms and get an answer from the multiple
@@ -45,24 +39,28 @@ def query_multiple_source(
         the user question
     community_id : str
         the community id to get their data
-    discord : bool
-        if `True` then add the engine to the subquery_generator
-        default is set to False
-    discourse : bool
-        if `True` then add the engine to the subquery_generator
-        default is set to False
-    google : bool
-        if `True` then add the engine to the subquery_generator
-        default is set to False
-    notion : bool
-        if `True` then add the engine to the subquery_generator
-        default is set to False
-    telegram : bool
-        if `True` then add the engine to the subquery_generator
-        default is set to False
-    github : bool
-        if `True` then add the engine to the subquery_generator
-        default is set to False
+    enable_answer_skipping : bool
+        skip answering questions with non-relevant retrieved nodes
+        having this, it could provide `None` for response and source_nodes
+    **kwargs:
+        discord : bool
+            if `True` then add the engine to the subquery_generator
+            default is set to False
+        discourse : bool
+            if `True` then add the engine to the subquery_generator
+            default is set to False
+        google : bool
+            if `True` then add the engine to the subquery_generator
+            default is set to False
+        notion : bool
+            if `True` then add the engine to the subquery_generator
+            default is set to False
+        telegram : bool
+            if `True` then add the engine to the subquery_generator
+            default is set to False
+        github : bool
+            if `True` then add the engine to the subquery_generator
+            default is set to False
 
 
     Returns
@@ -73,6 +71,15 @@ def query_multiple_source(
     source_nodes : list[NodeWithScore]
         the list of nodes that were source of answering
     """
+    discord = kwargs.get("discord", False)
+    discourse = kwargs.get("discourse", False)
+    google = kwargs.get("google", False)
+    notion = kwargs.get("notion", False)
+    telegram = kwargs.get("telegram", False)
+    github = kwargs.get("github", False)
+    mediaWiki = kwargs.get("mediaWiki", False)
+    website = kwargs.get("website", False)
+
     query_engine_tools: list[QueryEngineTool] = []
     tools: list[ToolMetadata] = []
     qdrant_utils = QDrantUtils(community_id)
@@ -86,6 +93,7 @@ def query_multiple_source(
         discord_query_engine = prepare_discord_engine_auto_filter(
             community_id,
             query,
+            enable_answer_skipping=enable_answer_skipping,
         )
         tool_metadata = ToolMetadata(
             name="Discord",
@@ -104,6 +112,7 @@ def query_multiple_source(
         discourse_query_engine = prepare_discourse_engine_auto_filter(
             community_id,
             query,
+            enable_answer_skipping=enable_answer_skipping,
         )
         tool_metadata = ToolMetadata(
             name="Discourse",
@@ -117,7 +126,9 @@ def query_multiple_source(
             )
         )
     if google and check_collection("google"):
-        google_query_engine = GDriveQueryEngine(community_id=community_id).prepare()
+        google_query_engine = GDriveQueryEngine(community_id=community_id).prepare(
+            enable_answer_skipping=enable_answer_skipping,
+        )
         tool_metadata = ToolMetadata(
             name="Google-Drive",
             description=(
@@ -132,7 +143,9 @@ def query_multiple_source(
             )
         )
     if notion and check_collection("notion"):
-        notion_query_engine = NotionQueryEngine(community_id=community_id).prepare()
+        notion_query_engine = NotionQueryEngine(community_id=community_id).prepare(
+            enable_answer_skipping=enable_answer_skipping,
+        )
         tool_metadata = ToolMetadata(
             name="Notion",
             description=(
@@ -150,11 +163,13 @@ def query_multiple_source(
         if check_collection("telegram_summary"):
             telegram_query_engine = TelegramDualQueryEngine(
                 community_id=community_id
-            ).prepare()
+            ).prepare(
+                enable_answer_skipping=enable_answer_skipping,
+            )
         else:
             telegram_query_engine = TelegramQueryEngine(
                 community_id=community_id
-            ).prepare()
+            ).prepare(enable_answer_skipping=enable_answer_skipping)
 
         tool_metadata = ToolMetadata(
             name="Telegram",
@@ -171,7 +186,9 @@ def query_multiple_source(
         )
 
     if github and check_collection("github"):
-        github_query_engine = GitHubDualQueryEngine(community_id=community_id).prepare()
+        github_query_engine = GitHubDualQueryEngine(community_id=community_id).prepare(
+            enable_answer_skipping=enable_answer_skipping,
+        )
         tool_metadata = ToolMetadata(
             name="GitHub",
             description=(
@@ -188,7 +205,7 @@ def query_multiple_source(
     if mediaWiki and check_collection("mediawiki"):
         mediawiki_query_engine = MediaWikiQueryEngine(
             community_id=community_id
-        ).prepare()
+        ).prepare(enable_answer_skipping=enable_answer_skipping)
         tool_metadata = ToolMetadata(
             name="WikiPedia",
             description="Hosts articles about any information on internet",
@@ -201,7 +218,9 @@ def query_multiple_source(
         )
 
     if website and check_collection("website"):
-        website_query_engine = WebsiteQueryEngine(community_id=community_id).prepare()
+        website_query_engine = WebsiteQueryEngine(community_id=community_id).prepare(
+            enable_answer_skipping=enable_answer_skipping,
+        )
         tool_metadata = ToolMetadata(
             name="Website",
             description=(

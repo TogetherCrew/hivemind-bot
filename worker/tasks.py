@@ -5,7 +5,7 @@ from celery.signals import task_postrun, task_prerun
 from llama_index.core.schema import NodeWithScore
 from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
-from utils.globals import QUERY_ERROR_MESSAGE
+from utils.globals import NO_DATA_SOURCE_SELECTED, QUERY_ERROR_MESSAGE
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.celery import app
@@ -51,7 +51,8 @@ def task_postrun_handler(sender=None, **kwargs):
 def query_data_sources(
     community_id: str,
     query: str,
-) -> tuple[str, list[NodeWithScore]]:
+    enable_answer_skipping: bool = False,
+) -> tuple[str | None, list[NodeWithScore | None]]:
     """
     ask questions with auto select platforms
 
@@ -61,22 +62,38 @@ def query_data_sources(
         the community id data to use for answering
     query : str
         the user query to ask llm
+    enable_answer_skipping : bool
+        skip answering questions with non-relevant retrieved information
+        having this, it could provide `None` for response and source_nodes
 
     Returns
     ---------
-    response : str
+    response : str | None
         the LLM's response
+        would be `None` in case there was no relevant information was available and enable_answer_skipping was True
     references : list[NodeWithScore]
         the references that the answers were coming from
+        would be a list of `None`
+        in case there was no relevant information was available and enable_answer_skipping was True
     """
-    logging.info(f"COMMUNITY_ID: {community_id} Finding data sources to query to!")
+    prefix = f"COMMUNITY_ID: {community_id}"
+    logging.info(f"{prefix} Finding data sources to query to!")
+    logging.info(
+        f"{prefix} Answer skipping in case of non-relevant information: {enable_answer_skipping}"
+    )
     selector = DataSourceSelector()
     data_sources = selector.select_data_source(community_id)
-    logging.info(f"Quering data sources: {data_sources}!")
-    response, references = query_multiple_source(
-        query=query,
-        community_id=community_id,
-        **data_sources,
-    )
+    if data_sources:
+        logging.info(f"Quering data sources: {list(data_sources.keys())}!")
+        response, references = query_multiple_source(
+            query=query,
+            community_id=community_id,
+            enable_answer_skipping=enable_answer_skipping,
+            **data_sources,
+        )
+    else:
+        logging.info(f"No data source selected!")
+        response = NO_DATA_SOURCE_SELECTED
+        references = []
 
     return response, references

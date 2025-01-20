@@ -27,6 +27,7 @@ class TestPrepareDiscourseEngine(unittest.TestCase):
         query_engine = prepare_discourse_engine(
             community_id=community_id,
             filters=filters,
+            enable_answer_skipping=False,
             testing=True,
         )
 
