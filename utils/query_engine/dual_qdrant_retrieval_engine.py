@@ -48,6 +48,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         synthesizer: BaseSynthesizer,
         platform_name: str,
         community_id: str,
+        enable_answer_skipping: bool,
     ):
         """
         setup the custom query engine on qdrant data
@@ -69,6 +70,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
         _, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
+        cls._enable_answer_skipping = enable_answer_skipping
 
         cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
@@ -98,6 +100,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         metadata_date_format: DataType,
         metadata_date_summary_key: str,
         metadata_date_summary_format: DataType,
+        enable_answer_skipping: bool,
     ):
         """
         setup the custom query engine on qdrant data
@@ -123,11 +126,15 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             the date format in metadata
             In case of `use_summary` equal to be true this shuold be passed
             NOTE: this should be always a string for the filtering of it to work.
+        enable_answer_skipping : bool
+            skip answering questions with non-relevant retrieved nodes
+            having this, it could provide `None` for response and source_nodes
         """
         collection_name = f"{community_id}_{platform_name}"
         summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
         cls._raw_data_top_k = raw_data_top_k
+        cls._enable_answer_skipping = enable_answer_skipping
 
         cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
@@ -183,7 +190,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             node.score for node in nodes if node.score >= REFERENCE_SCORE_THRESHOLD
         ]
 
-        if not raw_scores:
+        if not raw_scores and self._enable_answer_skipping:
             raise ValueError(
                 f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
                 " Returning empty response"
@@ -239,8 +246,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             for node in raw_nodes_filtered
             if node.score >= REFERENCE_SCORE_THRESHOLD
         ]
-
-        if not summary_scores and not raw_scores:
+        if not summary_scores and not raw_scores and self._enable_answer_skipping:
             raise ValueError(
                 f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
                 " Returning empty response"

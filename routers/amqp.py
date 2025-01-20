@@ -32,8 +32,18 @@ async def ask(payload: Payload, logger: Logger):
             community_id = payload.content.communityId
             init_tracing()
             logger.info(f"COMMUNITY_ID: {community_id} Received job")
+
+            if payload.content.metadata:
+                enable_answer_skipping = payload.content.metadata.get(
+                    "enableAnswerSkipping", False
+                )
+            else:
+                enable_answer_skipping = False
+
             response, references = query_data_sources(
-                community_id=community_id, query=question
+                community_id=community_id,
+                query=question,
+                enable_answer_skipping=enable_answer_skipping,
             )
             prepare_answer = PrepareAnswerSources()
             answer_reference = prepare_answer.prepare_answer_sources(nodes=references)
