@@ -65,6 +65,7 @@ class TestLevelBasedPlatformQueryEngine(unittest.TestCase):
                     platform_table_name=self.platform_table_name,
                     level1_key=self.level1_key,
                     level2_key=self.level2_key,
+                    enable_answer_skipping=False,
                     date_key=self.date_key,
                 )
 
@@ -107,6 +108,7 @@ class TestLevelBasedPlatformQueryEngine(unittest.TestCase):
                 level1_key=self.level1_key,
                 level2_key=self.level2_key,
                 date_key=self.date_key,
+                enable_answer_skipping=False,
                 include_summary_context=True,
             )
             self.assertIsNotNone(engine)

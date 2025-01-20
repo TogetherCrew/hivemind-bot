@@ -37,6 +37,7 @@ class TestLevelBasedPlatformQueryEngine(unittest.TestCase):
                 level2_key=self.level2_key,
                 date_key=self.date_key,
                 include_summary_context=True,
+                enable_answer_skipping=False,
             )
 
             raw_nodes = [
@@ -132,6 +133,7 @@ class TestLevelBasedPlatformQueryEngine(unittest.TestCase):
                 level2_key=self.level2_key,
                 date_key=self.date_key,
                 include_summary_context=True,
+                enable_answer_skipping=False,
             )
 
             raw_nodes = [
