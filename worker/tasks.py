@@ -83,7 +83,7 @@ def query_data_sources(
     )
     selector = DataSourceSelector()
     data_sources = selector.select_data_source(community_id)
-    if data_sources:
+    if data_sources or enable_answer_skipping:
         logging.info(f"Quering data sources: {list(data_sources.keys())}!")
         response, references = query_multiple_source(
             query=query,
