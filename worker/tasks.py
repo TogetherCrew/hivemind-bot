@@ -83,6 +83,8 @@ def query_data_sources(
     )
     selector = DataSourceSelector()
     data_sources = selector.select_data_source(community_id)
+
+    references: list = []
     if data_sources or enable_answer_skipping:
         logging.info(f"Quering data sources: {list(data_sources.keys())}!")
         response, references = query_multiple_source(
@@ -95,5 +97,8 @@ def query_data_sources(
         logging.info(f"No data source selected!")
         response = NO_DATA_SOURCE_SELECTED
         references = []
+
+    if enable_answer_skipping and not references:
+        response = None
 
     return response, references
