@@ -35,9 +35,8 @@ class DataSourceSelector:
             },
         )
         if hivemind_module is None:
-            raise ValueError(
-                f"No hivemind modules set for the given community id: {community_id}"
-            )
-        platforms = hivemind_module["options"]["platforms"]
+            platforms = {}
+        else:
+            platforms = hivemind_module["options"]["platforms"]
 
         return platforms
