@@ -17,8 +17,8 @@ class TestDataSourceSelector(TestCase):
         test if no community selected hivemind modeules
         """
         selector = DataSourceSelector()
-        with self.assertRaises(ValueError):
-            selector.select_data_source(community_id=self.community_id)
+        data_sources = selector.select_data_source(community_id=self.community_id)
+        self.assertEqual(data_sources, {})
 
     def test_single_platform(self):
         platform_id = "6579c364f1120850414e0da1"
