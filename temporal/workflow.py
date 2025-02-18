@@ -1,17 +1,19 @@
-from temporalio import workflow, activity
-from worker.tasks import query_data_sources
 from pydantic import BaseModel, Field
+from temporalio import activity, workflow
+from worker.tasks import query_data_sources
 
 
 class HivemindQueryPayload(BaseModel):
     community_id: str = Field(..., "the community id data to use for answering")
     query: str = Field(..., "the user query to ask llm")
     enable_answer_skipping: bool = Field(
-        False, (
+        False,
+        (
             "skip answering questions with non-relevant retrieved information"
             "having this, it could provide `None` for response and source_nodes"
-        )
+        ),
     )
+
 
 @activity.defn
 def run_hivemind_activity(payload: HivemindQueryPayload):

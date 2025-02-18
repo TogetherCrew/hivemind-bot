@@ -3,9 +3,9 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from temporalio.worker import Worker
 from temporal.temporal_client import TemporalClient
-from temporal.workflow import run_hivemind_activity, HivemindWorkflow
+from temporal.workflow import HivemindWorkflow, run_hivemind_activity
+from temporalio.worker import Worker
 
 
 async def main():
