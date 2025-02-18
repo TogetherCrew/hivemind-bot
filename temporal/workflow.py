@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from temporalio import activity, workflow
-from worker.tasks import query_data_sources
+from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
 
 
 class HivemindQueryPayload(BaseModel):
