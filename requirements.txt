@@ -18,3 +18,4 @@ faststream==0.5.28
 aio_pika==9.4.0
 mongomock==4.2.0.post1
 pydantic==2.9.2
+temporalio==1.9.0
