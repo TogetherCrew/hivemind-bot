@@ -1,0 +1,208 @@
+version: '3.9'
+
+networks:
+  temporal-network:
+    name: temporal-network
+    driver: bridge
+
+services:
+  app:
+    build:
+      context: .
+      target: dev-temporal
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MONGODB_HOST=mongo
+      - MONGODB_PORT=27017
+      - MONGODB_USER=root
+      - MONGODB_PASS=pass
+      - TRACELOOP_BASE_URL=some_url
+      - NEO4J_PROTOCOL=bolt
+      - NEO4J_HOST=neo4j
+      - NEO4J_PORT=7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password
+      - NEO4J_DB=neo4j
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=root
+      - POSTGRES_PASS=pass
+      - POSTGRES_PORT=5432
+      - RABBIT_HOST=rabbitmq
+      - RABBIT_PORT=5672
+      - RABBIT_USER=root
+      - RABBIT_PASSWORD=pass
+      - CHUNK_SIZE=512
+      - EMBEDDING_DIM=1024
+      - K1_RETRIEVER_SEARCH=20
+      - K2_RETRIEVER_SEARCH=5
+      - D_RETRIEVER_SEARCH=7
+      - COHERE_API_KEY=some_credentials
+      - OPENAI_API_KEY=some_credentials2
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_API_KEY=
+      - TEMPORAL_TASK_QUEUE=test_queue
+    volumes:
+      - ./coverage:/project/coverage
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant-healthcheck:
+        condition: service_healthy
+    networks:
+      - temporal-network
+
+  mongo:
+    image: "mongo:6.0.8"
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    healthcheck:
+      test: echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - temporal-network
+
+  postgres:
+    image: "ankane/pgvector"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=pass
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - temporal-network
+
+  rabbitmq:
+    image: "rabbitmq:3-management-alpine"
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=pass
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 2
+      start_period: 40s
+    networks:
+      - temporal-network
+
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    restart: always
+    container_name: qdrant
+    ports:
+      - 6333:6333
+    volumes:
+      - ./qdrant_data:/qdrant_data
+    networks:
+      - temporal-network
+
+  qdrant-healthcheck:
+    restart: always
+    image: curlimages/curl:8.11.0
+    entrypoint: ["/bin/sh", "-c", "--", "while true; do sleep 30; done;"]
+    depends_on:
+      - qdrant
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://qdrant:6333/readyz"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+    networks:
+      - temporal-network
+
+  worker:
+    build:
+      context: .
+      target: prod
+    env_file:
+      - .env
+    depends_on:
+      temporal:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - temporal-network
+
+  temporal:
+    image: temporalio/auto-setup:1.25.2.0
+    depends_on:
+      temporal-postgresql:
+        condition: service_healthy
+      qdrant-healthcheck:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-postgresql
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "workflow", "list"]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+    ports:
+      - 7233:7233
+    networks:
+      - temporal-network
+
+  temporal-ui:
+    image: temporalio/ui:2.31.2
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:8080
+    ports:
+      - 8080:8080
+    networks:
+      - temporal-network
+
+  temporal-postgresql:
+    image: postgres:12.21
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - temporal-network
+
+  redis:
+    image: redis:7.0.11
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 2
+      start_period: 10s
+    ports:
+      - 6379:6379
+    networks:
+      - temporal-network
