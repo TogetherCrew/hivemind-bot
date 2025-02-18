@@ -16,4 +16,4 @@ FROM base AS prod
 CMD ["celery", "-A", "worker", "worker", "-l", "INFO"]
 
 FROM base AS dev-temporal
-CMD ["python", "temporal/worker.py"]
+CMD ["python", "temporal/temporal_worker.py"]
