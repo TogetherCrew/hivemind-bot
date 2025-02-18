@@ -3,7 +3,7 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from temporal.temporal_client import TemporalClient
+from tc_temporal_backend.client import TemporalClient
 from temporal.workflow import HivemindWorkflow, run_hivemind_activity
 from temporalio.worker import Worker
 
