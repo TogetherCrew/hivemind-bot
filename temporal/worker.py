@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from tc_temporal_backend.client import TemporalClient
 from temporal.tasks import HivemindWorkflow, run_hivemind_activity
-from temporalio.worker import Worker, UnsandboxedWorkflowRunner
+from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 
 
 async def main():
