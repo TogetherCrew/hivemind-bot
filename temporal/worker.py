@@ -4,8 +4,8 @@ import os
 
 from dotenv import load_dotenv
 from tc_temporal_backend.client import TemporalClient
-from temporal.workflow import HivemindWorkflow, run_hivemind_activity
-from temporalio.worker import Worker
+from temporal.tasks import HivemindWorkflow, run_hivemind_activity
+from temporalio.worker import Worker, UnsandboxedWorkflowRunner
 
 
 async def main():
@@ -23,6 +23,7 @@ async def main():
         task_queue=task_queue,
         workflows=[HivemindWorkflow],
         activities=[run_hivemind_activity],
+        workflow_runner=UnsandboxedWorkflowRunner(),
     )
 
     logging.info("Starting worker...")
