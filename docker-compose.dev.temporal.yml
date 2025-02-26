@@ -45,6 +45,9 @@ services:
       - QDRANT_PORT=6333
       - QDRANT_API_KEY=
       - TEMPORAL_TASK_QUEUE=test_queue
+      - TEMPORAL_HOST=temporal
+      - TEMPORAL_API_KEY=
+      - TEMPORAL_PORT=7233
     volumes:
       - ./coverage:/project/coverage
     depends_on:

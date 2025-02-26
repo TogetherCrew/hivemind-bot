@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 
+from llama_index.core.query_engine import SubQuestionAnswerPair
 from llama_index.core.schema import NodeWithScore
 from utils.globals import REFERENCE_SCORE_THRESHOLD
 
@@ -22,14 +23,14 @@ class PrepareAnswerSources:
         self.threshold = threshold
         self.max_refs_per_source = max_refs_per_source
 
-    def prepare_answer_sources(self, nodes: list[NodeWithScore | None]) -> str:
+    def prepare_answer_sources(self, nodes: list[SubQuestionAnswerPair | None]) -> str:
         """
         Prepares a formatted string containing unique source URLs organized by tool name
         from the provided nodes, avoiding duplicate URLs.
 
         Parameters
         ----------
-        nodes : list[NodeWithScore]
+        nodes : list[SubQuestionAnswerPair]
             A list of node collections used for answering a question. Each node collection
             contains:
             - sub_q.tool_name: Name of the tool that generated these nodes
@@ -58,7 +59,7 @@ class PrepareAnswerSources:
         cleaned_nodes = [n for n in nodes if n is not None]
 
         # Group nodes by tool name while filtering by score and valid URL
-        tool_sources = defaultdict(list)
+        tool_sources: dict[str, list[NodeWithScore]] = defaultdict(list)
         for tool_nodes in cleaned_nodes:
             tool_name = tool_nodes.sub_q.tool_name
             for node in tool_nodes.sources:
