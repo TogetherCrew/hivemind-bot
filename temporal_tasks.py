@@ -60,7 +60,9 @@ class HivemindWorkflow:
 
         return f"{response}\n\n{answer_reference}"
 
-    def serialize_references(self, references: list[dict]) -> SubQuestionAnswerPair:
+    def serialize_references(
+        self, references: list[dict]
+    ) -> list[SubQuestionAnswerPair]:
         ref_nodes: list[SubQuestionAnswerPair] = []
         for ref in references:
             answer = ref["answer"]
