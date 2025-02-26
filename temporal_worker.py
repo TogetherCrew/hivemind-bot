@@ -9,8 +9,9 @@ from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 
 
 async def main():
-    # Initialize environment
     load_dotenv()
+    logging.basicConfig(level=logging.INFO)
+
     task_queue = os.getenv("TEMPORAL_TASK_QUEUE")
     if not task_queue:
         raise ValueError("`TEMPORAL_TASK_QUEUE` is not properly set!")
