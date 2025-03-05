@@ -3,7 +3,7 @@ from datetime import timedelta
 from llama_index.core.query_engine import SubQuestionAnswerPair
 from llama_index.core.schema import NodeWithScore, TextNode
 from pydantic import BaseModel, Field
-from schema import ResponseModel, RouteModel, RouteModelPayload
+from schema import QuestionModel, ResponseModel, RouteModel, RouteModelPayload
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
 from utils.persist_payload import PersistPayload
@@ -36,7 +36,7 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
     response_payload = RouteModelPayload(
         communityId=payload.community_id,
         route=RouteModel(source="temporal", destination=None),
-        question=payload.query,
+        question=QuestionModel(message=payload.query),
         response=ResponseModel(message=f"{response}\n\n{references}"),
         metadata=None,
     )
