@@ -3,7 +3,7 @@ from datetime import timedelta
 from llama_index.core.query_engine import SubQuestionAnswerPair
 from llama_index.core.schema import NodeWithScore, TextNode
 from pydantic import BaseModel, Field
-from schema import ResponseModel, RouteModel, RouteModelPayload, QuestionModel
+from schema import QuestionModel, ResponseModel, RouteModel, RouteModelPayload
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
 from utils.persist_payload import PersistPayload
