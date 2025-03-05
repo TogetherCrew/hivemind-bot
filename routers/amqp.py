@@ -3,7 +3,7 @@ from datetime import datetime
 from faststream.rabbit.fastapi import Logger, RabbitRouter  # type: ignore
 from faststream.rabbit.schemas.queue import RabbitQueue
 from pydantic import BaseModel
-from schema import AMQPPayload, ResponseModel
+from schema import ResponseModel, RouteModelPayload
 from tc_messageBroker.rabbit_mq.event import Event
 from tc_messageBroker.rabbit_mq.queue import Queue
 from utils.credentials import load_rabbitmq_credentials
@@ -21,7 +21,7 @@ router = RabbitRouter(rabbitmq_creds["url"])
 class Payload(BaseModel):
     event: str
     date: datetime | str
-    content: AMQPPayload
+    content: RouteModelPayload
 
 
 @router.subscriber(queue=RabbitQueue(name=Queue.HIVEMIND, durable=True))
@@ -50,7 +50,7 @@ async def ask(payload: Payload, logger: Logger):
 
             logger.info(f"COMMUNITY_ID: {community_id} Job finished")
 
-            response_payload = AMQPPayload(
+            response_payload = RouteModelPayload(
                 communityId=community_id,
                 route=payload.content.route,
                 question=payload.content.question,
@@ -59,7 +59,7 @@ async def ask(payload: Payload, logger: Logger):
             )
             # dumping the whole payload of question & answer to db
             persister = PersistPayload()
-            persister.persist_amqp(response_payload)
+            persister.persist_payload(response_payload)
 
             if response is None:
                 raise ValueError("not confident in answering!")

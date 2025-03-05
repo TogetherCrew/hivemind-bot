@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
-from schema import AMQPPayload, HTTPPayload
+from schema import HTTPPayload, RouteModelPayload
 from utils.mongo import MongoSingleton
 
 
@@ -13,13 +13,13 @@ class PersistPayload:
         self.external_msgs_collection = "external_messages"
         self.client = MongoSingleton.get_instance().get_client()
 
-    def persist_amqp(self, payload: AMQPPayload) -> None:
+    def persist_payload(self, payload: RouteModelPayload) -> None:
         """
-        persist the amqp payload within the database
+        persist the whole payload within the database
 
         Parameters
         -----------
-        payload : schema.AMQPPayload
+        payload : schema.RouteModelPayload
             the data payload to save on database
         """
         community_id = payload.communityId
