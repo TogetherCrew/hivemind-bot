@@ -1,1 +1,7 @@
-from .payload import AMQPPayload, HTTPPayload, QuestionModel, ResponseModel
+from .payload import (
+    RouteModelPayload,
+    HTTPPayload,
+    QuestionModel,
+    ResponseModel,
+    RouteModel,
+)

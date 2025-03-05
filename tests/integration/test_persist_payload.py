@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import mongomock
-from schema import AMQPPayload, HTTPPayload, QuestionModel, ResponseModel
+from schema import RouteModelPayload, HTTPPayload, QuestionModel, ResponseModel
 from utils.persist_payload import PersistPayload
 
 
@@ -22,7 +22,7 @@ class TestPersistPayloadIntegration(unittest.TestCase):
         # Initialize the class under test with the mocked MongoDB client
         self.persist_payload = PersistPayload()
 
-        # Sample AMQPPayload data
+        # Sample RouteModelPayload data
         self.sample_payload_data = {
             "communityId": "650be9f4e2c1234abcd12345",
             "route": {
@@ -55,12 +55,12 @@ class TestPersistPayloadIntegration(unittest.TestCase):
         self.persist_payload.external_msgs_collection = "http_messages"
 
     def test_persist_valid_payload(self):
-        """Test persisting a valid AMQPPayload into the database."""
-        # Create a AMQPPayload instance from the sample data
-        payload = AMQPPayload(**self.sample_payload_data)
+        """Test persisting a valid RouteModelPayload into the database."""
+        # Create a RouteModelPayload instance from the sample data
+        payload = RouteModelPayload(**self.sample_payload_data)
 
-        # Call the `persist_amqp` method to store the payload in the mock database
-        self.persist_payload.persist_amqp(payload)
+        # Call the `persist_payload` method to store the payload in the mock database
+        self.persist_payload.persist_payload(payload)
 
         # Retrieve the persisted document from the mock database
         persisted_data = self.mock_client["hivemind"]["internal_messages"].find_one(
@@ -83,7 +83,7 @@ class TestPersistPayloadIntegration(unittest.TestCase):
 
     def test_persist_with_invalid_payload(self):
         """Test that attempting to persist an invalid payload raises an exception."""
-        # Create an invalid AMQPPayload by omitting required fields
+        # Create an invalid RouteModelPayload by omitting required fields
         invalid_payload_data = {
             "communityId": self.sample_payload_data["communityId"],
             "route": {},  # Invalid as required fields are missing
@@ -92,14 +92,14 @@ class TestPersistPayloadIntegration(unittest.TestCase):
             "metadata": None,
         }
 
-        # Construct the AMQPPayload (this will raise a validation error)
+        # Construct the RouteModelPayload (this will raise a validation error)
         with self.assertRaises(ValueError):
-            AMQPPayload(**invalid_payload_data)
+            RouteModelPayload(**invalid_payload_data)
 
     def test_persist_handles_mongo_exception(self):
         """Test that MongoDB exceptions are properly handled and logged."""
-        # Create a valid AMQPPayload instance
-        payload = AMQPPayload(**self.sample_payload_data)
+        # Create a valid RouteModelPayload instance
+        payload = RouteModelPayload(**self.sample_payload_data)
 
         # Simulate a MongoDB exception during the insert operation
         with patch.object(
@@ -108,7 +108,7 @@ class TestPersistPayloadIntegration(unittest.TestCase):
             side_effect=Exception("Database error"),
         ):
             with self.assertLogs(level="ERROR") as log:
-                self.persist_payload.persist_amqp(payload)
+                self.persist_payload.persist_payload(payload)
                 print("log.output", log.output)
                 self.assertIn(
                     "Failed to persist payload to database for community", log.output[0]

@@ -20,7 +20,7 @@ class ResponseModel(BaseModel):
     message: str
 
 
-class AMQPPayload(BaseModel):
+class RouteModelPayload(BaseModel):
     communityId: str
     route: RouteModel
     question: QuestionModel

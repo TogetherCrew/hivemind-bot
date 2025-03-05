@@ -1,11 +1,11 @@
 from unittest import TestCase
 
 from pydantic import ValidationError
-from schema.payload import AMQPPayload
+from schema.payload import RouteModelPayload
 
 
 class TestPayloadModel(TestCase):
-    """Test suite for AMQPPayload and its nested models."""
+    """Test suite for RouteModelPayload and its nested models."""
 
     valid_community_id = "650be9f4e2c1234abcd12345"
 
@@ -28,7 +28,7 @@ class TestPayloadModel(TestCase):
     def test_valid_payload(self):
         """Test if a valid payload is correctly validated."""
         payload = self.get_valid_payload()
-        validated_model = AMQPPayload(**payload)
+        validated_model = RouteModelPayload(**payload)
         self.assertEqual(validated_model.communityId, payload["communityId"])
         self.assertEqual(validated_model.route.source, payload["route"]["source"])
         self.assertEqual(
@@ -41,7 +41,7 @@ class TestPayloadModel(TestCase):
         payload = self.get_valid_payload()
         del payload["route"]  # Remove a required field
         with self.assertRaises(ValidationError):
-            AMQPPayload(**payload)
+            RouteModelPayload(**payload)
 
     def test_none_as_optional_fields(self):
         """Test if setting optional fields as None is valid."""
@@ -49,23 +49,23 @@ class TestPayloadModel(TestCase):
         payload["route"]["destination"] = None  # Set optional destination to None
         payload["question"]["filters"] = None  # Set optional filters to None
         payload["metadata"] = None  # Set optional metadata to None
-        validated_model = AMQPPayload(**payload)
+        validated_model = RouteModelPayload(**payload)
         self.assertIsNone(validated_model.route.destination)
         self.assertIsNone(validated_model.question.filters)
         self.assertIsNone(validated_model.metadata)
 
     def test_invalid_route(self):
-        """Test if an invalid RouteModel within AMQPPayload raises a ValidationError."""
+        """Test if an invalid RouteModel within RouteModelPayload raises a ValidationError."""
         payload = self.get_valid_payload()
         payload["route"]["source"] = None  # Invalid value for a required field
         with self.assertRaises(ValidationError):
-            AMQPPayload(**payload)
+            RouteModelPayload(**payload)
 
     def test_empty_string_fields(self):
         """Test if fields with empty strings are allowed."""
         payload = self.get_valid_payload()
         payload["route"]["source"] = ""  # Set an empty string
         payload["question"]["message"] = ""  # Set an empty string
-        validated_model = AMQPPayload(**payload)
+        validated_model = RouteModelPayload(**payload)
         self.assertEqual(validated_model.route.source, "")
         self.assertEqual(validated_model.question.message, "")

@@ -7,6 +7,8 @@ from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
+from schema import RouteModelPayload, ResponseModel, RouteModel
+from utils.persist_payload import PersistPayload
 
 
 class HivemindQueryPayload(BaseModel):
@@ -30,6 +32,18 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         query=payload.query,
         enable_answer_skipping=payload.enable_answer_skipping,
     )
+
+    response_payload = RouteModelPayload(
+        communityId=payload.community_id,
+        route=RouteModel(source="temporal", destination=None),
+        question=payload.query,
+        response=ResponseModel(message=f"{response}\n\n{references}"),
+        metadata=None,
+    )
+
+    # dumping the whole payload of question & answer to db
+    persister = PersistPayload()
+    persister.persist_payload(response_payload)
 
     return response, references
 
