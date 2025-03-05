@@ -11,46 +11,8 @@ services:
       context: .
       target: dev-temporal
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - PORT=3000
-      - MONGODB_HOST=mongo
-      - MONGODB_PORT=27017
-      - MONGODB_USER=root
-      - MONGODB_PASS=pass
-      - TRACELOOP_BASE_URL=some_url
-      - NEO4J_PROTOCOL=bolt
-      - NEO4J_HOST=neo4j
-      - NEO4J_PORT=7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=password
-      - NEO4J_DB=neo4j
-      - POSTGRES_HOST=postgres
-      - POSTGRES_USER=root
-      - POSTGRES_PASS=pass
-      - POSTGRES_PORT=5432
-      - RABBIT_HOST=rabbitmq
-      - RABBIT_PORT=5672
-      - RABBIT_USER=root
-      - RABBIT_PASSWORD=pass
-      - CHUNK_SIZE=512
-      - EMBEDDING_DIM=1024
-      - K1_RETRIEVER_SEARCH=20
-      - K2_RETRIEVER_SEARCH=5
-      - D_RETRIEVER_SEARCH=7
-      - COHERE_API_KEY=some_credentials
-      - OPENAI_API_KEY=some_credentials2
-      - QDRANT_HOST=qdrant
-      - QDRANT_PORT=6333
-      - QDRANT_API_KEY=
-      - QDRANT_USE_HTTPS=false
-      - TEMPORAL_TASK_QUEUE=test_queue
-      - TEMPORAL_HOST=temporal
-      - TEMPORAL_API_KEY=
-      - TEMPORAL_PORT=7233
-    volumes:
-      - ./coverage:/project/coverage
+    env_file:
+      .env
     depends_on:
       rabbitmq:
         condition: service_healthy
