@@ -3,12 +3,12 @@ from datetime import timedelta
 from llama_index.core.query_engine import SubQuestionAnswerPair
 from llama_index.core.schema import NodeWithScore, TextNode
 from pydantic import BaseModel, Field
+from schema import ResponseModel, RouteModel, RouteModelPayload
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
+from utils.persist_payload import PersistPayload
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
-from schema import RouteModelPayload, ResponseModel, RouteModel
-from utils.persist_payload import PersistPayload
 
 
 class HivemindQueryPayload(BaseModel):

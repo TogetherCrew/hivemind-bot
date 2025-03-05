@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
-from schema import RouteModelPayload, HTTPPayload
+from schema import HTTPPayload, RouteModelPayload
 from utils.mongo import MongoSingleton
 
 

@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import mongomock
-from schema import RouteModelPayload, HTTPPayload, QuestionModel, ResponseModel
+from schema import HTTPPayload, QuestionModel, ResponseModel, RouteModelPayload
 from utils.persist_payload import PersistPayload
 
 
