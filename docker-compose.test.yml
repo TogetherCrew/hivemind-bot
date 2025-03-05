@@ -13,12 +13,6 @@ services:
       - MONGODB_USER=root
       - MONGODB_PASS=pass
       - TRACELOOP_BASE_URL=some_url
-      - NEO4J_PROTOCOL=bolt
-      - NEO4J_HOST=neo4j
-      - NEO4J_PORT=7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=password
-      - NEO4J_DB=neo4j
       - POSTGRES_HOST=postgres
       - POSTGRES_USER=root
       - POSTGRES_PASS=pass
@@ -40,26 +34,13 @@ services:
     volumes:
       - ./coverage:/project/coverage
     depends_on:
-      neo4j:
-        condition: service_healthy
       mongo:
         condition: service_healthy
       postgres:
         condition: service_healthy
       qdrant-healthcheck:
         condition: service_healthy
-  neo4j:
-    image: "neo4j:5.9.0"
-    environment:
-      - NEO4J_AUTH=neo4j/password
-      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
-      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
-    healthcheck:
-      test: [ "CMD", "wget", "http://localhost:7474" ]
-      interval: 1m30s
-      timeout: 10s
-      retries: 2
-      start_period: 40s
+
   mongo:
     image: "mongo:6.0.8"
     environment:
