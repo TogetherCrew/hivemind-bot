@@ -8,7 +8,7 @@ from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 
 class TestPrepareAnswerSources(unittest.TestCase):
     def setUp(self) -> None:
-        self.prepare = PrepareAnswerSources(threshold=0.7, max_refs_per_source=3)
+        self.prepare = PrepareAnswerSources(threshold=0.7, max_references=3)
 
     def test_empty_nodes_list(self):
         """Test with an empty list of nodes."""
@@ -39,8 +39,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo2\n"  # Higher score (0.9) should come first
             "[2] https://github.com/repo1"
         )
@@ -102,8 +101,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo3\n"  # Highest score (0.9) should come first
             "[2] https://github.com/repo1"
         )
@@ -153,13 +151,10 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            "github:\n"
-            "[1] https://github.com/repo1\n"
-            "[2] https://github.com/repo2\n\n"
-            "stackoverflow:\n"
+            "Top References:\n"
             "[1] https://stackoverflow.com/q1\n"
-            "[2] https://stackoverflow.com/q2"
+            "[2] https://stackoverflow.com/q2\n"
+            "[3] https://github.com/repo1"
         )
         self.assertEqual(result, expected)
 
@@ -185,7 +180,8 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         self.assertEqual(
-            result, ("References:\n" "github:\n" "[1] https://github.com/repo2")
+            result,
+            ("Top References:\n" "[1] https://github.com/repo2"),
         )
 
     def test_missing_urls_with_valid_scores(self):
@@ -209,11 +205,12 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         self.assertEqual(
-            result, ("References:\n" "github:\n" "[1] https://github.com/repo2")
+            result,
+            ("Top References:\n" "[1] https://github.com/repo2"),
         )
 
-    def test_max_refs_per_source_limit(self):
-        """Test that the number of references per source respects the max_refs_per_source limit."""
+    def test_max_references_limit(self):
+        """Test that the number of references per source respects the max_references limit."""
         nodes = [
             SubQuestionAnswerPair(
                 sub_q=SubQuestion(tool_name="github", sub_question="Question"),
@@ -251,17 +248,16 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo2\n"  # Highest score (0.9)
             "[2] https://github.com/repo3\n"  # Second highest (0.85)
             "[3] https://github.com/repo1"  # Third highest (0.8)
         )
         self.assertEqual(result, expected)
 
-    def test_custom_max_refs_per_source(self):
-        """Test with a custom max_refs_per_source value."""
-        prepare_custom = PrepareAnswerSources(threshold=0.7, max_refs_per_source=2)
+    def test_custom_max_references(self):
+        """Test with a custom max_references value."""
+        prepare_custom = PrepareAnswerSources(threshold=0.7, max_references=2)
         nodes = [
             SubQuestionAnswerPair(
                 sub_q=SubQuestion(tool_name="github", sub_question="Question"),
@@ -292,8 +288,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = prepare_custom.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo2\n"  # Highest score (0.9)
             "[2] https://github.com/repo3"  # Second highest (0.85)
         )
