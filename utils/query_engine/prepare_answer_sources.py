@@ -1,6 +1,4 @@
 import logging
-from collections import defaultdict
-
 from llama_index.core.query_engine import SubQuestionAnswerPair
 from llama_index.core.schema import NodeWithScore
 from utils.globals import REFERENCE_SCORE_THRESHOLD
@@ -8,7 +6,7 @@ from utils.globals import REFERENCE_SCORE_THRESHOLD
 
 class PrepareAnswerSources:
     def __init__(
-        self, threshold: float = REFERENCE_SCORE_THRESHOLD, max_refs_per_source: int = 3
+        self, threshold: float = REFERENCE_SCORE_THRESHOLD, max_references: int = 3
     ) -> None:
         """
         Initialize the PrepareAnswerSources class.
@@ -17,15 +15,15 @@ class PrepareAnswerSources:
         ----------
         threshold : float, optional
             Minimum score threshold for including a node's URL, by default 0.5 set in globals file
-        max_refs_per_source : int, optional
-            Maximum number of references to include per data source, by default 3
+        max_references : int, optional
+            Maximum number of references to include, by default 3
         """
         self.threshold = threshold
-        self.max_refs_per_source = max_refs_per_source
+        self.max_references = max_references
 
     def prepare_answer_sources(self, nodes: list[SubQuestionAnswerPair | None]) -> str:
         """
-        Prepares a formatted string containing unique source URLs organized by tool name
+        Prepares a formatted string containing unique source URLs
         from the provided nodes, avoiding duplicate URLs.
 
         Parameters
@@ -41,9 +39,8 @@ class PrepareAnswerSources:
         Returns
         -------
         all_sources : str
-            A formatted string containing numbered URLs organized by tool name, with the format:
-            References:
-            {tool_name}:
+            A formatted string containing numbered URLs with the format:
+            Top `x` references:
             [1] {url1}
             [2] {url2}
 
@@ -52,59 +49,46 @@ class PrepareAnswerSources:
             - No nodes meet the score threshold
             - No valid URLs are found in the nodes' metadata
         """
-        if len(nodes) == 0:
+        # Return early if no nodes
+        if not nodes:
             logging.error("No reference nodes available! returning empty string.")
             return ""
 
-        cleaned_nodes = [n for n in nodes if n is not None]
+        # Flatten and sort nodes (descending by score)
+        all_nodes: list[NodeWithScore] = sorted(
+            (
+                node
+                for subq_node in nodes
+                if subq_node is not None
+                for node in subq_node.sources
+                if node.metadata.get("url")
+            ),
+            key=lambda x: x.score,
+            reverse=True,
+        )
 
-        # Group nodes by tool name while filtering by score and valid URL
-        tool_sources: dict[str, list[NodeWithScore]] = defaultdict(list)
-        for tool_nodes in cleaned_nodes:
-            tool_name = tool_nodes.sub_q.tool_name
-            for node in tool_nodes.sources:
-                if (
-                    node.score >= self.threshold
-                    and node.metadata.get("url") is not None
-                ):
-                    tool_sources[tool_name].append(node)
+        # De-duplicate URLs, and filter by score threshold
+        seen_urls = set()
+        deduped_nodes = []
+        for node in all_nodes:
+            if node.score > self.threshold and node.metadata["url"] not in seen_urls:
+                deduped_nodes.append(node)
+                seen_urls.add(node.metadata["url"])
 
-        if not tool_sources:
+        # Take only top references up to max_references
+        limited_nodes = deduped_nodes[: self.max_references]
+
+        # If nothing remains after filtering, return empty
+        if not limited_nodes:
             logging.error(
-                f"All node scores are below threshold ({self.threshold}). Returning empty string!"
+                f"All node scores are below threshold ({self.threshold}) "
+                "or no valid URLs. Returning empty string!"
             )
             return ""
 
-        all_sources = "References:\n"
-
-        # Process each tool's nodes, remove duplicate URLs, sort and limit references
-        for tool_name, nodes_list in tool_sources.items():
-            unique_nodes = {}
-            for node in nodes_list:
-                url = node.metadata.get("url")
-                # If URL not seen yet or current node has a higher score, update it
-                if url not in unique_nodes or node.score > unique_nodes[url].score:
-                    unique_nodes[url] = node
-
-            # Sort nodes by score in descending order and limit references
-            sorted_nodes = sorted(
-                unique_nodes.values(), key=lambda x: x.score, reverse=True
-            )
-            limited_nodes = sorted_nodes[: self.max_refs_per_source]
-
-            if limited_nodes:
-                sources = [
-                    f"[{idx + 1}] {node.metadata['url']}"
-                    for idx, node in enumerate(limited_nodes)
-                ]
-                sources_combined = "\n".join(sources)
-                all_sources += f"{tool_name}:\n{sources_combined}\n\n"
-
-        if all_sources == "References:\n":
-            logging.error(
-                f"All node scores are below threshold ({self.threshold}). Returning empty string!"
-            )
-            return ""
-
-        # Remove trailing newlines
-        return all_sources.removesuffix("\n\n")
+        # Format the sources
+        sources_str = "\n".join(
+            f"[{idx + 1}] {node.metadata['url']}"
+            for idx, node in enumerate(limited_nodes)
+        )
+        return f"Top {min(len(limited_nodes), self.max_references)} references:\n{sources_str}"
