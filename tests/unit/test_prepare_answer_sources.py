@@ -39,8 +39,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            # "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo2\n"  # Higher score (0.9) should come first
             "[2] https://github.com/repo1"
         )
@@ -102,8 +101,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            # "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo3\n"  # Highest score (0.9) should come first
             "[2] https://github.com/repo1"
         )
@@ -153,10 +151,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            # "github:\n"
-            # "[2] https://github.com/repo2\n\n"
-            # "stackoverflow:\n"
+            "Top References:\n"
             "[1] https://stackoverflow.com/q1\n"
             "[2] https://stackoverflow.com/q2\n"
             "[3] https://github.com/repo1"
@@ -187,8 +182,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         self.assertEqual(
             result,
             (
-                "References:\n"
-                # "github:\n"
+                "Top References:\n"
                 "[1] https://github.com/repo2"
             ),
         )
@@ -216,8 +210,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         self.assertEqual(
             result,
             (
-                "References:\n"
-                # "github:\n"
+                "Top References:\n"
                 "[1] https://github.com/repo2"
             ),
         )
@@ -261,8 +254,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = self.prepare.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            # "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo2\n"  # Highest score (0.9)
             "[2] https://github.com/repo3\n"  # Second highest (0.85)
             "[3] https://github.com/repo1"  # Third highest (0.8)
@@ -302,8 +294,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         ]
         result = prepare_custom.prepare_answer_sources(nodes)
         expected = (
-            "References:\n"
-            # "github:\n"
+            "Top References:\n"
             "[1] https://github.com/repo2\n"  # Highest score (0.9)
             "[2] https://github.com/repo3"  # Second highest (0.85)
         )

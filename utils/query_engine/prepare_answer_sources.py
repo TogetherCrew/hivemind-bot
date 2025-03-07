@@ -91,4 +91,4 @@ class PrepareAnswerSources:
             f"[{idx + 1}] {node.metadata['url']}"
             for idx, node in enumerate(limited_nodes)
         )
-        return f"Top {min(len(limited_nodes), self.max_references)} references:\n{sources_str}"
+        return f"Top References:\n{sources_str}"
