@@ -181,10 +181,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         result = self.prepare.prepare_answer_sources(nodes)
         self.assertEqual(
             result,
-            (
-                "Top References:\n"
-                "[1] https://github.com/repo2"
-            ),
+            ("Top References:\n" "[1] https://github.com/repo2"),
         )
 
     def test_missing_urls_with_valid_scores(self):
@@ -209,10 +206,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
         result = self.prepare.prepare_answer_sources(nodes)
         self.assertEqual(
             result,
-            (
-                "Top References:\n"
-                "[1] https://github.com/repo2"
-            ),
+            ("Top References:\n" "[1] https://github.com/repo2"),
         )
 
     def test_max_references_limit(self):
