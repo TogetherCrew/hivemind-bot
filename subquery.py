@@ -261,6 +261,8 @@ def query_multiple_source(
         QueryBundle(query_str=query, embedding=query_embedding)
     )
     response, source_nodes = result
+    # filtering out None ones
+    source_nodes = [node for node in source_nodes if node]
 
     if source_nodes == []:
         return NO_ANSWER_REFERENCE, source_nodes
