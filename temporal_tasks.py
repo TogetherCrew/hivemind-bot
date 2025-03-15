@@ -71,8 +71,10 @@ class HivemindWorkflow:
         answer_reference = PrepareAnswerSources().prepare_answer_sources(
             nodes=references_nodes
         )
-
-        return f"{response}\n\n{answer_reference}"
+        if response:
+            return f"{response}\n\n{answer_reference}"
+        else:
+            return None
 
     def serialize_references(
         self, references: list[dict]
