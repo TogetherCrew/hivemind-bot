@@ -2,27 +2,13 @@ from datetime import timedelta
 
 from llama_index.core.query_engine import SubQuestionAnswerPair
 from llama_index.core.schema import NodeWithScore, TextNode
-from pydantic import BaseModel, Field
 from schema import QuestionModel, ResponseModel, RouteModel, RouteModelPayload
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
 from utils.persist_payload import PersistPayload
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
-
-
-class HivemindQueryPayload(BaseModel):
-    community_id: str = Field(
-        ..., description="the community id data to use for answering"
-    )
-    query: str = Field(..., description="the user query to ask llm")
-    enable_answer_skipping: bool = Field(
-        False,
-        description=(
-            "skip answering questions with non-relevant retrieved information"
-            "having this, it could provide `None` for response and source_nodes"
-        ),
-    )
+from tc_temporal_backend.schema.hivemind import HivemindQueryPayload
 
 
 @activity.defn
