@@ -30,6 +30,7 @@ class TestDataSourceSelector(TestCase):
                     "platforms": [
                         {
                             "platform": ObjectId(platform_id),
+                            "_id": ObjectId(platform_id),
                             "name": "discord",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
@@ -44,7 +45,7 @@ class TestDataSourceSelector(TestCase):
         self.assertEqual(
             data_sources,
             {
-                "discord": True,
+                "discord": platform_id,
             },
         )
 
@@ -61,6 +62,7 @@ class TestDataSourceSelector(TestCase):
                     "platforms": [
                         {
                             "platform": ObjectId(platform_id1),
+                            "_id": ObjectId(platform_id1),
                             "name": "discord",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
@@ -68,6 +70,7 @@ class TestDataSourceSelector(TestCase):
                         },
                         {
                             "platform": ObjectId(platform_id2),
+                            "_id": ObjectId(platform_id2),
                             "name": "github",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
@@ -75,6 +78,7 @@ class TestDataSourceSelector(TestCase):
                         },
                         {
                             "platform": ObjectId(platform_id3),
+                            "_id": ObjectId(platform_id3),
                             "name": "discourse",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
@@ -89,8 +93,8 @@ class TestDataSourceSelector(TestCase):
         self.assertEqual(
             data_sources,
             {
-                "discord": True,
-                "github": True,
-                "discourse": True,
+                "discord": platform_id1,
+                "github": platform_id2,
+                "discourse": platform_id3,
             },
         )

@@ -84,6 +84,9 @@ def query_data_sources(
     selector = DataSourceSelector()
     data_sources = selector.select_data_source(community_id)
 
+    # Platform IDs are now directly in data_sources, pass them directly
+    # No need to convert to boolean values
+
     references: list = []
     if data_sources or enable_answer_skipping:
         logging.info(f"Quering data sources: {list(data_sources.keys())}!")

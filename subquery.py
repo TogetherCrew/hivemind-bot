@@ -43,34 +43,34 @@ def query_multiple_source(
         skip answering questions with non-relevant retrieved nodes
         having this, it could provide `None` for response and source_nodes
     **kwargs:
-        discord : bool
-            if `True` then add the engine to the subquery_generator
-            default is set to False
-        discourse : bool
-            if `True` then add the engine to the subquery_generator
-            default is set to False
-        google : bool
-            if `True` then add the engine to the subquery_generator
-            default is set to False
-        notion : bool
-            if `True` then add the engine to the subquery_generator
-            default is set to False
-        telegram : bool
-            if `True` then add the engine to the subquery_generator
-            default is set to False
-        github : bool
-            if `True` then add the engine to the subquery_generator
-            default is set to False
+        Platform keys can be either boolean flags or platform IDs:
+        discord : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
+        discourse : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
+        google : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
+        notion : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
+        telegram : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
+        github : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
+        mediaWiki : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
+        website : bool or str
+            if boolean True or a string platform ID, add the engine to the subquery_generator
 
 
     Returns
     --------
     response : str,
         the response to the user query from the LLM
-        using the engines of the given platforms (platform equal to True)
+        using the engines of the given platforms
     source_nodes : list[NodeWithScore]
         the list of nodes that were source of answering
     """
+    # Get platform values - can be either boolean or platform IDs
     discord = kwargs.get("discord", False)
     discourse = kwargs.get("discourse", False)
     google = kwargs.get("google", False)
@@ -125,115 +125,147 @@ def query_multiple_source(
                 metadata=tool_metadata,
             )
         )
-    if google and check_collection("google"):
-        google_query_engine = GDriveQueryEngine(community_id=community_id).prepare(
-            enable_answer_skipping=enable_answer_skipping,
-        )
-        tool_metadata = ToolMetadata(
-            name="Google-Drive",
-            description=(
-                "Stores and manages documents, spreadsheets, presentations,"
-                " and other files for the community."
-            ),
-        )
-        query_engine_tools.append(
-            QueryEngineTool(
-                query_engine=google_query_engine,
-                metadata=tool_metadata,
-            )
-        )
-    if notion and check_collection("notion"):
-        notion_query_engine = NotionQueryEngine(community_id=community_id).prepare(
-            enable_answer_skipping=enable_answer_skipping,
-        )
-        tool_metadata = ToolMetadata(
-            name="Notion",
-            description=(
-                "Centralizes notes, wikis, project plans, and to-dos for the community."
-            ),
-        )
-        query_engine_tools.append(
-            QueryEngineTool(
-                query_engine=notion_query_engine,
-                metadata=tool_metadata,
-            )
-        )
-    if telegram and check_collection("telegram"):
-        # checking if the summaries was available
-        if check_collection("telegram_summary"):
-            telegram_query_engine = TelegramDualQueryEngine(
-                community_id=community_id
+    if google:
+        # Extract platform_id if provided
+        platform_id = google if isinstance(google, str) else None
+
+        if check_collection(platform_id or "google"):
+            google_query_engine = GDriveQueryEngine(
+                community_id=community_id, platform_id=platform_id
             ).prepare(
                 enable_answer_skipping=enable_answer_skipping,
             )
-        else:
-            telegram_query_engine = TelegramQueryEngine(
-                community_id=community_id
+            tool_metadata = ToolMetadata(
+                name="Google-Drive",
+                description=(
+                    "Stores and manages documents, spreadsheets, presentations,"
+                    " and other files for the community."
+                ),
+            )
+            query_engine_tools.append(
+                QueryEngineTool(
+                    query_engine=google_query_engine,
+                    metadata=tool_metadata,
+                )
+            )
+    if notion:
+        # Extract platform_id if provided
+        platform_id = notion if isinstance(notion, str) else None
+
+        if check_collection(platform_id or "notion"):
+            notion_query_engine = NotionQueryEngine(
+                community_id=community_id, platform_id=platform_id
+            ).prepare(
+                enable_answer_skipping=enable_answer_skipping,
+            )
+            tool_metadata = ToolMetadata(
+                name="Notion",
+                description=(
+                    "Centralizes notes, wikis, project plans, and to-dos for the community."
+                ),
+            )
+            query_engine_tools.append(
+                QueryEngineTool(
+                    query_engine=notion_query_engine,
+                    metadata=tool_metadata,
+                )
+            )
+    if telegram:
+        # Extract platform_id if provided
+        platform_id = telegram if isinstance(telegram, str) else None
+
+        if check_collection(platform_id or "telegram"):
+            # checking if the summaries was available
+            if check_collection((platform_id or "telegram") + "_summary"):
+                telegram_query_engine = TelegramDualQueryEngine(
+                    community_id=community_id, platform_id=platform_id
+                ).prepare(
+                    enable_answer_skipping=enable_answer_skipping,
+                )
+            else:
+                telegram_query_engine = TelegramQueryEngine(
+                    community_id=community_id, platform_id=platform_id
+                ).prepare(enable_answer_skipping=enable_answer_skipping)
+
+            tool_metadata = ToolMetadata(
+                name="Telegram",
+                description=(
+                    "Contains messages, conversations, and media from the Telegram platform,"
+                    " used for group discussions within the community."
+                ),
+            )
+            query_engine_tools.append(
+                QueryEngineTool(
+                    query_engine=telegram_query_engine,
+                    metadata=tool_metadata,
+                )
+            )
+
+    if github:
+        # Extract platform_id if provided
+        platform_id = github if isinstance(github, str) else None
+
+        if check_collection(platform_id or "github"):
+            github_query_engine = GitHubDualQueryEngine(
+                community_id=community_id, platform_id=platform_id
+            ).prepare(
+                enable_answer_skipping=enable_answer_skipping,
+            )
+            tool_metadata = ToolMetadata(
+                name="GitHub",
+                description=(
+                    "Hosts commits and conversations from Github issues and"
+                    " pull requests from the selected repositories"
+                ),
+            )
+            query_engine_tools.append(
+                QueryEngineTool(
+                    query_engine=github_query_engine,
+                    metadata=tool_metadata,
+                )
+            )
+    if mediaWiki:
+        # Extract platform_id if provided
+        platform_id = mediaWiki if isinstance(mediaWiki, str) else None
+
+        if check_collection(platform_id or "mediawiki"):
+            mediawiki_query_engine = MediaWikiQueryEngine(
+                community_id=community_id, platform_id=platform_id
             ).prepare(enable_answer_skipping=enable_answer_skipping)
+            tool_metadata = ToolMetadata(
+                name="WikiPedia",
+                description="Hosts articles about any information on internet",
+            )
+            query_engine_tools.append(
+                QueryEngineTool(
+                    query_engine=mediawiki_query_engine,
+                    metadata=tool_metadata,
+                )
+            )
 
-        tool_metadata = ToolMetadata(
-            name="Telegram",
-            description=(
-                "Contains messages, conversations, and media from the Telegram platform,"
-                " used for group discussions within the community."
-            ),
-        )
-        query_engine_tools.append(
-            QueryEngineTool(
-                query_engine=telegram_query_engine,
-                metadata=tool_metadata,
-            )
-        )
+    if website:
+        # Extract platform_id if provided
+        platform_id = website if isinstance(website, str) else None
 
-    if github and check_collection("github"):
-        github_query_engine = GitHubDualQueryEngine(community_id=community_id).prepare(
-            enable_answer_skipping=enable_answer_skipping,
-        )
-        tool_metadata = ToolMetadata(
-            name="GitHub",
-            description=(
-                "Hosts commits and conversations from Github issues and"
-                " pull requests from the selected repositories"
-            ),
-        )
-        query_engine_tools.append(
-            QueryEngineTool(
-                query_engine=github_query_engine,
-                metadata=tool_metadata,
+        if check_collection(platform_id or "website"):
+            website_query_engine = WebsiteQueryEngine(
+                community_id=community_id, platform_id=platform_id
+            ).prepare(
+                enable_answer_skipping=enable_answer_skipping,
             )
-        )
-    if mediaWiki and check_collection("mediawiki"):
-        mediawiki_query_engine = MediaWikiQueryEngine(
-            community_id=community_id
-        ).prepare(enable_answer_skipping=enable_answer_skipping)
-        tool_metadata = ToolMetadata(
-            name="WikiPedia",
-            description="Hosts articles about any information on internet",
-        )
-        query_engine_tools.append(
-            QueryEngineTool(
-                query_engine=mediawiki_query_engine,
-                metadata=tool_metadata,
+            tool_metadata = ToolMetadata(
+                name="Website",
+                description=(
+                    "Hosts a diverse collection of crawled data from various "
+                    "online sources to facilitate community insights and analysis."
+                ),
             )
-        )
-
-    if website and check_collection("website"):
-        website_query_engine = WebsiteQueryEngine(community_id=community_id).prepare(
-            enable_answer_skipping=enable_answer_skipping,
-        )
-        tool_metadata = ToolMetadata(
-            name="Website",
-            description=(
-                "Hosts a diverse collection of crawled data from various "
-                "online sources to facilitate community insights and analysis."
-            ),
-        )
-        query_engine_tools.append(
-            QueryEngineTool(
-                query_engine=website_query_engine,
-                metadata=tool_metadata,
+            query_engine_tools.append(
+                QueryEngineTool(
+                    query_engine=website_query_engine,
+                    metadata=tool_metadata,
+                )
             )
-        )
     if not BasePreprocessor().extract_main_content(text=query):
         response = INVALID_QUERY_RESPONSE
         source_nodes = []

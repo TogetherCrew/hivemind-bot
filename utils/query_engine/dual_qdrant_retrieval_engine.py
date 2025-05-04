@@ -46,7 +46,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         cls,
         llm: OpenAI,
         synthesizer: BaseSynthesizer,
-        platform_name: str,
+        platform_id: str,
         community_id: str,
         enable_answer_skipping: bool,
     ):
@@ -61,12 +61,12 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             the process of generating response using an LLM
         qa_prompt : PromptTemplate
             the prompt template to be filled and passed to an LLM
-        platform_name : str
-            specifying the platform data to identify the data collection
+        platform_id : str
+            specifying the platform ID to identify the data collection
         community_id : str
             specifying community_id to identify the data collection
         """
-        collection_name = f"{community_id}_{platform_name}"
+        collection_name = f"{community_id}_{platform_id}"
 
         _, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
@@ -94,7 +94,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         cls,
         llm: OpenAI,
         synthesizer: BaseSynthesizer,
-        platform_name: str,
+        platform_id: str,
         community_id: str,
         metadata_date_key: str,
         metadata_date_format: DataType,
@@ -115,8 +115,8 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             the llm to be used for RAG pipeline
         synthesizer : BaseSynthesizer
             the process of generating response using an LLM
-        platform_name : str
-            specifying the platform data to identify the data collection
+        platform_id : str
+            specifying the platform ID to identify the data collection
         community_id : str
             specifying community_id to identify the data collection
         metadata_date_summary_key : str | None
@@ -130,7 +130,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             skip answering questions with non-relevant retrieved nodes
             having this, it could provide `None` for response and source_nodes
         """
-        collection_name = f"{community_id}_{platform_name}"
+        collection_name = f"{community_id}_{platform_id}"
         summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
         cls._raw_data_top_k = raw_data_top_k
