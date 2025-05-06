@@ -3,7 +3,7 @@ from utils.mongo import MongoSingleton
 
 
 class DataSourceSelector:
-    def select_data_source(self, community_id: str) -> dict[str, bool]:
+    def select_data_source(self, community_id: str) -> dict[str, str]:
         """
         Given a community id, find all its data sources selected for hivemind module
 
@@ -14,13 +14,13 @@ class DataSourceSelector:
 
         Returns
         ----------
-        data_sources : dict[str, bool]
-            a dictionary representing what data sources is selcted
-            for the given community
+        data_sources : dict[str, str]
+            a dictionary representing what data sources is selected
+            for the given community, with platform names as keys and
+            platform IDs as values
         """
         db_results = self._query_modules_db(community_id)
-        platforms = list(map(lambda data: data["name"], db_results))
-        data_sources = dict.fromkeys(platforms, True)
+        data_sources = {data["name"]: str(data["_id"]) for data in db_results}
         return data_sources
 
     def _query_modules_db(self, community_id: str) -> list[dict]:
@@ -32,6 +32,7 @@ class DataSourceSelector:
             },
             {
                 "options.platforms.name": 1,
+                "options.platforms._id": 1,
             },
         )
         if hivemind_module is None:
