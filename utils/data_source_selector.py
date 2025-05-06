@@ -20,7 +20,7 @@ class DataSourceSelector:
             platform IDs as values
         """
         db_results = self._query_modules_db(community_id)
-        data_sources = {data["name"]: str(data["_id"]) for data in db_results}
+        data_sources = {data["name"]: str(data["platform"]) for data in db_results}
         return data_sources
 
     def _query_modules_db(self, community_id: str) -> list[dict]:
@@ -32,7 +32,7 @@ class DataSourceSelector:
             },
             {
                 "options.platforms.name": 1,
-                "options.platforms._id": 1,
+                "options.platforms.platform": 1,
             },
         )
         if hivemind_module is None:
