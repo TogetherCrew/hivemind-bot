@@ -30,7 +30,7 @@ class TestDataSourceSelector(TestCase):
                     "platforms": [
                         {
                             "platform": ObjectId(platform_id),
-                            "_id": ObjectId(platform_id),
+                            "_id": ObjectId(),
                             "name": "discord",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
@@ -62,7 +62,7 @@ class TestDataSourceSelector(TestCase):
                     "platforms": [
                         {
                             "platform": ObjectId(platform_id1),
-                            "_id": ObjectId(platform_id1),
+                            "_id": ObjectId(),
                             "name": "discord",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
@@ -70,7 +70,7 @@ class TestDataSourceSelector(TestCase):
                         },
                         {
                             "platform": ObjectId(platform_id2),
-                            "_id": ObjectId(platform_id2),
+                            "_id": ObjectId(),
                             "name": "github",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
@@ -78,7 +78,7 @@ class TestDataSourceSelector(TestCase):
                         },
                         {
                             "platform": ObjectId(platform_id3),
-                            "_id": ObjectId(platform_id3),
+                            "_id": ObjectId(),
                             "name": "discourse",
                             "metadata": {
                                 "fromDate": datetime(2024, 1, 1),
