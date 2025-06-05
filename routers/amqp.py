@@ -52,7 +52,7 @@ async def ask(payload: Payload, logger: Logger):
 
             logger.info(f"COMMUNITY_ID: {community_id} Job finished")
 
-            eval_result = AnswerRelevanceEvaluation().evaluate(
+            eval_result = await AnswerRelevanceEvaluation().evaluate(
                 question=question, answer=response
             )
 

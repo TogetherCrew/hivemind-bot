@@ -54,7 +54,7 @@ async def status(
                 detail="Task belongs to another community!",
             )
 
-        eval_result = AnswerRelevanceEvaluation().evaluate(
+        eval_result = await AnswerRelevanceEvaluation().evaluate(
             question=task.result["question"], answer=task.result["response"]
         )
         http_payload = HTTPPayload(

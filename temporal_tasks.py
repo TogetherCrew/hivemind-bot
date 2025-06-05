@@ -21,7 +21,7 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         enable_answer_skipping=payload.enable_answer_skipping,
     )
 
-    eval_result = AnswerRelevanceEvaluation().evaluate(
+    eval_result = await AnswerRelevanceEvaluation().evaluate(
         question=payload.query, answer=response
     )
     response_payload = RouteModelPayload(
