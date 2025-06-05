@@ -12,6 +12,8 @@ from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.tasks import query_data_sources
 from worker.utils.fire_event import job_send
+from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
+from bot.evaluations.schema import AnswerRelevanceSuccess
 
 rabbitmq_creds = load_rabbitmq_credentials()
 
@@ -50,12 +52,28 @@ async def ask(payload: Payload, logger: Logger):
 
             logger.info(f"COMMUNITY_ID: {community_id} Job finished")
 
+            eval_result = AnswerRelevanceEvaluation().evaluate(
+                question=question, answer=response
+            )
+
             response_payload = RouteModelPayload(
                 communityId=community_id,
                 route=payload.content.route,
                 question=payload.content.question,
                 response=ResponseModel(message=f"{response}\n\n{answer_reference}"),
-                metadata=payload.content.metadata,
+                metadata={
+                    **payload.content.metadata,
+                    "answer_relevance_score": (
+                        eval_result.score
+                        if isinstance(eval_result, AnswerRelevanceSuccess)
+                        else eval_result.error
+                    ),
+                    "answer_relevance_explanation": (
+                        eval_result.explanation
+                        if isinstance(eval_result, AnswerRelevanceSuccess)
+                        else eval_result.error
+                    ),
+                },
             )
             # dumping the whole payload of question & answer to db
             persister = PersistPayload()

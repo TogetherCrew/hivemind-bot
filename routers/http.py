@@ -3,11 +3,13 @@ import logging
 from celery.result import AsyncResult
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
 from schema import HTTPPayload, QuestionModel, ResponseModel
 from services.api_key import validate_token
 from starlette.status import HTTP_403_FORBIDDEN
 from utils.persist_payload import PersistPayload
 from worker.tasks import ask_question_auto_search
+from bot.evaluations.schema import AnswerRelevanceSuccess
 
 
 class RequestPayload(BaseModel):
@@ -51,11 +53,27 @@ async def status(
                 status_code=HTTP_403_FORBIDDEN,
                 detail="Task belongs to another community!",
             )
+
+        eval_result = AnswerRelevanceEvaluation().evaluate(
+            question=task.result["question"], answer=task.result["response"]
+        )
         http_payload = HTTPPayload(
             communityId=community_id,
             question=QuestionModel(message=task.result["question"]),
             response=ResponseModel(message=task.result["response"]),
             taskId=task.id,
+            metadata={
+                "answer_relevance_score": (
+                    eval_result.score
+                    if isinstance(eval_result, AnswerRelevanceSuccess)
+                    else eval_result.error
+                ),
+                "answer_relevance_explanation": (
+                    eval_result.explanation
+                    if isinstance(eval_result, AnswerRelevanceSuccess)
+                    else eval_result.error
+                ),
+            },
         )
 
         # persisting the data updates in db
