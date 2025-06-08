@@ -9,6 +9,8 @@ from utils.persist_payload import PersistPayload
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
 from tc_temporal_backend.schema.hivemind import HivemindQueryPayload
+from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
+from bot.evaluations.schema import AnswerRelevanceSuccess
 
 
 @activity.defn
@@ -19,12 +21,26 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         enable_answer_skipping=payload.enable_answer_skipping,
     )
 
+    eval_result = await AnswerRelevanceEvaluation().evaluate(
+        question=payload.query, answer=response
+    )
     response_payload = RouteModelPayload(
         communityId=payload.community_id,
         route=RouteModel(source="temporal", destination=None),
         question=QuestionModel(message=payload.query),
         response=ResponseModel(message=f"{response}\n\n{references}"),
-        metadata=None,
+        metadata={
+            "answer_relevance_score": (
+                eval_result.score
+                if isinstance(eval_result, AnswerRelevanceSuccess)
+                else eval_result.error
+            ),
+            "answer_relevance_explanation": (
+                eval_result.explanation
+                if isinstance(eval_result, AnswerRelevanceSuccess)
+                else eval_result.error
+            ),
+        },
     )
 
     # dumping the whole payload of question & answer to db
