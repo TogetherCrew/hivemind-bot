@@ -17,17 +17,7 @@ from llama_index.llms.openai import OpenAI
 from utils.globals import REFERENCE_SCORE_THRESHOLD, RETRIEVER_THRESHOLD
 from utils.query_engine.base_pg_engine import BasePGEngine
 from utils.query_engine.level_based_platforms_util import LevelBasedPlatformUtils
-
-qa_prompt = PromptTemplate(
-    "Context information is below.\n"
-    "---------------------\n"
-    "{context_str}\n"
-    "---------------------\n"
-    "Given the context information and not prior knowledge, "
-    "answer the query.\n"
-    "Query: {query_str}\n"
-    "Answer: "
-)
+from utils.query_engine.qa_prompt import qa_prompt
 
 
 class LevelBasedPlatformQueryEngine(CustomQueryEngine):
