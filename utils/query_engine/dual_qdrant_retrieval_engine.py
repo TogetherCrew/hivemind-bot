@@ -13,17 +13,7 @@ from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
 from utils.globals import REFERENCE_SCORE_THRESHOLD, RETRIEVER_THRESHOLD
 from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
-
-qa_prompt = PromptTemplate(
-    "Context information is below.\n"
-    "---------------------\n"
-    "{context_str}\n"
-    "---------------------\n"
-    "Given the context information and not prior knowledge, "
-    "answer the query very concisely.\n"
-    "Query: {query_str}\n"
-    "Answer (concisely): "
-)
+from utils.query_engine.qa_prompt import qa_prompt
 
 
 class DualQdrantRetrievalEngine(CustomQueryEngine):
