@@ -47,7 +47,13 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
     persister = PersistPayload()
     persister.persist_payload(response_payload)
 
-    return response, references
+    # Hardcoded threshold for answer relevance
+    # if the relevance score is less than 3, we do not return the answer
+    # and in case of enable_answer_skipping is True (auto-answering questions)
+    if eval_result.score < 3 and payload.enable_answer_skipping:
+        return None, []
+    else:
+        return response, references
 
 
 @workflow.defn
