@@ -52,8 +52,8 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
     # and in case of enable_answer_skipping is True (auto-answering questions)
     if eval_result.score < 3 and payload.enable_answer_skipping:
         return None, []
-    else:
-        return response, references
+
+    return response, references
 
 
 @workflow.defn
