@@ -50,7 +50,11 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
     # Hardcoded threshold for answer relevance
     # if the relevance score is less than 3, we do not return the answer
     # and in case of enable_answer_skipping is True (auto-answering questions)
-    if eval_result.score < 3 and payload.enable_answer_skipping:
+    if (
+        isinstance(eval_result, AnswerRelevanceSuccess)
+        and eval_result.score < 3
+        and payload.enable_answer_skipping
+    ):
         return None, []
 
     return response, references
