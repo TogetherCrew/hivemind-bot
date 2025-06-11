@@ -38,11 +38,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
             )
         ]
         result = self.prepare.prepare_answer_sources(nodes)
-        expected = (
-            "Top References:\n"
-            "[1] https://github.com/repo2\n"  # Higher score (0.9) should come first
-            "[2] https://github.com/repo1"
-        )
+        expected = "Top References: [[1]](https://github.com/repo2) [[2]](https://github.com/repo1)"  # Higher score (0.9) should come first
         self.assertEqual(result, expected)
 
     def test_urls_below_score_threshold(self):
@@ -100,11 +96,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
             )
         ]
         result = self.prepare.prepare_answer_sources(nodes)
-        expected = (
-            "Top References:\n"
-            "[1] https://github.com/repo3\n"  # Highest score (0.9) should come first
-            "[2] https://github.com/repo1"
-        )
+        expected = "Top References: [[1]](https://github.com/repo3) [[2]](https://github.com/repo1)"  # Highest score (0.9) should come first
         self.assertEqual(result, expected)
 
     def test_multiple_tools_with_valid_scores(self):
@@ -150,12 +142,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
             ),
         ]
         result = self.prepare.prepare_answer_sources(nodes)
-        expected = (
-            "Top References:\n"
-            "[1] https://stackoverflow.com/q1\n"
-            "[2] https://stackoverflow.com/q2\n"
-            "[3] https://github.com/repo1"
-        )
+        expected = "Top References: [[1]](https://stackoverflow.com/q1) [[2]](https://stackoverflow.com/q2) [[3]](https://github.com/repo1)"
         self.assertEqual(result, expected)
 
     def test_none_urls_with_valid_scores(self):
@@ -179,10 +166,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
             )
         ]
         result = self.prepare.prepare_answer_sources(nodes)
-        self.assertEqual(
-            result,
-            ("Top References:\n" "[1] https://github.com/repo2"),
-        )
+        self.assertEqual(result, "Top References: [[1]](https://github.com/repo2)")
 
     def test_missing_urls_with_valid_scores(self):
         """Test with missing URLs that have valid scores."""
@@ -204,10 +188,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
             )
         ]
         result = self.prepare.prepare_answer_sources(nodes)
-        self.assertEqual(
-            result,
-            ("Top References:\n" "[1] https://github.com/repo2"),
-        )
+        self.assertEqual(result, "Top References: [[1]](https://github.com/repo2)")
 
     def test_max_references_limit(self):
         """Test that the number of references per source respects the max_references limit."""
@@ -247,12 +228,7 @@ class TestPrepareAnswerSources(unittest.TestCase):
             )
         ]
         result = self.prepare.prepare_answer_sources(nodes)
-        expected = (
-            "Top References:\n"
-            "[1] https://github.com/repo2\n"  # Highest score (0.9)
-            "[2] https://github.com/repo3\n"  # Second highest (0.85)
-            "[3] https://github.com/repo1"  # Third highest (0.8)
-        )
+        expected = "Top References: [[1]](https://github.com/repo2) [[2]](https://github.com/repo3) [[3]](https://github.com/repo1)"  # Top 3 by score
         self.assertEqual(result, expected)
 
     def test_custom_max_references(self):
@@ -287,9 +263,5 @@ class TestPrepareAnswerSources(unittest.TestCase):
             )
         ]
         result = prepare_custom.prepare_answer_sources(nodes)
-        expected = (
-            "Top References:\n"
-            "[1] https://github.com/repo2\n"  # Highest score (0.9)
-            "[2] https://github.com/repo3"  # Second highest (0.85)
-        )
+        expected = "Top References: [[1]](https://github.com/repo2) [[2]](https://github.com/repo3)"  # Top 2 by score
         self.assertEqual(result, expected)
