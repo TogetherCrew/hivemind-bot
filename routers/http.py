@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
 from bot.evaluations.answer_confidence import AnswerConfidenceEvaluation
+from bot.evaluations.question_answered import QuestionAnswerCoverageEvaluation
 from schema import HTTPPayload, QuestionModel, ResponseModel
 from services.api_key import validate_token
 from starlette.status import HTTP_403_FORBIDDEN
 from utils.persist_payload import PersistPayload
 from worker.tasks import ask_question_auto_search
-from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess
+from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess, QuestionAnswerCoverageSuccess
 
 
 class RequestPayload(BaseModel):
@@ -61,6 +62,9 @@ async def status(
         confidence_result = await AnswerConfidenceEvaluation().evaluate(
             question=task.result["question"], answer=task.result["response"]
         )
+        coverage_result = await QuestionAnswerCoverageEvaluation().evaluate(
+            question=task.result["question"], answer=task.result["response"]
+        )
         http_payload = HTTPPayload(
             communityId=community_id,
             question=QuestionModel(message=task.result["question"]),
@@ -86,6 +90,21 @@ async def status(
                     confidence_result.explanation
                     if isinstance(confidence_result, AnswerConfidenceSuccess)
                     else confidence_result.error
+                ),
+                "answer_coverage_answered": (
+                    coverage_result.answered
+                    if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                    else False
+                ),
+                "answer_coverage_score": (
+                    coverage_result.score
+                    if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                    else coverage_result.error
+                ),
+                "answer_coverage_explanation": (
+                    coverage_result.explanation
+                    if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                    else coverage_result.error
                 ),
             },
         )

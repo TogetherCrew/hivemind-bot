@@ -95,3 +95,46 @@ class AnswerConfidenceError(EvaluationResult):
 
     error: str
     raw_response: str
+
+
+class QuestionAnswerCoverageSuccess(EvaluationResult):
+    """
+    Model for successful question answer coverage evaluation results.
+
+    Attributes
+    ----------
+    answered : bool
+        Whether the question was actually answered (True/False)
+    score : int
+        Score from 1-10 indicating how well the question was answered
+    explanation : str
+        Brief explanation of the evaluation
+    question : str
+        The question that was asked
+    answer : str
+        The answer that was evaluated
+    """
+
+    answered: bool
+    score: int
+    explanation: str
+
+
+class QuestionAnswerCoverageError(EvaluationResult):
+    """
+    Model for failed question answer coverage evaluation results.
+
+    Attributes
+    ----------
+    error : str
+        Error message describing what went wrong
+    raw_response : str
+        The raw response from the LLM that couldn't be parsed
+    question : str
+        The question that was asked
+    answer : str
+        The answer that was evaluated
+    """
+
+    error: str
+    raw_response: str

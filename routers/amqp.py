@@ -14,7 +14,8 @@ from worker.tasks import query_data_sources
 from worker.utils.fire_event import job_send
 from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
 from bot.evaluations.answer_confidence import AnswerConfidenceEvaluation
-from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess
+from bot.evaluations.question_answered import QuestionAnswerCoverageEvaluation
+from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess, QuestionAnswerCoverageSuccess
 
 rabbitmq_creds = load_rabbitmq_credentials()
 
@@ -61,6 +62,10 @@ async def ask(payload: Payload, logger: Logger):
                 question=question, answer=response
             )
 
+            coverage_result = await QuestionAnswerCoverageEvaluation().evaluate(
+                question=question, answer=response
+            )
+
             response_payload = RouteModelPayload(
                 communityId=community_id,
                 route=payload.content.route,
@@ -87,6 +92,21 @@ async def ask(payload: Payload, logger: Logger):
                         confidence_result.explanation
                         if isinstance(confidence_result, AnswerConfidenceSuccess)
                         else confidence_result.error
+                    ),
+                    "answer_coverage_answered": (
+                        coverage_result.answered
+                        if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                        else False
+                    ),
+                    "answer_coverage_score": (
+                        coverage_result.score
+                        if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                        else coverage_result.error
+                    ),
+                    "answer_coverage_explanation": (
+                        coverage_result.explanation
+                        if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                        else coverage_result.error
                     ),
                 },
             )
