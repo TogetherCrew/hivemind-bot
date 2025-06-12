@@ -13,7 +13,8 @@ from utils.traceloop import init_tracing
 from worker.tasks import query_data_sources
 from worker.utils.fire_event import job_send
 from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
-from bot.evaluations.schema import AnswerRelevanceSuccess
+from bot.evaluations.answer_confidence import AnswerConfidenceEvaluation
+from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess
 
 rabbitmq_creds = load_rabbitmq_credentials()
 
@@ -56,6 +57,10 @@ async def ask(payload: Payload, logger: Logger):
                 question=question, answer=response
             )
 
+            confidence_result = await AnswerConfidenceEvaluation().evaluate(
+                question=question, answer=response
+            )
+
             response_payload = RouteModelPayload(
                 communityId=community_id,
                 route=payload.content.route,
@@ -72,6 +77,16 @@ async def ask(payload: Payload, logger: Logger):
                         eval_result.explanation
                         if isinstance(eval_result, AnswerRelevanceSuccess)
                         else eval_result.error
+                    ),
+                    "answer_confidence_score": (
+                        confidence_result.score
+                        if isinstance(confidence_result, AnswerConfidenceSuccess)
+                        else confidence_result.error
+                    ),
+                    "answer_confidence_explanation": (
+                        confidence_result.explanation
+                        if isinstance(confidence_result, AnswerConfidenceSuccess)
+                        else confidence_result.error
                     ),
                 },
             )
