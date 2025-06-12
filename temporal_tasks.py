@@ -12,7 +12,8 @@ from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
 from tc_temporal_backend.schema.hivemind import HivemindQueryPayload
 from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
 from bot.evaluations.answer_confidence import AnswerConfidenceEvaluation
-from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess
+from bot.evaluations.question_answered import QuestionAnswerCoverageEvaluation
+from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess, QuestionAnswerCoverageSuccess
 
 
 @activity.defn
@@ -27,6 +28,9 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         question=payload.query, answer=response
     )
     confidence_result = await AnswerConfidenceEvaluation().evaluate(
+        question=payload.query, answer=response
+    )
+    coverage_result = await QuestionAnswerCoverageEvaluation().evaluate(
         question=payload.query, answer=response
     )
     response_payload = RouteModelPayload(
@@ -55,6 +59,21 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
                 if isinstance(confidence_result, AnswerConfidenceSuccess)
                 else confidence_result.error
             ),
+            "answer_coverage_answered": (
+                coverage_result.answered
+                if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                else False
+            ),
+            "answer_coverage_score": (
+                coverage_result.score
+                if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                else coverage_result.error
+            ),
+            "answer_coverage_explanation": (
+                coverage_result.explanation
+                if isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+                else coverage_result.error
+            ),
         },
     )
 
@@ -66,12 +85,12 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
     # if the relevance score is less than 3, we do not return the answer
     # and in case of enable_answer_skipping is True (auto-answering questions)
     if (
-        isinstance(confidence_result, AnswerConfidenceSuccess)
-        and confidence_result.score < 3
+        isinstance(coverage_result, QuestionAnswerCoverageSuccess)
+        and coverage_result.score < 3
         and payload.enable_answer_skipping
     ):
         logging.warning(
-            f"Answer confidence score is less than 3, skipping answer: {confidence_result.score}"
+            f"Answer coverage score is less than 3, skipping answer: {coverage_result.score}"
         )
 
         return None, []
