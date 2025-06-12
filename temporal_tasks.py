@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 from llama_index.core.query_engine import SubQuestionAnswerPair
 from llama_index.core.schema import NodeWithScore, TextNode
@@ -10,7 +11,8 @@ from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
 from tc_temporal_backend.schema.hivemind import HivemindQueryPayload
 from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
-from bot.evaluations.schema import AnswerRelevanceSuccess
+from bot.evaluations.answer_confidence import AnswerConfidenceEvaluation
+from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess
 
 
 @activity.defn
@@ -21,7 +23,10 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         enable_answer_skipping=payload.enable_answer_skipping,
     )
 
-    eval_result = await AnswerRelevanceEvaluation().evaluate(
+    relevancy_result = await AnswerRelevanceEvaluation().evaluate(
+        question=payload.query, answer=response
+    )
+    confidence_result = await AnswerConfidenceEvaluation().evaluate(
         question=payload.query, answer=response
     )
     response_payload = RouteModelPayload(
@@ -31,14 +36,24 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         response=ResponseModel(message=f"{response}\n\n{references}"),
         metadata={
             "answer_relevance_score": (
-                eval_result.score
-                if isinstance(eval_result, AnswerRelevanceSuccess)
-                else eval_result.error
+                relevancy_result.score
+                if isinstance(relevancy_result, AnswerRelevanceSuccess)
+                else relevancy_result.error
             ),
             "answer_relevance_explanation": (
-                eval_result.explanation
-                if isinstance(eval_result, AnswerRelevanceSuccess)
-                else eval_result.error
+                relevancy_result.explanation
+                if isinstance(relevancy_result, AnswerRelevanceSuccess)
+                else relevancy_result.error
+            ),
+            "answer_confidence_score": (
+                confidence_result.score
+                if isinstance(confidence_result, AnswerConfidenceSuccess)
+                else confidence_result.error
+            ),
+            "answer_confidence_explanation": (
+                confidence_result.explanation
+                if isinstance(confidence_result, AnswerConfidenceSuccess)
+                else confidence_result.error
             ),
         },
     )
@@ -51,10 +66,14 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
     # if the relevance score is less than 3, we do not return the answer
     # and in case of enable_answer_skipping is True (auto-answering questions)
     if (
-        isinstance(eval_result, AnswerRelevanceSuccess)
-        and eval_result.score < 3
+        isinstance(confidence_result, AnswerConfidenceSuccess)
+        and confidence_result.score < 3
         and payload.enable_answer_skipping
     ):
+        logging.warning(
+            f"Answer confidence score is less than 3, skipping answer: {confidence_result.score}"
+        )
+
         return None, []
 
     return response, references
