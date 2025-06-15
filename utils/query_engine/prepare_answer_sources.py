@@ -88,8 +88,8 @@ class PrepareAnswerSources:
             return ""
 
         # Format the sources
-        sources_str = " ".join(
-            f"[[{idx + 1}]]({node.metadata['url']})"
+        sources_str = "\n".join(
+            f"[{idx + 1}] {node.metadata['url']}"
             for idx, node in enumerate(limited_nodes)
         )
-        return f"Top References: {sources_str}"
+        return f"Top References:\n{sources_str}"
