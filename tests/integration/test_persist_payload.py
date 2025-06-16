@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import mongomock
+from bson import ObjectId
 from schema import HTTPPayload, QuestionModel, ResponseModel, RouteModelPayload
 from utils.persist_payload import PersistPayload
 
@@ -113,6 +114,107 @@ class TestPersistPayloadIntegration(unittest.TestCase):
                 self.assertIn(
                     "Failed to persist payload to database for community", log.output[0]
                 )
+
+    def test_persist_payload_with_workflow_id_update(self):
+        """Test updating an existing document when workflow_id is provided."""
+        # Create a RouteModelPayload instance from the sample data
+        payload = RouteModelPayload(**self.sample_payload_data)
+        workflow_id = "507f1f77bcf86cd799439011"  # Valid ObjectId format
+
+        # First, insert an initial document with the workflow_id and existing metadata
+        initial_data = self.sample_payload_data.copy()
+        initial_data["_id"] = ObjectId(workflow_id)
+        initial_data["response"]["message"] = "Initial response"
+        initial_data["metadata"] = {"existing_key": "existing_value", "timestamp": "2023-10-08T12:00:00"}
+        self.mock_client["hivemind"]["internal_messages"].insert_one(initial_data)
+
+        # Update the payload with new response and new metadata
+        updated_payload = RouteModelPayload(**self.sample_payload_data)
+        updated_payload.response.message = "Updated response"
+        updated_payload.metadata = {"new_key": "new_value", "answer_relevance_score": 0.95}
+
+        # Call the `persist_payload` method with workflow_id to update the existing document
+        self.persist_payload.persist_payload(updated_payload, workflow_id=workflow_id)
+
+        # Retrieve the updated document from the mock database
+        updated_data = self.mock_client["hivemind"]["internal_messages"].find_one(
+            {"_id": ObjectId(workflow_id)}
+        )
+
+        # Check that the document was updated correctly
+        self.assertIsNotNone(updated_data)
+        self.assertEqual(updated_data["_id"], ObjectId(workflow_id))
+        self.assertEqual(updated_data["response"]["message"], "Updated response")
+        self.assertEqual(
+            updated_data["communityId"], self.sample_payload_data["communityId"]
+        )
+        
+        # Check that metadata was merged correctly (existing + new metadata)
+        expected_metadata = {
+            "existing_key": "existing_value", 
+            "timestamp": "2023-10-08T12:00:00",
+            "new_key": "new_value", 
+            "answer_relevance_score": 0.95
+        }
+        self.assertEqual(updated_data["metadata"], expected_metadata)
+
+    def test_persist_payload_with_workflow_id_upsert(self):
+        """Test upsert behavior when workflow_id is provided but document doesn't exist."""
+        # Create a RouteModelPayload instance from the sample data
+        payload = RouteModelPayload(**self.sample_payload_data)
+        workflow_id = "507f1f77bcf86cd799439012"  # Valid ObjectId format
+
+        # Ensure the document does not exist before upsert
+        initial_check = self.mock_client["hivemind"]["internal_messages"].find_one(
+            {"_id": ObjectId(workflow_id)}
+        )
+        self.assertIsNone(initial_check)
+
+        # Call the `persist_payload` method with workflow_id to perform upsert
+        self.persist_payload.persist_payload(payload, workflow_id=workflow_id)
+
+        # Check that the document now exists in the collection
+        upserted_data = self.mock_client["hivemind"]["internal_messages"].find_one(
+            {"_id": ObjectId(workflow_id)}
+        )
+        self.assertIsNotNone(upserted_data)
+        self.assertEqual(upserted_data["_id"], ObjectId(workflow_id))
+        self.assertEqual(
+            upserted_data["communityId"], self.sample_payload_data["communityId"]
+        )
+        self.assertEqual(
+            upserted_data["response"]["message"],
+            self.sample_payload_data["response"]["message"],
+        )
+
+    def test_persist_payload_without_workflow_id_insert(self):
+        """Test inserting new document when workflow_id is None (default behavior)."""
+        # Create a RouteModelPayload instance from the sample data
+        payload = RouteModelPayload(**self.sample_payload_data)
+
+        # Call the `persist_payload` method without workflow_id (default behavior)
+        self.persist_payload.persist_payload(payload, workflow_id=None)
+
+        # Retrieve the persisted document from the mock database
+        persisted_data = self.mock_client["hivemind"]["internal_messages"].find_one(
+            {"communityId": self.sample_payload_data["communityId"]}
+        )
+
+        # Check that the persisted document matches the original payload
+        self.assertIsNotNone(persisted_data)
+        self.assertEqual(
+            persisted_data["communityId"], self.sample_payload_data["communityId"]
+        )
+        self.assertEqual(
+            persisted_data["route"]["source"],
+            self.sample_payload_data["route"]["source"],
+        )
+        self.assertEqual(
+            persisted_data["question"]["message"],
+            self.sample_payload_data["question"]["message"],
+        )
+        # Ensure workflow_id is not present in the document
+        self.assertNotIn("workflow_id", persisted_data)
 
     def test_persist_http_insert(self):
         """Test inserting a new HTTPPayload into the database."""

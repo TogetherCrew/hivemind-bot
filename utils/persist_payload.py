@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+from bson import ObjectId
 
 from schema import HTTPPayload, RouteModelPayload
 from utils.mongo import MongoSingleton
@@ -13,7 +14,7 @@ class PersistPayload:
         self.external_msgs_collection = "external_messages"
         self.client = MongoSingleton.get_instance().get_client()
 
-    def persist_payload(self, payload: RouteModelPayload) -> None:
+    def persist_payload(self, payload: RouteModelPayload, workflow_id: str | None = None) -> None:
         """
         persist the whole payload within the database
 
@@ -21,19 +22,64 @@ class PersistPayload:
         -----------
         payload : schema.RouteModelPayload
             the data payload to save on database
+        workflow_id : str | None
+            if provided, update the existing document with this workflow_id
+            if None, insert a new document
         """
         community_id = payload.communityId
         try:
-            self.client[self.db][self.internal_msgs_collection].insert_one(
-                {
-                    **payload.model_dump(),
-                    "createdAt": datetime.now().replace(tzinfo=timezone.utc),
-                    "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
-                }
-            )
-            logging.info(
-                f"Payload for community id: {community_id} persisted successfully!"
-            )
+            if workflow_id is None:
+                # Insert new document (current behavior)
+                self.client[self.db][self.internal_msgs_collection].insert_one(
+                    {
+                        **payload.model_dump(),
+                        "createdAt": datetime.now().replace(tzinfo=timezone.utc),
+                        "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
+                    }
+                )
+                logging.info(
+                    f"New payload for community id: {community_id} persisted successfully!"
+                )
+            else:
+                # Update existing document with workflow_id
+                # Check if createdAt needs to be set if it doesn't exist
+                self.client[self.db][self.internal_msgs_collection].update_one(
+                    {"_id": ObjectId(workflow_id), "createdAt": {"$exists": False}},
+                    {
+                        "$set": {
+                            "createdAt": datetime.now().replace(tzinfo=timezone.utc)
+                        }
+                    },
+                )
+
+                # Get existing document to merge metadata
+                existing_doc = self.client[self.db][self.internal_msgs_collection].find_one(
+                    {"_id": ObjectId(workflow_id)}
+                )
+                
+                # Merge metadata if existing document has metadata
+                merged_metadata = payload.metadata
+                if existing_doc and "metadata" in existing_doc and existing_doc["metadata"]:
+                    if merged_metadata is None:
+                        merged_metadata = {}
+                    # Merge existing metadata with new metadata (new metadata takes precedence)
+                    merged_metadata = {**existing_doc["metadata"], **merged_metadata}
+
+                # Update or upsert the main document with evaluation results and response
+                self.client[self.db][self.internal_msgs_collection].update_one(
+                    {"_id": ObjectId(workflow_id)},
+                    {
+                        "$set": {
+                            "metadata": merged_metadata,
+                            "response": payload.response.model_dump(),
+                            "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
+                        }
+                    },
+                    upsert=True,
+                )
+                logging.info(
+                    f"Updated payload for community id: {community_id} with workflow_id: {workflow_id} persisted successfully!"
+                )
         except Exception as exp:
             logging.error(
                 f"Failed to persist payload to database for community: {community_id}!"
