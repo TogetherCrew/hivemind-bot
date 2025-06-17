@@ -65,16 +65,30 @@ class PersistPayload:
                     # Merge existing metadata with new metadata (new metadata takes precedence)
                     merged_metadata = {**existing_doc["metadata"], **merged_metadata}
 
-                # Update or upsert the main document with evaluation results and response
-                self.client[self.db][self.internal_msgs_collection].update_one(
-                    {"_id": ObjectId(workflow_id)},
-                    {
+                # Prepare the update document
+                if existing_doc:
+                    # Update existing document - only update specific fields
+                    update_doc = {
                         "$set": {
                             "metadata": merged_metadata,
                             "response": payload.response.model_dump(),
                             "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
                         }
-                    },
+                    }
+                else:
+                    # Upsert new document - include all payload fields
+                    update_doc = {
+                        "$set": {
+                            **payload.model_dump(),
+                            "metadata": merged_metadata,
+                            "updatedAt": datetime.now().replace(tzinfo=timezone.utc),
+                        }
+                    }
+
+                # Update or upsert the main document with evaluation results and response
+                self.client[self.db][self.internal_msgs_collection].update_one(
+                    {"_id": ObjectId(workflow_id)},
+                    update_doc,
                     upsert=True,
                 )
                 logging.info(
