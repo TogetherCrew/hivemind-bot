@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+import copy
 
 import mongomock
 from bson import ObjectId
@@ -122,7 +123,7 @@ class TestPersistPayloadIntegration(unittest.TestCase):
         workflow_id = "507f1f77bcf86cd799439011"  # Valid ObjectId format
 
         # First, insert an initial document with the workflow_id and existing metadata
-        initial_data = self.sample_payload_data.copy()
+        initial_data = copy.deepcopy(self.sample_payload_data)
         initial_data["_id"] = ObjectId(workflow_id)
         initial_data["response"]["message"] = "Initial response"
         initial_data["metadata"] = {"existing_key": "existing_value", "timestamp": "2023-10-08T12:00:00"}
@@ -252,7 +253,7 @@ class TestPersistPayloadIntegration(unittest.TestCase):
     def test_persist_http_update(self):
         """Test updating an existing HTTPPayload document in the database."""
         # Insert an initial HTTP payload document into the mock database
-        initial_data = self.sample_http_payload_data.copy()
+        initial_data = copy.deepcopy(self.sample_http_payload_data)
         initial_data["response"]["message"] = "Not Found"  # Initial message
         self.mock_client["hivemind"]["http_messages"].insert_one(initial_data)
 
