@@ -77,9 +77,11 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         },
     )
 
-    # dumping the whole payload of question & answer to db
+    # Get workflow ID and update the payload in the database
+    # If workflow_id is None, insert new data; else update existing document with evaluation results and response
+    workflow_id = getattr(payload, 'workflow_id', None)
     persister = PersistPayload()
-    persister.persist_payload(response_payload)
+    persister.persist_payload(response_payload, workflow_id=workflow_id)
 
     # Hardcoded threshold for answer relevance
     # if the relevance score is less than 3, we do not return the answer
