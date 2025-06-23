@@ -79,7 +79,23 @@ class QdrantEngineUtils:
                 )
             )
 
-        filter = models.Filter(should=should_filters)
+        # we want messages older than 5 minutes ago
+        # to avoid the question being included within the context (real-time data ingestion case)
+        latest_query_date = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).timestamp()
+
+        must_filters: list[models.FieldCondition] = [
+            models.FieldCondition(
+                    key=self.metadata_date_key,
+                    range=models.Range(
+                        lte=int(latest_query_date) if self.metadata_date_format == DataType.INTEGER else latest_query_date,
+                    ),
+            )
+        ]
+
+        filter = models.Filter(
+            should=should_filters,
+            must=must_filters
+        )
 
         return filter
 
