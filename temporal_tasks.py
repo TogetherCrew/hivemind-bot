@@ -13,7 +13,14 @@ from tc_temporal_backend.schema.hivemind import HivemindQueryPayload
 from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
 from bot.evaluations.answer_confidence import AnswerConfidenceEvaluation
 from bot.evaluations.question_answered import QuestionAnswerCoverageEvaluation
-from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess, QuestionAnswerCoverageSuccess
+from bot.evaluations.schema import (
+    AnswerRelevanceSuccess,
+    AnswerConfidenceSuccess,
+    QuestionAnswerCoverageSuccess,
+    AnswerRelevanceError,
+    AnswerConfidenceError,
+    QuestionAnswerCoverageError,
+)
 
 
 @activity.defn
@@ -24,15 +31,33 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         enable_answer_skipping=payload.enable_answer_skipping,
     )
 
-    relevancy_result = await AnswerRelevanceEvaluation().evaluate(
-        question=payload.query, answer=response
-    )
-    confidence_result = await AnswerConfidenceEvaluation().evaluate(
-        question=payload.query, answer=response
-    )
-    coverage_result = await QuestionAnswerCoverageEvaluation().evaluate(
-        question=payload.query, answer=response
-    )
+    if response:
+        relevancy_result = await AnswerRelevanceEvaluation().evaluate(
+            question=payload.query, answer=response
+        )
+        confidence_result = await AnswerConfidenceEvaluation().evaluate(
+            question=payload.query, answer=response
+        )
+        coverage_result = await QuestionAnswerCoverageEvaluation().evaluate(
+            question=payload.query, answer=response
+        )
+    else:
+        relevancy_result = AnswerRelevanceError(
+            error="No response from the query engine",
+            question=payload.query,
+            answer=None,
+        )
+        confidence_result = AnswerConfidenceError(
+            error="No response from the query engine",
+            question=payload.query,
+            answer=None,
+        )
+        coverage_result = QuestionAnswerCoverageError(
+            error="No response from the query engine",
+            question=payload.query,
+            answer=None,
+        )
+
     response_payload = RouteModelPayload(
         communityId=payload.community_id,
         route=RouteModel(source="temporal", destination=None),
@@ -79,7 +104,7 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
 
     # Get workflow ID and update the payload in the database
     # If workflow_id is None, insert new data; else update existing document with evaluation results and response
-    workflow_id = getattr(payload, 'workflow_id', None)
+    workflow_id = getattr(payload, "workflow_id", None)
     persister = PersistPayload()
     persister.persist_payload(response_payload, workflow_id=workflow_id)
 

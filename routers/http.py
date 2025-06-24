@@ -11,7 +11,11 @@ from services.api_key import validate_token
 from starlette.status import HTTP_403_FORBIDDEN
 from utils.persist_payload import PersistPayload
 from worker.tasks import ask_question_auto_search
-from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess, QuestionAnswerCoverageSuccess
+from bot.evaluations.schema import (
+    AnswerRelevanceSuccess,
+    AnswerConfidenceSuccess,
+    QuestionAnswerCoverageSuccess,
+)
 
 
 class RequestPayload(BaseModel):

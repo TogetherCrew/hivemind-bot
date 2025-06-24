@@ -14,7 +14,9 @@ class PersistPayload:
         self.external_msgs_collection = "external_messages"
         self.client = MongoSingleton.get_instance().get_client()
 
-    def persist_payload(self, payload: RouteModelPayload, workflow_id: str | None = None) -> None:
+    def persist_payload(
+        self, payload: RouteModelPayload, workflow_id: str | None = None
+    ) -> None:
         """
         persist the whole payload within the database
 
@@ -53,13 +55,17 @@ class PersistPayload:
                 )
 
                 # Get existing document to merge metadata
-                existing_doc = self.client[self.db][self.internal_msgs_collection].find_one(
-                    {"_id": ObjectId(workflow_id)}
-                )
-                
+                existing_doc = self.client[self.db][
+                    self.internal_msgs_collection
+                ].find_one({"_id": ObjectId(workflow_id)})
+
                 # Merge metadata if existing document has metadata
                 merged_metadata = payload.metadata
-                if existing_doc and "metadata" in existing_doc and existing_doc["metadata"]:
+                if (
+                    existing_doc
+                    and "metadata" in existing_doc
+                    and existing_doc["metadata"]
+                ):
                     if merged_metadata is None:
                         merged_metadata = {}
                     # Merge existing metadata with new metadata (new metadata takes precedence)
