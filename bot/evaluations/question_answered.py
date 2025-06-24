@@ -97,4 +97,4 @@ class QuestionAnswerCoverageEvaluation(BaseEvaluation):
                 raw_response=response,
                 question=question,
                 answer=answer,
-            ) 
+            )

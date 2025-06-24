@@ -15,7 +15,11 @@ from worker.utils.fire_event import job_send
 from bot.evaluations.answer_relevance import AnswerRelevanceEvaluation
 from bot.evaluations.answer_confidence import AnswerConfidenceEvaluation
 from bot.evaluations.question_answered import QuestionAnswerCoverageEvaluation
-from bot.evaluations.schema import AnswerRelevanceSuccess, AnswerConfidenceSuccess, QuestionAnswerCoverageSuccess
+from bot.evaluations.schema import (
+    AnswerRelevanceSuccess,
+    AnswerConfidenceSuccess,
+    QuestionAnswerCoverageSuccess,
+)
 
 rabbitmq_creds = load_rabbitmq_credentials()
 

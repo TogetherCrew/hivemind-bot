@@ -126,13 +126,19 @@ class TestPersistPayloadIntegration(unittest.TestCase):
         initial_data = copy.deepcopy(self.sample_payload_data)
         initial_data["_id"] = ObjectId(workflow_id)
         initial_data["response"]["message"] = "Initial response"
-        initial_data["metadata"] = {"existing_key": "existing_value", "timestamp": "2023-10-08T12:00:00"}
+        initial_data["metadata"] = {
+            "existing_key": "existing_value",
+            "timestamp": "2023-10-08T12:00:00",
+        }
         self.mock_client["hivemind"]["internal_messages"].insert_one(initial_data)
 
         # Update the payload with new response and new metadata
         updated_payload = RouteModelPayload(**self.sample_payload_data)
         updated_payload.response.message = "Updated response"
-        updated_payload.metadata = {"new_key": "new_value", "answer_relevance_score": 0.95}
+        updated_payload.metadata = {
+            "new_key": "new_value",
+            "answer_relevance_score": 0.95,
+        }
 
         # Call the `persist_payload` method with workflow_id to update the existing document
         self.persist_payload.persist_payload(updated_payload, workflow_id=workflow_id)
@@ -149,13 +155,13 @@ class TestPersistPayloadIntegration(unittest.TestCase):
         self.assertEqual(
             updated_data["communityId"], self.sample_payload_data["communityId"]
         )
-        
+
         # Check that metadata was merged correctly (existing + new metadata)
         expected_metadata = {
-            "existing_key": "existing_value", 
+            "existing_key": "existing_value",
             "timestamp": "2023-10-08T12:00:00",
-            "new_key": "new_value", 
-            "answer_relevance_score": 0.95
+            "new_key": "new_value",
+            "answer_relevance_score": 0.95,
         }
         self.assertEqual(updated_data["metadata"], expected_metadata)
 

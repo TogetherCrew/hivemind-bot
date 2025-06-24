@@ -80,4 +80,4 @@ class AnswerConfidenceEvaluation(BaseEvaluation):
                 raw_response=response,
                 question=question,
                 answer=answer,
-            ) 
+            )

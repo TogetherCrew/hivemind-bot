@@ -104,7 +104,7 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
 
     # Get workflow ID and update the payload in the database
     # If workflow_id is None, insert new data; else update existing document with evaluation results and response
-    workflow_id = getattr(payload, 'workflow_id', None)
+    workflow_id = getattr(payload, "workflow_id", None)
     persister = PersistPayload()
     persister.persist_payload(response_payload, workflow_id=workflow_id)
 
