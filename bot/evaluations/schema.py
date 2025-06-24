@@ -94,7 +94,7 @@ class AnswerConfidenceError(EvaluationResult):
     """
 
     error: str
-    raw_response: str
+    raw_response: str | None = None
 
 
 class QuestionAnswerCoverageSuccess(EvaluationResult):
@@ -137,4 +137,4 @@ class QuestionAnswerCoverageError(EvaluationResult):
     """
 
     error: str
-    raw_response: str
+    raw_response: str | None = None
