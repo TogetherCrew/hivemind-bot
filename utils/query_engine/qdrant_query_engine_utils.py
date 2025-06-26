@@ -5,6 +5,7 @@ from dateutil.parser import parse
 from llama_index.core.schema import NodeWithScore
 from qdrant_client.http import models
 from schema.type import DataType
+from utils.globals import EXCLUDED_DATE_MARGIN
 
 
 class QdrantEngineUtils:
@@ -79,9 +80,11 @@ class QdrantEngineUtils:
                 )
             )
 
-        # we want messages older than 5 minutes ago
+        # we want messages older than EXCLUDED_DATE_MARGIN minutes ago
         # to avoid the question being included within the context (real-time data ingestion case)
-        latest_query_date = (datetime.now(tz=timezone.utc) - timedelta(minutes=5)).timestamp()
+        latest_query_date = (
+            datetime.now(tz=timezone.utc) - timedelta(minutes=EXCLUDED_DATE_MARGIN)
+        ).timestamp()
 
         must_filters: list[models.FieldCondition] = [
             models.FieldCondition(
