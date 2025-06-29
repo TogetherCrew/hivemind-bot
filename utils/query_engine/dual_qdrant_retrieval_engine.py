@@ -1,3 +1,4 @@
+import logging
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import PromptTemplate, VectorStoreIndex
 from llama_index.core.base.response.schema import Response
@@ -120,6 +121,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             skip answering questions with non-relevant retrieved nodes
             having this, it could provide `None` for response and source_nodes
         """
+        logging.basicConfig(level=logging.INFO)
         collection_name = f"{community_id}_{platform_id}"
         summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
@@ -194,7 +196,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         return Response(response=str(response), source_nodes=nodes_filtered)
 
     def _process_summary_query(self, query_str: str) -> Response:
-        import logging
         
         logging.info("=== SUMMARY MODE QUERY FLOW ===")
         logging.info(f"Query: {query_str}")
