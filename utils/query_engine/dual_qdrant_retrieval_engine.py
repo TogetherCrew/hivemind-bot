@@ -194,38 +194,90 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         return Response(response=str(response), source_nodes=nodes_filtered)
 
     def _process_summary_query(self, query_str: str) -> Response:
+        import logging
+        
+        logging.info("=== SUMMARY MODE QUERY FLOW ===")
+        logging.info(f"Query: {query_str}")
+        
+        # Step 1: Query summary data
+        logging.info("Step 1: Retrieving summary nodes...")
         summary_nodes = self.summary_retriever.retrieve(query_str)
+        logging.info(f"Retrieved {len(summary_nodes)} summary nodes")
+        
+        # Step 2: Filter summary nodes by retriever threshold
+        logging.info("Step 2: Filtering summary nodes by threshold...")
         summary_nodes_filtered = [
             node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD
         ]
+        logging.info(f"Filtered to {len(summary_nodes_filtered)} summary nodes (threshold: {RETRIEVER_THRESHOLD})")
+        
+        # Step 3: Extract dates from summary nodes
+        logging.info("Step 3: Extracting dates from summary nodes...")
         utils = QdrantEngineUtils(
             metadata_date_key=self.metadata_date_key,
             metadata_date_format=self.metadata_date_format,
             date_margin=self._date_margin,
         )
 
-        dates = [
-            node.metadata[self.metadata_date_summary_key]
-            for node in summary_nodes_filtered
-            if self.metadata_date_summary_key in node.metadata
-        ]
+        dates = []
+        nodes_with_dates = 0
+        nodes_without_dates = 0
+        
+        for node in summary_nodes_filtered:
+            try:
+                if self.metadata_date_summary_key in node.metadata:
+                    date_value = node.metadata[self.metadata_date_summary_key]
+                    dates.append(date_value)
+                    nodes_with_dates += 1
+                    logging.debug(f"Found date in node: {date_value}")
+                else:
+                    nodes_without_dates += 1
+                    logging.warning(f"Summary node missing date key '{self.metadata_date_summary_key}': {list(node.metadata.keys())}")
+            except Exception as e:
+                nodes_without_dates += 1
+                logging.error(f"Error extracting date from summary node: {e}")
 
+        logging.info(f"Extracted {len(dates)} dates from {nodes_with_dates} nodes ({nodes_without_dates} nodes had no date)")
+        logging.info(f"Dates: {dates}")
+
+        # Step 4: Check if we have dates, fallback to basic query if not
         if not dates:
+            logging.warning("No dates found in summary nodes, falling back to basic query")
             return self._process_basic_query(query_str)
 
-        filter = utils.define_raw_data_filters(dates=dates)
+        # Step 5: Create filters using extracted dates
+        logging.info("Step 4: Creating raw data filters from summary dates...")
+        try:
+            filter = utils.define_raw_data_filters(dates=dates)
+            logging.info("Successfully created raw data filters")
+        except Exception as e:
+            logging.error(f"Error creating raw data filters: {e}")
+            logging.info("Falling back to basic query due to filter creation error")
+            return self._process_basic_query(query_str)
 
-        retriever: BaseRetriever = self._vector_store_index.as_retriever(
-            vector_store_kwargs={"qdrant_filters": filter},
-            similarity_top_k=self._raw_data_top_k,
-        )
-        raw_nodes = retriever.retrieve(query_str)
+        # Step 6: Query raw data with the date filters
+        logging.info("Step 5: Querying raw data with date filters...")
+        try:
+            retriever: BaseRetriever = self._vector_store_index.as_retriever(
+                vector_store_kwargs={"qdrant_filters": filter},
+                similarity_top_k=self._raw_data_top_k,
+            )
+            raw_nodes = retriever.retrieve(query_str)
+            logging.info(f"Retrieved {len(raw_nodes)} raw nodes")
+        except Exception as e:
+            logging.error(f"Error querying raw data: {e}")
+            logging.info("Falling back to basic query due to raw data query error")
+            return self._process_basic_query(query_str)
 
+        # Step 7: Filter raw nodes by retriever threshold
+        logging.info("Step 6: Filtering raw nodes by threshold...")
         raw_nodes_filtered = [
             node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD
         ]
+        logging.info(f"Filtered to {len(raw_nodes_filtered)} raw nodes (threshold: {RETRIEVER_THRESHOLD})")
 
-        # Checking nodes threshold
+        # Step 8: Check if we have enough high-quality nodes for response
+        logging.info("Step 7: Checking node quality for response generation...")
         summary_scores = [
             node.score
             for node in summary_nodes_filtered
@@ -236,17 +288,33 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             for node in raw_nodes_filtered
             if node.score >= REFERENCE_SCORE_THRESHOLD
         ]
+        
+        logging.info(f"High-quality summary nodes: {len(summary_scores)} (threshold: {REFERENCE_SCORE_THRESHOLD})")
+        logging.info(f"High-quality raw nodes: {len(raw_scores)} (threshold: {REFERENCE_SCORE_THRESHOLD})")
+        
         if not summary_scores and not raw_scores and self._enable_answer_skipping:
+            logging.warning("No high-quality nodes found, skipping answer")
             raise ValueError(
                 f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
                 " Returning empty response"
             )
         else:
-            # if we had something above our threshold then try to answer
-            context_str = utils.combine_nodes_for_prompt(
-                summary_nodes_filtered, raw_nodes_filtered
-            )
-            prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
-            response = self.llm.complete(prompt)
-
-            return Response(response=str(response), source_nodes=raw_nodes_filtered)
+            # Step 9: Generate response using combined context
+            logging.info("Step 8: Generating response from combined summary and raw context...")
+            try:
+                context_str = utils.combine_nodes_for_prompt(
+                    summary_nodes_filtered, raw_nodes_filtered
+                )
+                logging.info(f"Generated context length: {len(context_str)} characters")
+                
+                prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
+                response = self.llm.complete(prompt)
+                
+                logging.info("Successfully generated response")
+                logging.info("=== SUMMARY MODE QUERY FLOW COMPLETED ===")
+                
+                return Response(response=str(response), source_nodes=raw_nodes_filtered)
+            except Exception as e:
+                logging.error(f"Error generating response: {e}")
+                logging.info("Falling back to basic query due to response generation error")
+                return self._process_basic_query(query_str)
