@@ -37,13 +37,20 @@ class QdrantEngineUtils:
         should_filters: list[models.FieldCondition] = []
         expanded_dates: set[datetime] = set()
 
+        # Calculate the cutoff timestamp for excluding recent messages
+        # we want messages older than EXCLUDED_DATE_MARGIN minutes ago
+        # to avoid the question being included within the context (real-time data ingestion case)
+        cutoff_datetime = datetime.now(tz=timezone.utc) - timedelta(minutes=EXCLUDED_DATE_MARGIN)
+        cutoff_timestamp = cutoff_datetime.timestamp()
+
         # accounting for the date margin
         for date in dates:
             if isinstance(date, str):
-                day_value = parse(date)
+                # Ensure we parse the date in UTC timezone to match our cutoff
+                day_value = parse(date).replace(tzinfo=timezone.utc)
             elif isinstance(date, float):
-                # if it was timestamp
-                day_value = datetime.fromtimestamp(date)
+                # if it was timestamp, convert to UTC
+                day_value = datetime.fromtimestamp(date, tz=timezone.utc)
             else:
                 raise ValueError(f"Type {type(date)} date is not supported!")
 
@@ -54,14 +61,19 @@ class QdrantEngineUtils:
                 expanded_dates.add(day_value + timedelta(days=i))
 
         for day_value in expanded_dates:
-            next_day = day_value + timedelta(days=1)
+            # Start of the day in UTC
+            day_start = day_value.replace(hour=0, minute=0, second=0, microsecond=0)
+            # Start of next day in UTC
+            next_day = day_start + timedelta(days=1)
 
             if self.metadata_date_format == DataType.INTEGER:
-                gte_value = int(day_value.timestamp())
-                lte_value = int(next_day.timestamp())
+                gte_value = int(day_start.timestamp())
+                # Ensure we don't include messages newer than the cutoff
+                lte_value = min(int(next_day.timestamp()), int(cutoff_timestamp))
             elif self.metadata_date_format == DataType.FLOAT:
-                gte_value = day_value.timestamp()
-                lte_value = next_day.timestamp()
+                gte_value = day_start.timestamp()
+                # Ensure we don't include messages newer than the cutoff
+                lte_value = min(next_day.timestamp(), cutoff_timestamp)
             else:
                 raise ValueError(
                     (
@@ -70,35 +82,35 @@ class QdrantEngineUtils:
                     )
                 )
 
-            should_filters.append(
-                models.FieldCondition(
-                    key=self.metadata_date_key,
-                    range=models.Range(
-                        gte=gte_value,
-                        lte=lte_value,
-                    ),
+            # Only add the filter if the date range is valid (gte <= lte)
+            if gte_value <= lte_value:
+                should_filters.append(
+                    models.FieldCondition(
+                        key=self.metadata_date_key,
+                        range=models.Range(
+                            gte=gte_value,
+                            lte=lte_value,
+                        ),
+                    )
                 )
-            )
 
-        # we want messages older than EXCLUDED_DATE_MARGIN minutes ago
-        # to avoid the question being included within the context (real-time data ingestion case)
-        latest_query_date = (
-            datetime.now(tz=timezone.utc) - timedelta(minutes=EXCLUDED_DATE_MARGIN)
-        ).timestamp()
-
-        must_filters: list[models.FieldCondition] = [
+        # Create the filter with both should conditions for date ranges
+        # AND a global must condition as a safety net to ensure NO recent messages get through
+        must_filters = [
             models.FieldCondition(
-                    key=self.metadata_date_key,
-                    range=models.Range(
-                        lte=int(latest_query_date) if self.metadata_date_format == DataType.INTEGER else latest_query_date,
-                    ),
+                key=self.metadata_date_key,
+                range=models.Range(
+                    lte=int(cutoff_timestamp) if self.metadata_date_format == DataType.INTEGER else cutoff_timestamp,
+                ),
             )
         ]
 
-        filter = models.Filter(
-            should=should_filters,
-            must=must_filters
-        )
+
+        if should_filters:
+            filter = models.Filter(should=should_filters, must=must_filters)
+        else:
+            # If no date ranges are valid, just use the global cutoff filter
+            filter = models.Filter(must=must_filters)
 
         return filter
 
