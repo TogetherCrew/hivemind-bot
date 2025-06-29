@@ -10,3 +10,5 @@ NO_ANSWER_REFERENCE = (
     "Please ask the community manager for intel and we'll take notes for next time 🙂"
 )
 NO_DATA_SOURCE_SELECTED = "No data source is currently selected. Please choose a data source from the dashboard and try again."
+
+EXCLUDED_DATE_MARGIN = 5  # minutes
