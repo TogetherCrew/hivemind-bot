@@ -1,3 +1,6 @@
+import logging
+from datetime import datetime, timedelta, timezone
+from qdrant_client.http import models
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import PromptTemplate, VectorStoreIndex
 from llama_index.core.base.response.schema import Response
@@ -173,10 +176,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         return index
 
     def _process_basic_query(self, query_str: str) -> Response:
-        from datetime import datetime, timedelta, timezone
-        from qdrant_client.http import models
-        import logging
-        
         logging.info("=== BASIC QUERY MODE ===")
         logging.info(f"Applying EXCLUDED_DATE_MARGIN ({EXCLUDED_DATE_MARGIN} minutes) filter to basic query")
 
