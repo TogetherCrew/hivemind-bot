@@ -42,6 +42,8 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         platform_id: str,
         community_id: str,
         enable_answer_skipping: bool,
+        metadata_date_key: str | None = None,
+        metadata_date_format: DataType | None = None,
     ):
         """
         setup the custom query engine on qdrant data
@@ -64,6 +66,11 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         _, raw_data_top_k, date_margin = load_hyperparams()
         cls._date_margin = date_margin
         cls._enable_answer_skipping = enable_answer_skipping
+        
+        if metadata_date_key is not None:
+            cls.metadata_date_key = metadata_date_key
+        if metadata_date_format is not None:
+            cls.metadata_date_format = metadata_date_format
 
         cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name

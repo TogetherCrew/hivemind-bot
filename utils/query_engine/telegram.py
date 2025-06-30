@@ -3,7 +3,6 @@ from llama_index.core.query_engine import BaseQueryEngine
 from schema.type import DataType
 from utils.query_engine import DualQdrantRetrievalEngine
 from utils.query_engine.base_qdrant_engine import BaseQdrantEngine
-from bot.retrievers.utils.load_hyperparams import load_hyperparams
 
 
 class TelegramQueryEngine(BaseQdrantEngine):
@@ -18,15 +17,6 @@ class TelegramQueryEngine(BaseQdrantEngine):
         """
         Override the prepare method to add EXCLUDED_DATE_MARGIN filtering
         """
-        _, _, date_margin = load_hyperparams()
-        
-        # Set the required class attributes before creating the instance (same as setup_engine method)
-        DualQdrantRetrievalEngine._date_margin = date_margin
-        DualQdrantRetrievalEngine._enable_answer_skipping = enable_answer_skipping
-        DualQdrantRetrievalEngine.summary_retriever = None
-        DualQdrantRetrievalEngine.metadata_date_key = "createdAt"
-        DualQdrantRetrievalEngine.metadata_date_format = DataType.FLOAT
-
         # Create the engine with the filtered retriever
         engine = DualQdrantRetrievalEngine.setup_engine(
             llm=Settings.llm,
@@ -34,6 +24,8 @@ class TelegramQueryEngine(BaseQdrantEngine):
             platform_id=self.platform_id,
             community_id=self.community_id,
             enable_answer_skipping=enable_answer_skipping,
+            metadata_date_key="createdAt",
+            metadata_date_format=DataType.FLOAT,
         )
 
         return engine
