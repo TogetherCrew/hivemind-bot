@@ -6,7 +6,7 @@ qa_prompt = PromptTemplate(
     "{context_str}\n"
     "---------------------\n"
     "Given the context information and not prior knowledge, "
-    "answer the query very concisely.\n"
+    "give a short answer to the query.\n"
     "Query: {query_str}\n"
     "Answer (concisely): "
 )
