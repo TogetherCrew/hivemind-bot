@@ -36,10 +36,15 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
             verbose,
             use_async,
         )
+        # Store metadata from individual query engines
+        self._engine_metadata = {}
 
     def _query(
         self, query_bundle: QueryBundle
-    ) -> tuple[RESPONSE_TYPE, list[NodeWithScore]]:
+    ) -> tuple[RESPONSE_TYPE, list[Optional[SubQuestionAnswerPair]]]:
+        # Clear previous metadata
+        self._engine_metadata = {}
+
         with self.callback_manager.event(
             CBEventType.QUERY, payload={EventPayload.QUERY_STR: query_bundle.query_str}
         ) as query_event:
@@ -77,8 +82,12 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
                     nodes=nodes,
                     additional_source_nodes=source_nodes,
                 )
+                # Add response metadata from each query engine
+                response.metadata = self._engine_metadata.copy()
             else:
-                response = Response(response=None, source_nodes=[])
+                response = Response(
+                    response=None, source_nodes=[], metadata=self._engine_metadata
+                )
 
             query_event.on_end(payload={EventPayload.RESPONSE: response})
 
@@ -87,7 +96,7 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
     @dispatcher.span
     def query(
         self, str_or_query_bundle: str | QueryBundle
-    ) -> tuple[RESPONSE_TYPE, list[NodeWithScore]]:
+    ) -> tuple[RESPONSE_TYPE, list[Optional[SubQuestionAnswerPair]]]:
         dispatcher.event(QueryStartEvent(query=str_or_query_bundle))
         with self.callback_manager.as_trace("query"):
             if isinstance(str_or_query_bundle, str):
@@ -118,6 +127,10 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
                 if self._verbose:
                     print_text(f"[{sub_q.tool_name}] A: {response_text}\n", color=color)
 
+                # Store metadata from the individual query engine
+                if hasattr(response, "metadata") and response.metadata:
+                    self._engine_metadata[sub_q.tool_name] = response.metadata
+
                 qa_pair = SubQuestionAnswerPair(
                     sub_q=sub_q, answer=response_text, sources=response.source_nodes
                 )
@@ -130,3 +143,15 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
                 f"[{sub_q.tool_name}] Failed to run {sub_q.sub_question}: {exp}"
             )
             return None
+
+    def get_engine_metadata(self) -> dict:
+        """
+        Get metadata from individual query engines.
+
+        Returns
+        -------
+        dict
+            Dictionary containing metadata from each query engine.
+            Keys are tool names, values are metadata dictionaries.
+        """
+        return self._engine_metadata.copy()
