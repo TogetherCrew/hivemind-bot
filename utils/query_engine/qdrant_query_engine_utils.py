@@ -41,7 +41,9 @@ class QdrantEngineUtils:
         # Calculate the cutoff timestamp for excluding recent messages
         # we want messages older than EXCLUDED_DATE_MARGIN minutes ago
         # to avoid the question being included within the context (real-time data ingestion case)
-        cutoff_datetime = datetime.now(tz=timezone.utc) - timedelta(minutes=EXCLUDED_DATE_MARGIN)
+        cutoff_datetime = datetime.now(tz=timezone.utc) - timedelta(
+            minutes=EXCLUDED_DATE_MARGIN
+        )
         cutoff_timestamp = cutoff_datetime.timestamp()
 
         # accounting for the date margin
@@ -61,7 +63,9 @@ class QdrantEngineUtils:
                 expanded_dates.add(day_value - timedelta(days=i))
                 expanded_dates.add(day_value + timedelta(days=i))
 
-        logging.info(f"QueryEngineUtils: Expanded dates: {[d.strftime('%Y-%m-%d %H:%M:%S %Z') for d in expanded_dates]}")
+        logging.info(
+            f"QueryEngineUtils: Expanded dates: {[d.strftime('%Y-%m-%d %H:%M:%S %Z') for d in expanded_dates]}"
+        )
         for day_value in expanded_dates:
             # Start of the day in UTC
             day_start = day_value.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -102,11 +106,14 @@ class QdrantEngineUtils:
             models.FieldCondition(
                 key=self.metadata_date_key,
                 range=models.Range(
-                    lte=int(cutoff_timestamp) if self.metadata_date_format == DataType.INTEGER else cutoff_timestamp,
+                    lte=(
+                        int(cutoff_timestamp)
+                        if self.metadata_date_format == DataType.INTEGER
+                        else cutoff_timestamp
+                    ),
                 ),
             )
         ]
-
 
         if should_filters:
             filter = models.Filter(should=should_filters, must=must_filters)

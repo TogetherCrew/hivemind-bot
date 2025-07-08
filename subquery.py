@@ -28,8 +28,9 @@ def query_multiple_source(
     query: str,
     community_id: str,
     enable_answer_skipping: bool,
+    return_metadata: bool = False,
     **kwargs,
-) -> tuple[str, list[NodeWithScore]]:
+) -> tuple[str, list[NodeWithScore]] | tuple[str, list[NodeWithScore], dict]:
     """
     query multiple platforms and get an answer from the multiple
 
@@ -42,6 +43,9 @@ def query_multiple_source(
     enable_answer_skipping : bool
         skip answering questions with non-relevant retrieved nodes
         having this, it could provide `None` for response and source_nodes
+    return_metadata : bool
+        if True, return metadata as a third element in the tuple
+        metadata will contain 'summary_nodes' and other metadata from query engines
     **kwargs:
         Platform keys can be either boolean flags or platform IDs:
         discord : bool or str
@@ -69,6 +73,9 @@ def query_multiple_source(
         using the engines of the given platforms
     source_nodes : list[NodeWithScore]
         the list of nodes that were source of answering
+    metadata : dict (optional)
+        dictionary containing metadata from query engines if return_metadata=True
+        includes 'summary_nodes' and other metadata from individual platforms
     """
     # Get platform values - can be either boolean or platform IDs
     discord = kwargs.get("discord", False)
@@ -297,6 +304,17 @@ def query_multiple_source(
     source_nodes = [node for node in source_nodes if node]
 
     if source_nodes == []:
-        return NO_ANSWER_REFERENCE, source_nodes
+        if return_metadata:
+            return NO_ANSWER_REFERENCE, source_nodes, {}
+        else:
+            return NO_ANSWER_REFERENCE, source_nodes
     else:
-        return response.response, source_nodes
+        if return_metadata:
+            # Extract metadata from the response if available
+            metadata = {}
+            if hasattr(response, "metadata") and response.metadata:
+                metadata = response.metadata
+
+            return response.response, source_nodes, metadata
+        else:
+            return response.response, source_nodes
