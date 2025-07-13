@@ -24,7 +24,6 @@ class TestPrepareDiscordEngine(unittest.TestCase):
             community_id,
             platform_id=platform_id,
             enable_answer_skipping=False,
-            testing=True,
         )
 
         self.assertIsNotNone(query_engine)
