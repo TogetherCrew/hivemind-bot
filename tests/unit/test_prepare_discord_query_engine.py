@@ -17,16 +17,12 @@ class TestPrepareDiscordEngine(unittest.TestCase):
 
     def test_prepare_discord_engine(self):
         community_id = "123456"
-        filters = [
-            {"channel": "general", "date": "2023-01-02"},
-            {"thread": "discussion", "date": "2024-01-03"},
-            {"date": "2022-01-01"},
-        ]
+        platform_id = "123456"
 
         # Call the function
         query_engine = prepare_discord_engine(
             community_id,
-            filters=filters,
+            platform_id=platform_id,
             enable_answer_skipping=False,
             testing=True,
         )

@@ -1,13 +1,61 @@
+from llama_index.core import Settings, get_response_synthesizer
 from llama_index.core.query_engine import BaseQueryEngine
+from schema.type import DataType
+from utils.query_engine import DualQdrantRetrievalEngine
+from utils.query_engine.base_qdrant_engine import BaseQdrantEngine
 
-from .level_based_platform_query_engine import LevelBasedPlatformQueryEngine
+
+class DiscordQueryEngine(BaseQdrantEngine):
+    def __init__(self, community_id: str, platform_id: str | None = None) -> None:
+        # If no platform_id provided, use default collection name for backward compatibility
+        platform_id = platform_id or "discord"
+        super().__init__(platform_id, community_id)
+
+    def prepare(
+        self, enable_answer_skipping: bool = False, testing=False
+    ) -> BaseQueryEngine:
+        """
+        Override the prepare method to add EXCLUDED_DATE_MARGIN filtering
+        """
+        # Create the engine with the filtered retriever
+        engine = DualQdrantRetrievalEngine.setup_engine(
+            llm=Settings.llm,  # type: ignore
+            synthesizer=get_response_synthesizer(),
+            platform_id=self.platform_id,
+            community_id=self.community_id,
+            enable_answer_skipping=enable_answer_skipping,
+            metadata_date_key="date",
+            metadata_date_format=DataType.FLOAT,
+        )
+
+        return engine
+
+
+class DiscordDualQueryEngine:
+    def __init__(self, community_id: str, platform_id: str | None = None) -> None:
+        # If no platform_id provided, use default collection name for backward compatibility
+        self.platform_id = platform_id or "discord"
+        self.community_id = community_id
+
+    def prepare(self, enable_answer_skipping: bool) -> BaseQueryEngine:
+        engine = DualQdrantRetrievalEngine.setup_engine_with_summaries(
+            llm=Settings.llm,  # type: ignore
+            synthesizer=get_response_synthesizer(),
+            platform_id=self.platform_id,
+            community_id=self.community_id,
+            metadata_date_key="date",
+            metadata_date_format=DataType.FLOAT,
+            metadata_date_summary_key="date",
+            metadata_date_summary_format=DataType.FLOAT,
+            enable_answer_skipping=enable_answer_skipping,
+        )
+        return engine
 
 
 def prepare_discord_engine(
     community_id: str,
-    filters: list[dict[str, str]],
+    platform_id: str,
     enable_answer_skipping: bool,
-    **kwargs,
 ) -> BaseQueryEngine:
     """
     query the platform database using filters given
@@ -17,35 +65,23 @@ def prepare_discord_engine(
     ------------
     community_id : str
         the discord community id data to query
-    query : str
-        the query (question) of the user
-    filters : list[dict[str, str]] | None
-        the list of filters to be applied when retrieving data
-        if `None` then set no filtering on PGVectorStore
-    ** kwargs :
-        testing : bool
-            whether to setup the PGVectorAccess in testing mode
+    platform_id : str
+        the platform id to query
+
 
     Returns
     ---------
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-
-    testing = kwargs.get("testing", False)
-    query_engine = LevelBasedPlatformQueryEngine.prepare_platform_engine(
-        community_id=community_id,
-        platform_table_name="discord",
-        filters=filters,
-        testing=testing,
-        enable_answer_skipping=enable_answer_skipping,
-    )
-    return query_engine
+    # Use the new DiscordQueryEngine instead of LevelBasedPlatformQueryEngine
+    engine = DiscordQueryEngine(community_id=community_id, platform_id=platform_id)
+    return engine.prepare(enable_answer_skipping=enable_answer_skipping)
 
 
 def prepare_discord_engine_auto_filter(
     community_id: str,
-    query: str,
+    platform_id: str,
     enable_answer_skipping: bool,
 ) -> BaseQueryEngine:
     """
@@ -57,9 +93,8 @@ def prepare_discord_engine_auto_filter(
     -----------
     community_id : str
         the discord community data to query
-    query : str
-        the query (question) of the user
-        this query will be used to fetch the filters from similar summaries nodes
+    platform_id : str
+        the platform id to query
 
 
     Returns
@@ -67,14 +102,6 @@ def prepare_discord_engine_auto_filter(
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-    engine = LevelBasedPlatformQueryEngine.prepare_engine_auto_filter(
-        community_id=community_id,
-        query=query,
-        platform_table_name="discord",
-        level1_key="channel",
-        level2_key="thread",
-        date_key="date",
-        include_summary_context=True,
-        enable_answer_skipping=enable_answer_skipping,
-    )
-    return engine
+    # Use the new DiscordDualQueryEngine for auto filtering with summaries
+    engine = DiscordDualQueryEngine(community_id=community_id, platform_id=platform_id)
+    return engine.prepare(enable_answer_skipping=enable_answer_skipping)
