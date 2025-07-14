@@ -1,8 +1,9 @@
 import gc
 import logging
+from typing import Any
 
 from celery.signals import task_postrun, task_prerun
-from llama_index.core.schema import NodeWithScore
+from llama_index.core.query_engine import SubQuestionAnswerPair
 from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
 from utils.globals import NO_DATA_SOURCE_SELECTED, QUERY_ERROR_MESSAGE
@@ -15,7 +16,7 @@ from worker.celery import app
 def ask_question_auto_search(
     community_id: str,
     query: str,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     try:
         response, references = query_data_sources(
             community_id=community_id, query=query
@@ -52,7 +53,11 @@ def query_data_sources(
     community_id: str,
     query: str,
     enable_answer_skipping: bool = False,
-) -> tuple[str | None, list[NodeWithScore | None]]:
+    return_metadata: bool = False,
+) -> (
+    tuple[str | None, list[SubQuestionAnswerPair | None]]
+    | tuple[str | None, list[SubQuestionAnswerPair | None], dict]
+):
     """
     ask questions with auto select platforms
 
@@ -65,13 +70,15 @@ def query_data_sources(
     enable_answer_skipping : bool
         skip answering questions with non-relevant retrieved information
         having this, it could provide `None` for response and source_nodes
+    return_metadata : bool
+        return metadata from the query engines
 
     Returns
     ---------
     response : str | None
         the LLM's response
         would be `None` in case there was no relevant information was available and enable_answer_skipping was True
-    references : list[NodeWithScore]
+    references : list[Sub]
         the references that the answers were coming from
         would be a list of `None`
         in case there was no relevant information was available and enable_answer_skipping was True
@@ -88,14 +95,20 @@ def query_data_sources(
     # No need to convert to boolean values
 
     references: list = []
+    metadata = {}
     if data_sources or enable_answer_skipping:
         logging.info(f"Quering data sources: {list(data_sources.keys())}!")
-        response, references = query_multiple_source(
+        result = query_multiple_source(
             query=query,
             community_id=community_id,
             enable_answer_skipping=enable_answer_skipping,
+            return_metadata=return_metadata,
             **data_sources,
         )
+        if return_metadata:
+            response, references, metadata = result
+        else:
+            response, references = result
     else:
         logging.info(f"No data source selected!")
         response = NO_DATA_SOURCE_SELECTED
@@ -103,5 +116,8 @@ def query_data_sources(
 
     if enable_answer_skipping and not references:
         response = None
+
+    if return_metadata:
+        return response, references, metadata
 
     return response, references
