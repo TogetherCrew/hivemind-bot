@@ -307,6 +307,8 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
                 summary_nodes_filtered, raw_nodes_filtered
             )
             prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
+            # TODO: remove this after testing
+            # logging.error(f"Prompt: {prompt}")
             response = self.llm.complete(prompt)
 
             return Response(

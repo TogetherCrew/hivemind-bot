@@ -177,11 +177,14 @@ class QdrantEngineUtils:
         combined_sections = []
 
         for date, summary_bullets in combined_summaries.items():
-            section = f"Date: {date}\nSummary:\n" + summary_bullets + "\n\n"
+            section = f"Date: {date}\nContext Summary:\n" + summary_bullets + "\n\n"
 
             if date in raw_nodes_by_date:
                 raw_texts = [node.text for node in raw_nodes_by_date[date]]
-                section += "Messages:\n" + "\n".join(raw_texts)
+                raw_texts_cleaned = []
+                for text in raw_texts:
+                    raw_texts_cleaned.append(text.replace("\n", " "))
+                section += "Raw Messages:\n" + "\n".join(raw_texts_cleaned)
 
             combined_sections.append(section)
 
