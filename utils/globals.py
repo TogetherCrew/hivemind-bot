@@ -9,6 +9,8 @@ NO_ANSWER_REFERENCE = (
     "Current documentation and community chats draw a blank. "
     "Please ask the community manager for intel and we'll take notes for next time 🙂"
 )
+# An easier prompt for the LLM to understand
+NO_ANSWER_REFERENCE_PLACEHOLDER = "I don't have enough information to answer that question."
 NO_DATA_SOURCE_SELECTED = "No data source is currently selected. Please choose a data source from the dashboard and try again."
 
 EXCLUDED_DATE_MARGIN = 5  # minutes
