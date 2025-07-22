@@ -303,24 +303,27 @@ def query_multiple_source(
     # filtering out None ones
     source_nodes = [node for node in source_nodes if node]
 
+    # Handle empty source nodes case early
     if source_nodes == []:
-        if return_metadata:
-            return NO_ANSWER_REFERENCE, source_nodes, {}
-        else:
-            return NO_ANSWER_REFERENCE, source_nodes
+        metadata = {} if return_metadata else None
+        return (NO_ANSWER_REFERENCE, source_nodes, metadata) if return_metadata else (NO_ANSWER_REFERENCE, source_nodes)
+    
+    # Extract metadata if needed
+    metadata = {}
+    if return_metadata and hasattr(response, "metadata") and response.metadata:
+        metadata = response.metadata
+    
+    # Determine response text
+    response_text = response.response if hasattr(response, "response") else str(response)
+    if response_text == NO_ANSWER_REFERENCE_PLACEHOLDER:
+        response_text = NO_ANSWER_REFERENCE
+        # Clear source_nodes if no valid answer but keep them for metadata case
+        final_source_nodes = source_nodes if return_metadata else []
     else:
-        if return_metadata:
-            # Extract metadata from the response if available
-            metadata = {}
-            if hasattr(response, "metadata") and response.metadata:
-                metadata = response.metadata
-            
-            if response.response == NO_ANSWER_REFERENCE_PLACEHOLDER:
-                return NO_ANSWER_REFERENCE, source_nodes, metadata
-            else:
-                return response.response, source_nodes, metadata
-        else:
-            if response.response == NO_ANSWER_REFERENCE_PLACEHOLDER:
-                return NO_ANSWER_REFERENCE, []
-            else:
-                return response.response, source_nodes
+        final_source_nodes = source_nodes
+    
+    # Return appropriate tuple based on return_metadata flag
+    if return_metadata:
+        return response_text, final_source_nodes, metadata
+    else:
+        return response_text, final_source_nodes
