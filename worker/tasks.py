@@ -6,7 +6,11 @@ from celery.signals import task_postrun, task_prerun
 from llama_index.core.query_engine import SubQuestionAnswerPair
 from subquery import query_multiple_source
 from utils.data_source_selector import DataSourceSelector
-from utils.globals import NO_DATA_SOURCE_SELECTED, QUERY_ERROR_MESSAGE
+from utils.globals import (
+    NO_ANSWER_REFERENCE,
+    NO_DATA_SOURCE_SELECTED,
+    QUERY_ERROR_MESSAGE,
+)
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.celery import app
@@ -114,7 +118,7 @@ def query_data_sources(
         response = NO_DATA_SOURCE_SELECTED
         references = []
 
-    if enable_answer_skipping and not references:
+    if enable_answer_skipping and (not references or response == NO_ANSWER_REFERENCE):
         response = None
 
     if return_metadata:
