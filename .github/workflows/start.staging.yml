@@ -7,3 +7,6 @@ on: pull_request
 jobs:
   ci:
     uses: TogetherCrew/operations/.github/workflows/ci2.yml@main
+
+    secrets:
+      CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
