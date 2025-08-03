@@ -4,9 +4,18 @@ name: Staging CI/CD Pipeline
 
 on: pull_request
 
-jobs:
-  ci:
-    uses: TogetherCrew/operations/.github/workflows/ci.yml@main
+# jobs:
+#   ci:
+#     uses: TogetherCrew/operations/.github/workflows/ci.yml@main
 
-    secrets:
-      CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+#     secrets:
+#       CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f docker-compose.test.yml up --exit-code-from app
