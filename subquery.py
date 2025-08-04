@@ -284,7 +284,7 @@ def query_multiple_source(
     Settings.llm = llm
 
     question_gen = GuidanceQuestionGenerator.from_defaults(
-        guidance_llm=OpenAIChat("o3-mini-2025-01-31"),
+        guidance_llm=OpenAIChat("gpt-4o-mini"),
         verbose=False,
         prompt_template_str=DEFAULT_GUIDANCE_SUB_QUESTION_PROMPT_TMPL,
     )
