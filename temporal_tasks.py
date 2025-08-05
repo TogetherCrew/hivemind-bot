@@ -220,6 +220,9 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
             for eval_result in raw_node_evaluations
         ]
 
+    logging.info("NO_ANSWER_REFERENCE == response: ", NO_ANSWER_REFERENCE == response)
+    logging.info("references: ", references)
+
     # Prepare answer references for response
     answer_reference = ""
     if references and response != NO_ANSWER_REFERENCE:
