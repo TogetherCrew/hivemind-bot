@@ -221,7 +221,7 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         ]
 
     logging.info(f"NO_ANSWER_REFERENCE == response: {NO_ANSWER_REFERENCE == response}")
-    logging.info(f"references: {references}")
+    logging.info(f"len(references): {len(references)}")
 
     # Prepare answer references for response
     answer_reference = ""
