@@ -220,8 +220,6 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
             for eval_result in raw_node_evaluations
         ]
 
-    logging.info(f"NO_ANSWER_REFERENCE == response: {NO_ANSWER_REFERENCE == response}")
-    logging.info(f"len(references): {len(references)}")
 
     # Prepare answer references for response
     answer_reference = ""
@@ -229,6 +227,7 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
         answer_reference = PrepareAnswerSources().prepare_answer_sources(
             nodes=references  # type: ignore
         )
+
 
     response_payload = RouteModelPayload(
         communityId=payload.community_id,
@@ -282,9 +281,11 @@ class HivemindWorkflow:
         response, references = response_tuple
 
         references_nodes = self.serialize_references(references=references)
-        answer_reference = PrepareAnswerSources().prepare_answer_sources(
-            nodes=references_nodes  # type: ignore
-        )
+        answer_reference = ""
+        if references and response != NO_ANSWER_REFERENCE:
+            answer_reference = PrepareAnswerSources().prepare_answer_sources(
+                nodes=references_nodes  # type: ignore
+            )
         if response:
             return f"{response}\n\n{answer_reference}"
         else:
