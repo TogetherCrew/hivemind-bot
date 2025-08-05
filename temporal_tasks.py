@@ -6,6 +6,7 @@ from llama_index.core.schema import NodeWithScore, TextNode
 from schema import QuestionModel, ResponseModel, RouteModel, RouteModelPayload
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
+from utils.globals import NO_ANSWER_REFERENCE
 from utils.persist_payload import PersistPayload
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from worker.tasks import query_data_sources  # pylint: disable=no-name-in-module
@@ -221,7 +222,7 @@ async def run_hivemind_activity(payload: HivemindQueryPayload):
 
     # Prepare answer references for response
     answer_reference = ""
-    if references:
+    if references and response != NO_ANSWER_REFERENCE:
         answer_reference = PrepareAnswerSources().prepare_answer_sources(
             nodes=references  # type: ignore
         )
