@@ -201,28 +201,36 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         logging.info(f"Cutoff datetime (UTC): {cutoff_datetime}")
         logging.info(f"Cutoff timestamp: {cutoff_timestamp}")
 
-        # Create a filter to exclude messages newer than the cutoff
-        must_filters = [
-            models.FieldCondition(
-                key=self.metadata_date_key,
-                range=models.Range(
-                    lte=(
-                        int(cutoff_timestamp)
-                        if self.metadata_date_format == DataType.INTEGER
-                        else cutoff_timestamp
+        # Check if the class has metadata_date_key attribute before applying the filter
+        if hasattr(self, 'metadata_date_key') and self.metadata_date_key is not None:
+            # Create a filter to exclude messages newer than the cutoff
+            must_filters = [
+                models.FieldCondition(
+                    key=self.metadata_date_key,
+                    range=models.Range(
+                        lte=(
+                            int(cutoff_timestamp)
+                            if self.metadata_date_format == DataType.INTEGER
+                            else cutoff_timestamp
+                        ),
                     ),
-                ),
+                )
+            ]
+
+            filter = models.Filter(must=must_filters)
+            logging.info("Created global cutoff filter for basic query")
+
+            # Create a retriever with the date filter applied
+            retriever = self._vector_store_index.as_retriever(
+                vector_store_kwargs={"qdrant_filters": filter},
+                similarity_top_k=self.retriever.similarity_top_k,
             )
-        ]
-
-        filter = models.Filter(must=must_filters)
-        logging.info("Created global cutoff filter for basic query")
-
-        # Create a retriever with the date filter applied
-        retriever = self._vector_store_index.as_retriever(
-            vector_store_kwargs={"qdrant_filters": filter},
-            similarity_top_k=self.retriever.similarity_top_k,
-        )
+        else:
+            logging.info("No metadata_date_key available, proceeding without date filter")
+            # Create a retriever without date filter
+            retriever = self._vector_store_index.as_retriever(
+                similarity_top_k=self.retriever.similarity_top_k,
+            )
 
         nodes: list[NodeWithScore] = retriever.retrieve(query_str)
         logging.info(f"Retrieved {len(nodes)} nodes with cutoff filter applied")
