@@ -94,6 +94,7 @@ def query_data_sources(
     )
     selector = DataSourceSelector()
     data_sources = selector.select_data_source(community_id)
+    logging.info(f"{prefix} Data sources selected: {data_sources}")
 
     # Platform IDs are now directly in data_sources, pass them directly
     # No need to convert to boolean values
