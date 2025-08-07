@@ -98,8 +98,8 @@ def query_multiple_source(
     # tools_metadata and query_engine_tools
     if discord:
         discord_query_engine = prepare_discord_engine_auto_filter(
-            community_id,
-            query,
+            community_id=community_id,
+            platform_id=discord,
             enable_answer_skipping=enable_answer_skipping,
         )
         tool_metadata = ToolMetadata(
