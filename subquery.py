@@ -21,6 +21,7 @@ from utils.query_engine import (
     WebsiteQueryEngine,
     prepare_discord_engine_auto_filter,
     prepare_discourse_engine_auto_filter,
+    prepare_discord_engine,
 )
 
 
@@ -97,23 +98,31 @@ def query_multiple_source(
     # query engine perparation
     # tools_metadata and query_engine_tools
     if discord:
-        discord_query_engine = prepare_discord_engine_auto_filter(
-            community_id=community_id,
-            platform_id=discord,
-            enable_answer_skipping=enable_answer_skipping,
-        )
-        tool_metadata = ToolMetadata(
-            name="Discord",
-            description="Contains messages and summaries of conversations from the Discord platform of the community",
-        )
-
-        tools.append(tool_metadata)
-        query_engine_tools.append(
-            QueryEngineTool(
-                query_engine=discord_query_engine,
-                metadata=tool_metadata,
+        if check_collection(discord):
+            if check_collection(discord + "_summary"):
+                discord_query_engine = prepare_discord_engine_auto_filter(
+                community_id=community_id,
+                    platform_id=discord,
+                    enable_answer_skipping=enable_answer_skipping,
+                )
+            else:
+                discord_query_engine = prepare_discord_engine(
+                    community_id=community_id,
+                    platform_id=discord,
+                    enable_answer_skipping=enable_answer_skipping,
+                )
+            tool_metadata = ToolMetadata(
+                name="Discord",
+                description="Contains messages and summaries of conversations from the Discord platform of the community",
             )
-        )
+
+            tools.append(tool_metadata)
+            query_engine_tools.append(
+                QueryEngineTool(
+                    query_engine=discord_query_engine,
+                    metadata=tool_metadata,
+                )
+            )
 
     if discourse:
         discourse_query_engine = prepare_discourse_engine_auto_filter(

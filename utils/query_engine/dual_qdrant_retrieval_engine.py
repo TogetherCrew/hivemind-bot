@@ -188,9 +188,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
     def _process_basic_query(self, query_str: str) -> Response:
         logging.info("=== BASIC QUERY MODE ===")
-        logging.info(
-            f"Applying EXCLUDED_DATE_MARGIN ({EXCLUDED_DATE_MARGIN} minutes) filter to basic query"
-        )
 
         # Calculate the cutoff timestamp for excluding recent messages
         cutoff_datetime = datetime.now(tz=timezone.utc) - timedelta(
@@ -198,8 +195,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         )
         cutoff_timestamp = cutoff_datetime.timestamp()
 
-        logging.info(f"Cutoff datetime (UTC): {cutoff_datetime}")
-        logging.info(f"Cutoff timestamp: {cutoff_timestamp}")
 
         # Check if the class has metadata_date_key attribute before applying the filter
         if hasattr(self, 'metadata_date_key') and self.metadata_date_key is not None:
@@ -218,7 +213,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             ]
 
             filter = models.Filter(must=must_filters)
-            logging.info("Created global cutoff filter for basic query")
 
             # Create a retriever with the date filter applied
             retriever = self._vector_store_index.as_retriever(
@@ -226,7 +220,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
                 similarity_top_k=self.retriever.similarity_top_k,
             )
         else:
-            logging.info("No metadata_date_key available, proceeding without date filter")
             # Create a retriever without date filter
             retriever = self._vector_store_index.as_retriever(
                 similarity_top_k=self.retriever.similarity_top_k,
@@ -255,13 +248,13 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
 
-        logging.info("Successfully generated basic query response")
         logging.info("=== BASIC QUERY MODE COMPLETED ===")
 
         # return final_response
         return Response(response=str(response), source_nodes=nodes_filtered)
 
     def _process_summary_query(self, query_str: str) -> Response:
+        logging.info("=== SUMMARY QUERY MODE ===")
         summary_nodes = self.summary_retriever.retrieve(query_str)
         summary_nodes_filtered = [
             node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD
@@ -279,6 +272,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         ]
 
         if not dates:
+            logging.info("No dates found in summary nodes, proceeding to basic query")
             return self._process_basic_query(query_str)
 
         filter = utils.define_raw_data_filters(dates=dates)
@@ -288,6 +282,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             similarity_top_k=self._raw_data_top_k,
         )
         raw_nodes = retriever.retrieve(query_str)
+        logging.info(f"Retrieved {len(raw_nodes)} raw nodes")
 
         raw_nodes_filtered = [
             node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD
@@ -310,6 +305,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
                 " Returning empty response"
             )
         else:
+            logging.info(f"Filtered {len(summary_nodes_filtered)} summary nodes and {len(raw_nodes_filtered)} raw nodes")
             # if we had something above our threshold then try to answer
             context_str = utils.combine_nodes_for_prompt(
                 summary_nodes_filtered, raw_nodes_filtered
@@ -319,6 +315,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             # logging.error(f"Prompt: {prompt}")
             response = self.llm.complete(prompt)
 
+            logging.info("=== SUMMARY QUERY MODE COMPLETED ===")
             return Response(
                 response=str(response),
                 source_nodes=raw_nodes_filtered,

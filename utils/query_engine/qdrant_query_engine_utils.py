@@ -63,9 +63,7 @@ class QdrantEngineUtils:
                 expanded_dates.add(day_value - timedelta(days=i))
                 expanded_dates.add(day_value + timedelta(days=i))
 
-        logging.info(
-            f"QueryEngineUtils: Expanded dates: {[d.strftime('%Y-%m-%d %H:%M:%S %Z') for d in expanded_dates]}"
-        )
+
         for day_value in expanded_dates:
             # Start of the day in UTC
             day_start = day_value.replace(hour=0, minute=0, second=0, microsecond=0)
