@@ -48,6 +48,7 @@ class DiscordDualQueryEngine:
             metadata_date_summary_key="date",
             metadata_date_summary_format=DataType.FLOAT,
             enable_answer_skipping=enable_answer_skipping,
+            summary_type="day",
         )
         return engine
 

@@ -99,6 +99,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         metadata_date_summary_key: str,
         metadata_date_summary_format: DataType,
         enable_answer_skipping: bool,
+        summary_type: str | None = None,
     ):
         """
         setup the custom query engine on qdrant data
@@ -127,6 +128,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         enable_answer_skipping : bool
             skip answering questions with non-relevant retrieved nodes
             having this, it could provide `None` for response and source_nodes
+        summary_type : str, optional
+            Optional label describing the type of the summary collection.
+            Default is None meaning no filter is applied to the summary index.
         """
         collection_name = f"{community_id}_{platform_id}"
         summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
@@ -151,6 +155,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             metadata_date_summary_format=metadata_date_summary_format,
             date_margin=date_margin,
             enable_answer_skipping=enable_answer_skipping,
+            summary_type=summary_type,
         )
 
         return cls(

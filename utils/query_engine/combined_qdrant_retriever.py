@@ -29,7 +29,43 @@ class CombinedQdrantRetriever(BaseRetriever):
         metadata_date_summary_format: Optional[DataType] = None,
         date_margin: int = EXCLUDED_DATE_MARGIN,
         enable_answer_skipping: bool = False,
+        summary_type: str | None = None,
     ) -> None:
+        """
+        Prepare the combined retriever
+
+        Parameters
+        ----------
+        raw_index : VectorStoreIndex
+            Primary vector store index used for raw document retrieval.
+        raw_top_k : int
+            Number of top similar nodes to retrieve from the raw index.
+        summary_index : VectorStoreIndex, optional
+            Optional summary index used by `retrieve_summary`. Default is None.
+        summary_top_k : int, optional
+            Number of top similar nodes to retrieve from the summary index.
+            Required if `summary_index` is provided. Default is None.
+        metadata_date_key : str, optional
+            Metadata key in the payload that stores the document date/time used
+            for raw retrieval filtering. Default is None.
+        metadata_date_format : DataType, optional
+            Format/type of the values stored under `metadata_date_key`.
+            Default is None.
+        metadata_date_summary_key : str, optional
+            Metadata key for dates in the summary collection. Default is None.
+        metadata_date_summary_format : DataType, optional
+            Format/type of the values stored under
+            `metadata_date_summary_key`. Default is None.
+        date_margin : int, optional
+            Safety margin in days to exclude very recent items from raw
+            retrievals. Default is `EXCLUDED_DATE_MARGIN`.
+        enable_answer_skipping : bool, optional
+            Reserved for future use to skip answering based on heuristics.
+            Default is False.
+        summary_type : str, optional
+            Optional label describing the type of the summary collection.
+            Default is None meaning no filter is applied to the summary index.
+        """
         super().__init__()
         self.raw_index = raw_index
         self.raw_top_k = raw_top_k
@@ -41,6 +77,7 @@ class CombinedQdrantRetriever(BaseRetriever):
         self.metadata_date_summary_format = metadata_date_summary_format
         self.date_margin = date_margin
         self.enable_answer_skipping = enable_answer_skipping
+        self.summary_type = summary_type
 
     @property
     def has_summary(self) -> bool:
@@ -57,7 +94,16 @@ class CombinedQdrantRetriever(BaseRetriever):
             return []
         assert self.summary_index is not None
         assert self.summary_top_k is not None
+
+        if self.summary_type is not None:
+            filter = models.Filter(
+                must=[
+                    models.FieldCondition(key="type", match=models.MatchValue(value=self.summary_type))
+                ]
+            )
+
         retriever = self.summary_index.as_retriever(
+            vector_store_kwargs={"qdrant_filters": filter} if self.summary_type is not None else None,
             similarity_top_k=self.summary_top_k
         )
         return retriever.retrieve(query_str)
