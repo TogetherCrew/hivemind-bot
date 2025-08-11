@@ -102,10 +102,14 @@ class CombinedQdrantRetriever(BaseRetriever):
                 ]
             )
 
-        retriever = self.summary_index.as_retriever(
-            vector_store_kwargs={"qdrant_filters": filter} if self.summary_type is not None else None,
-            similarity_top_k=self.summary_top_k
-        )
+            retriever = self.summary_index.as_retriever(
+                vector_store_kwargs={"qdrant_filters": filter},
+                similarity_top_k=self.summary_top_k
+            )
+        else:
+            retriever = self.summary_index.as_retriever(
+                similarity_top_k=self.summary_top_k
+            )
         return retriever.retrieve(query_str)
 
     def retrieve_raw_with_dates(self, query_str: str, dates: list[str | float]) -> list[NodeWithScore]:
