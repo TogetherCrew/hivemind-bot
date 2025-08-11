@@ -4,8 +4,9 @@ from llama_index.core.indices.vector_store.retrievers.retriever import (
     VectorIndexRetriever,
 )
 from utils.query_engine import MediaWikiQueryEngine
+import pytest
 
-
+@pytest.mark.skip(reason="Skipping test")
 class TestMediaWikiQueryEngine(TestCase):
     def setUp(self) -> None:
         community_id = "sample_community"

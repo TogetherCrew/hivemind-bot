@@ -165,3 +165,4 @@ main.ipynb
 .DS_Store
 
 temp_test_run_data.json
+bin/*

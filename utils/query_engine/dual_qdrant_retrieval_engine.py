@@ -1,12 +1,8 @@
 import logging
 from datetime import datetime, timedelta, timezone
-from qdrant_client.http import models
 from bot.retrievers.utils.load_hyperparams import load_hyperparams
 from llama_index.core import PromptTemplate, VectorStoreIndex
 from llama_index.core.base.response.schema import Response
-from llama_index.core.indices.vector_store.retrievers.retriever import (
-    VectorIndexRetriever,
-)
 from llama_index.core.query_engine import CustomQueryEngine
 from llama_index.core.response_synthesizers import BaseSynthesizer
 from llama_index.core.retrievers import BaseRetriever
@@ -17,10 +13,10 @@ from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
 from utils.globals import (
     REFERENCE_SCORE_THRESHOLD,
     RETRIEVER_THRESHOLD,
-    EXCLUDED_DATE_MARGIN,
 )
-from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 from utils.query_engine.qa_prompt import qa_prompt
+from utils.query_engine.combined_qdrant_retriever import CombinedQdrantRetriever
+from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
 
 
 class DualQdrantRetrievalEngine(CustomQueryEngine):
@@ -32,11 +28,10 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     qa_prompt: PromptTemplate
 
     def custom_query(self, query_str: str):
-        if self.summary_retriever is None:
-            response = self._process_basic_query(query_str)
-        else:
-            response = self._process_summary_query(query_str)
-        return response
+        retriever = self.retriever
+        if isinstance(retriever, CombinedQdrantRetriever) and retriever.has_summary:
+            return self._process_summary_query(query_str)
+        return self._process_basic_query(query_str)
 
     @classmethod
     def setup_engine(
@@ -68,23 +63,22 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         collection_name = f"{community_id}_{platform_id}"
 
         _, raw_data_top_k, date_margin = load_hyperparams()
-        cls._date_margin = date_margin
-        cls._enable_answer_skipping = enable_answer_skipping
 
-        if metadata_date_key is not None:
-            cls.metadata_date_key = metadata_date_key
-        if metadata_date_format is not None:
-            cls.metadata_date_format = metadata_date_format
-
-        cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
+        vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
         )
-        retriever = VectorIndexRetriever(
-            index=cls._vector_store_index,
-            similarity_top_k=raw_data_top_k,
+        retriever = CombinedQdrantRetriever(
+            raw_index=vector_store_index,
+            raw_top_k=raw_data_top_k,
+            summary_index=None,
+            summary_top_k=None,
+            metadata_date_key=metadata_date_key,
+            metadata_date_format=metadata_date_format,
+            metadata_date_summary_key=None,
+            metadata_date_summary_format=None,
+            date_margin=date_margin,
+            enable_answer_skipping=enable_answer_skipping,
         )
-
-        cls.summary_retriever = None
 
         return cls(
             retriever=retriever,
@@ -105,6 +99,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         metadata_date_summary_key: str,
         metadata_date_summary_format: DataType,
         enable_answer_skipping: bool,
+        summary_type: str | None = None,
     ):
         """
         setup the custom query engine on qdrant data
@@ -133,19 +128,15 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         enable_answer_skipping : bool
             skip answering questions with non-relevant retrieved nodes
             having this, it could provide `None` for response and source_nodes
+        summary_type : str, optional
+            Optional label describing the type of the summary collection.
+            Default is None meaning no filter is applied to the summary index.
         """
         collection_name = f"{community_id}_{platform_id}"
         summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
-        cls._date_margin = date_margin
-        cls._raw_data_top_k = raw_data_top_k
-        cls._enable_answer_skipping = enable_answer_skipping
 
-        cls._vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
+        vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
-        )
-        retriever = VectorIndexRetriever(
-            index=cls._vector_store_index,
-            similarity_top_k=raw_data_top_k,
         )
 
         summary_collection_name = collection_name + "_summary"
@@ -153,14 +144,19 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             collection_name=summary_collection_name
         )
 
-        cls.summary_retriever = VectorIndexRetriever(
-            index=summary_vector_store_index,
-            similarity_top_k=summary_data_top_k,
+        retriever = CombinedQdrantRetriever(
+            raw_index=vector_store_index,
+            raw_top_k=raw_data_top_k,
+            summary_index=summary_vector_store_index,
+            summary_top_k=summary_data_top_k,
+            metadata_date_key=metadata_date_key,
+            metadata_date_format=metadata_date_format,
+            metadata_date_summary_key=metadata_date_summary_key,
+            metadata_date_summary_format=metadata_date_summary_format,
+            date_margin=date_margin,
+            enable_answer_skipping=enable_answer_skipping,
+            summary_type=summary_type,
         )
-        cls.metadata_date_summary_key = metadata_date_summary_key
-        cls.metadata_date_summary_format = metadata_date_summary_format
-        cls.metadata_date_key = metadata_date_key
-        cls.metadata_date_format = metadata_date_format
 
         return cls(
             retriever=retriever,
@@ -189,43 +185,8 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     def _process_basic_query(self, query_str: str) -> Response:
         logging.info("=== BASIC QUERY MODE ===")
 
-        # Calculate the cutoff timestamp for excluding recent messages
-        cutoff_datetime = datetime.now(tz=timezone.utc) - timedelta(
-            minutes=EXCLUDED_DATE_MARGIN
-        )
-        cutoff_timestamp = cutoff_datetime.timestamp()
-
-
-        # Check if the class has metadata_date_key attribute before applying the filter
-        if hasattr(self, 'metadata_date_key') and self.metadata_date_key is not None:
-            # Create a filter to exclude messages newer than the cutoff
-            must_filters = [
-                models.FieldCondition(
-                    key=self.metadata_date_key,
-                    range=models.Range(
-                        lte=(
-                            int(cutoff_timestamp)
-                            if self.metadata_date_format == DataType.INTEGER
-                            else cutoff_timestamp
-                        ),
-                    ),
-                )
-            ]
-
-            filter = models.Filter(must=must_filters)
-
-            # Create a retriever with the date filter applied
-            retriever = self._vector_store_index.as_retriever(
-                vector_store_kwargs={"qdrant_filters": filter},
-                similarity_top_k=self.retriever.similarity_top_k,
-            )
-        else:
-            # Create a retriever without date filter
-            retriever = self._vector_store_index.as_retriever(
-                similarity_top_k=self.retriever.similarity_top_k,
-            )
-
-        nodes: list[NodeWithScore] = retriever.retrieve(query_str)
+        # Delegate to retriever (combined retriever applies cutoff internally)
+        nodes: list[NodeWithScore] = self.retriever.retrieve(query_str)
         logging.info(f"Retrieved {len(nodes)} nodes with cutoff filter applied")
 
         nodes_filtered = [node for node in nodes if node.score >= RETRIEVER_THRESHOLD]
@@ -237,7 +198,11 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             node.score for node in nodes if node.score >= REFERENCE_SCORE_THRESHOLD
         ]
 
-        if not raw_scores and self._enable_answer_skipping:
+        enable_skip = (
+            isinstance(self.retriever, CombinedQdrantRetriever)
+            and self.retriever.enable_answer_skipping
+        )
+        if not raw_scores and enable_skip:
             logging.warning("No high-quality nodes found, skipping answer")
             raise ValueError(
                 f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
@@ -255,33 +220,26 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
     def _process_summary_query(self, query_str: str) -> Response:
         logging.info("=== SUMMARY QUERY MODE ===")
-        summary_nodes = self.summary_retriever.retrieve(query_str)
+        # Retrieve summary nodes via combined retriever
+        combined = self.retriever
+        assert isinstance(combined, CombinedQdrantRetriever)
+        summary_nodes = combined.retrieve_summary(query_str)
         summary_nodes_filtered = [
             node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD
         ]
-        utils = QdrantEngineUtils(
-            metadata_date_key=self.metadata_date_key,
-            metadata_date_format=self.metadata_date_format,
-            date_margin=self._date_margin,
-        )
-
-        dates = [
-            node.metadata[self.metadata_date_summary_key]
-            for node in summary_nodes_filtered
-            if self.metadata_date_summary_key in node.metadata
-        ]
+        dates = []
+        if combined.metadata_date_summary_key is not None:
+            dates = [
+                node.metadata[combined.metadata_date_summary_key]
+                for node in summary_nodes_filtered
+                if combined.metadata_date_summary_key in node.metadata
+            ]
 
         if not dates:
             logging.info("No dates found in summary nodes, proceeding to basic query")
             return self._process_basic_query(query_str)
 
-        filter = utils.define_raw_data_filters(dates=dates)
-
-        retriever: BaseRetriever = self._vector_store_index.as_retriever(
-            vector_store_kwargs={"qdrant_filters": filter},
-            similarity_top_k=self._raw_data_top_k,
-        )
-        raw_nodes = retriever.retrieve(query_str)
+        raw_nodes = combined.retrieve_raw_with_dates(query_str, dates)
         logging.info(f"Retrieved {len(raw_nodes)} raw nodes")
 
         raw_nodes_filtered = [
@@ -299,7 +257,11 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             for node in raw_nodes_filtered
             if node.score >= REFERENCE_SCORE_THRESHOLD
         ]
-        if not summary_scores and not raw_scores and self._enable_answer_skipping:
+        enable_skip = (
+            isinstance(self.retriever, CombinedQdrantRetriever)
+            and self.retriever.enable_answer_skipping
+        )
+        if not summary_scores and not raw_scores and enable_skip:
             raise ValueError(
                 f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
                 " Returning empty response"
@@ -307,7 +269,13 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         else:
             logging.info(f"Filtered {len(summary_nodes_filtered)} summary nodes and {len(raw_nodes_filtered)} raw nodes")
             # if we had something above our threshold then try to answer
-            context_str = utils.combine_nodes_for_prompt(
+            # Use QdrantEngineUtils to build combined prompt text
+            utils_helper = QdrantEngineUtils(
+                metadata_date_key=combined.metadata_date_key,
+                metadata_date_format=combined.metadata_date_format,
+                date_margin=combined.date_margin,
+            )
+            context_str = utils_helper.combine_nodes_for_prompt(
                 summary_nodes_filtered, raw_nodes_filtered
             )
             prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
