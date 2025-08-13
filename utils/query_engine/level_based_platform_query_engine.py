@@ -94,7 +94,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         **kwargs :
             llm : llama-index.LLM
                 the LLM to use answering queries
-                default is gpt-4
+                default is gpt-4o-mini
             synthesizer : llama_index.response_synthesizers.base.BaseSynthesizer
                 the synthesizers to use when creating the prompt
                 default is to get from `get_response_synthesizer(response_mode="compact")`
@@ -128,7 +128,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         synthesizer = kwargs.get(
             "synthesizer", get_response_synthesizer(response_mode="compact")
         )
-        llm = kwargs.get("llm", OpenAI("gpt-4"))
+        llm = kwargs.get("llm", OpenAI("gpt-4o-mini"))
         qa_prompt_ = kwargs.get("qa_prompt", qa_prompt)
         base_engine = BasePGEngine(platform_table_name, community_id)
         index: VectorStoreIndex = kwargs.get(
