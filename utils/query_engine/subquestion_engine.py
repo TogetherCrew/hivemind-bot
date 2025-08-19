@@ -48,7 +48,29 @@ class CustomSubQuestionQueryEngine(SubQuestionQueryEngine):
         with self.callback_manager.event(
             CBEventType.QUERY, payload={EventPayload.QUERY_STR: query_bundle.query_str}
         ) as query_event:
-            sub_questions = self._question_gen.generate(self._metadatas, query_bundle)
+            # Generate sub-questions; if the generator fails to parse/return output,
+            # gracefully fall back to querying each available tool with the original query.
+            try:
+                sub_questions = self._question_gen.generate(self._metadatas, query_bundle)
+            except Exception as exp:
+                logger.warning(
+                    "Sub-question generation failed; falling back to default strategy: %s",
+                    exp,
+                )
+                # Fallback: one sub-question per available tool using the original query
+                sub_questions = [
+                    SubQuestion(sub_question=query_bundle.query_str, tool_name=tool_name)
+                    for tool_name in self._query_engines.keys()
+                ]
+            # Handle empty or None returns defensively
+            if not sub_questions:
+                logger.warning(
+                    "Sub-question generator returned no items; using fallback with all tools."
+                )
+                sub_questions = [
+                    SubQuestion(sub_question=query_bundle.query_str, tool_name=tool_name)
+                    for tool_name in self._query_engines.keys()
+                ]
 
             colors = get_color_mapping([str(i) for i in range(len(sub_questions))])
 
