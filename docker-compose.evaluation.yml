@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  evaluation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    container_name: evaluation
+    depends_on:
+      - qdrant
+    working_dir: /project
+    env_file:
+      - .env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_API_KEY=
+    command: >
+      python evaluation/evaluation.py
+      --community-id 1234
+      --platform-id 4321
+    volumes:
+      - .:/project
+    restart: "no"
+
+volumes:
+  qdrant_data:
+
+

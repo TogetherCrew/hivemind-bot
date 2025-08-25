@@ -166,3 +166,6 @@ main.ipynb
 
 temp_test_run_data.json
 bin/*
+datasets/*
+evaluation/results.csv
+evaluation/datasets/testset_hybrid_extended_ooc_data.csv
