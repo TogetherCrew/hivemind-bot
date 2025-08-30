@@ -45,7 +45,12 @@ class StartEvaluation:
         )
 
         logging.info(f"Loading dataset...")
-        self.dataset = Dataset.load(name="testset_hybrid_extended_ooc_data", backend="local/csv", root_dir=".")
+        data_root = os.getenv("EVAL_DATA_ROOT", "evaluation")
+        self.dataset = Dataset.load(
+            name="testset_hybrid_extended_ooc_data",
+            backend="local/csv",
+            root_dir=data_root,
+        )
 
     def evaluate(self):
         _df = self.dataset.to_pandas()

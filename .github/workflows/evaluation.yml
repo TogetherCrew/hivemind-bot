@@ -36,6 +36,28 @@ jobs:
           pip install -r requirements.txt
           python -m spacy download en_core_web_sm
 
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_EVAL_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Fetch evaluation dataset from S3
+        env:
+          DATASET_S3_URI: ${{ vars.EVAL_DATASET_S3_URI }}
+        run: |
+          if [ -z "$DATASET_S3_URI" ]; then
+            echo "EVAL_DATASET_S3_URI repo variable is not set (e.g., s3://bucket/eval-datasets/testset_hybrid_extended_ooc_data.csv)" >&2
+            exit 1
+          fi
+          mkdir -p evaluation/datasets
+          aws s3 cp "$DATASET_S3_URI" evaluation/datasets/
+
       - name: Wait for Qdrant to be ready
         run: |
           timeout 120 bash -c 'until curl -sf http://localhost:6333/collections >/dev/null; do echo "Waiting for Qdrant..."; sleep 3; done'
@@ -46,6 +68,7 @@ jobs:
           QDRANT_PORT: '6333'
           QDRANT_API_KEY: ''
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EVAL_DATA_ROOT: evaluation
         run: |
           python evaluation/evaluation.py \
             --community-id 1234 \
