@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.9.2
     container_name: qdrant
     ports:
       - "6333:6333"
@@ -24,10 +24,33 @@ services:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - QDRANT_API_KEY=
+      - SUMMARY_SNAPSHOT_ARN=
+      - BASE_SNAPSHOT_ARN=
+    entrypoint: /bin/sh -c
     command: >
-      python evaluation/evaluation.py
-      --community-id 1234
-      --platform-id 4321
+      "set -e;
+      echo Waiting for Qdrant...;
+      timeout 120 sh -c 'until wget -qO- http://qdrant:6333/collections >/dev/null; do echo Waiting for Qdrant...; sleep 3; done';
+      mkdir -p /project/snapshots;
+      to_s3_uri() { echo "$1" | sed -E 's#^arn:aws:s3:::(.*)#s3://\1#'; };
+      if [ -n \"$SUMMARY_SNAPSHOT_ARN\" ]; then \
+        echo Fetching summary snapshot from S3...; \
+        aws s3 cp \"$(to_s3_uri \"$SUMMARY_SNAPSHOT_ARN\")\" /project/snapshots/summary.snapshot; \
+      fi;
+      if [ -n \"$BASE_SNAPSHOT_ARN\" ]; then \
+        echo Fetching base snapshot from S3...; \
+        aws s3 cp \"$(to_s3_uri \"$BASE_SNAPSHOT_ARN\")\" /project/snapshots/base.snapshot; \
+      fi;
+      echo Restoring Qdrant snapshots if present...;
+      if [ -f /project/snapshots/summary.snapshot ]; then \
+        curl -sf -X POST http://qdrant:6333/collections/1234_4321_summary/snapshots/upload \
+          -F snapshot=@/project/snapshots/summary.snapshot; \
+      else echo 'No summary snapshot found, skipping restore.'; fi;
+      if [ -f /project/snapshots/base.snapshot ]; then \
+        curl -sf -X POST http://qdrant:6333/collections/1234_4321/snapshots/upload \
+          -F snapshot=@/project/snapshots/base.snapshot; \
+      else echo 'No base snapshot found, skipping restore.'; fi;
+      python evaluation/evaluation.py --community-id 1234 --platform-id 4321"
     volumes:
       - .:/project
     restart: "no"

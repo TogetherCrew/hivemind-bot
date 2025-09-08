@@ -3,6 +3,14 @@ FROM python:3.11-bullseye AS base
 WORKDIR /project
 COPY . .
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+      curl \
+      wget \
+      ca-certificates \
+      awscli \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV BLIS_ARCH="generic"
 RUN pip3 install -r requirements.txt --no-cache-dir
 RUN python -m spacy download en_core_web_sm

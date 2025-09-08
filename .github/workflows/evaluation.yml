@@ -9,7 +9,7 @@ jobs:
 
     services:
       qdrant:
-        image: qdrant/qdrant:latest
+        image: qdrant/qdrant:v1.9.2
         ports:
           - 6333:6333
 
@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.txt --no-cache-dir
           python -m spacy download en_core_web_sm
 
       - name: Configure AWS credentials (OIDC)
@@ -61,6 +61,36 @@ jobs:
       - name: Wait for Qdrant to be ready
         run: |
           timeout 120 bash -c 'until curl -sf http://localhost:6333/collections >/dev/null; do echo "Waiting for Qdrant..."; sleep 3; done'
+
+      - name: Restore Qdrant collections from S3 snapshots
+        env:
+          SUMMARY_SNAPSHOT_ARN: ${{ vars.EVAL_QDRANT_SUMMARY_SNAPSHOT_ARN }}
+          BASE_SNAPSHOT_ARN: ${{ vars.EVAL_QDRANT_BASE_SNAPSHOT_ARN }}
+        run: |
+          set -eo pipefail
+          to_s3_uri() { echo "$1" | sed -E 's#^arn:aws:s3:::(.*)#s3://\1#'; }
+
+          DEFAULT_SUMMARY_ARN="arn:aws:s3:::togethercrew-staging/eval-datasets/6579c364f1120850414e0dc5_65b18d9b5f88faae22760e97_summary-5685328549633988-2025-08-21-11-54-10.snapshot"
+          DEFAULT_BASE_ARN="arn:aws:s3:::togethercrew-staging/eval-datasets/6579c364f1120850414e0dc5_65b18d9b5f88faae22760e97-5685328549633988-2025-08-21-11-53-57.snapshot"
+
+          SUMMARY_ARN="${SUMMARY_SNAPSHOT_ARN:-$DEFAULT_SUMMARY_ARN}"
+          BASE_ARN="${BASE_SNAPSHOT_ARN:-$DEFAULT_BASE_ARN}"
+
+          mkdir -p snapshots
+          echo "Downloading snapshots from S3..."
+          aws s3 cp "$(to_s3_uri "$SUMMARY_ARN")" snapshots/summary.snapshot
+          aws s3 cp "$(to_s3_uri "$BASE_ARN")" snapshots/base.snapshot
+
+          echo "Restoring Qdrant collections via upload..."
+          curl -sf -X POST "http://localhost:6333/collections/1234_4321_summary/snapshots/upload" \
+            -F "snapshot=@snapshots/summary.snapshot"
+
+          curl -sf -X POST "http://localhost:6333/collections/1234_4321/snapshots/upload" \
+            -F "snapshot=@snapshots/base.snapshot"
+
+          echo "Validating restored collections..."
+          curl -sf "http://localhost:6333/collections/1234_4321_summary" >/dev/null
+          curl -sf "http://localhost:6333/collections/1234_4321" >/dev/null
 
       - name: Run evaluation
         env:
