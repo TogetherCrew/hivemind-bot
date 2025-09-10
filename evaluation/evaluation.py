@@ -41,7 +41,7 @@ class StartEvaluation:
         self.engine = prepare_discord_engine_auto_filter(
             community_id,
             platform_id,
-            enable_answer_skipping=True
+            enable_answer_skipping=False,
         )
 
         logging.info(f"Loading dataset...")
