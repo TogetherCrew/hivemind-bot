@@ -119,7 +119,13 @@ jobs:
           QDRANT_PORT: '6333'
           QDRANT_API_KEY: ''
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
           EVAL_DATA_ROOT: evaluation
+          CHUNK_SIZE: '512'
+          EMBEDDING_DIM: '1024'
+          K1_RETRIEVER_SEARCH: '20'
+          K2_RETRIEVER_SEARCH: '10'
+          D_RETRIEVER_SEARCH: '7'
         run: |
           python -m evaluation.evaluation \
             --community-id 1234 \
