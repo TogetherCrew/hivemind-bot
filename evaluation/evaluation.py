@@ -65,7 +65,8 @@ class StartEvaluation:
 
         _testset = Testset.from_list(_items)
 
-        evaluation_dataset = _testset.to_evaluation_dataset()
+        # TODO: remove the [:2] after testing
+        evaluation_dataset = _testset.to_evaluation_dataset()[:2]
 
         # the engine combining the summary and the source nodes
         wrapped_engine = SourceMergingQueryEngine(self.engine)
