@@ -121,7 +121,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           EVAL_DATA_ROOT: evaluation
         run: |
-          python evaluation/evaluation.py \
+          python -m evaluation.evaluation \
             --community-id 1234 \
             --platform-id 4321
 
