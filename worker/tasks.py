@@ -123,7 +123,7 @@ def query_data_sources(
             or not references
         )
         if no_answer:
-            rephrased = rephrase_question(query, context_hint=f"community_id={community_id}")
+            rephrased = rephrase_question(query)
             if rephrased and rephrased != query:
                 logging.info(f"{prefix} Rephrasing query and retrying: '{rephrased}'")
                 result = query_multiple_source(

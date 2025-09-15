@@ -21,6 +21,8 @@ from ragas.testset.synthesizers.testset_schema import Testset
 from ast import literal_eval
 from ragas.evaluation import EvaluationResult
 from ragas.cost import TokenUsage
+from utils.rephrase import rephrase_question
+from utils.globals import NO_ANSWER_REFERENCE, NO_ANSWER_REFERENCE_PLACEHOLDER
 
 
 
@@ -67,8 +69,9 @@ class StartEvaluation:
 
         evaluation_dataset = _testset.to_evaluation_dataset()
 
-        # the engine combining the summary and the source nodes
-        wrapped_engine = SourceMergingQueryEngine(self.engine)
+        # Rephrase-and-retry wrapper then merge summary+raw nodes
+        rephrasing_engine = RephrasingQueryEngine(self.engine)
+        wrapped_engine = SourceMergingQueryEngine(rephrasing_engine)
 
         logging.info(f"Evaluating...")
         results = self._evaluate(wrapped_engine, evaluation_dataset)
@@ -195,6 +198,96 @@ class SourceMergingQueryEngine:
     async def aquery(self, *args, **kwargs):
         resp = await self._inner.aquery(*args, **kwargs)
         return self._merge(resp)
+
+
+class RephrasingQueryEngine:
+    def __init__(self, inner: Any):
+        self._inner = inner
+
+    def __getattr__(self, name: str):
+        return getattr(self._inner, name)
+
+    def _extract_query(self, *args, **kwargs) -> str | None:
+        if args:
+            first = args[0]
+            if isinstance(first, str):
+                return first
+            # Fallback: duck-typed QueryBundle
+            q = getattr(first, "query_str", None)
+            if isinstance(q, str):
+                return q
+        qk = kwargs.get("query_str")
+        if isinstance(qk, str):
+            return qk
+        return None
+
+    def _is_no_answer(self, response: Any) -> bool:
+        try:
+            text = getattr(response, "response", None)
+            if text is None:
+                text = str(response)
+            text = (text or "").strip()
+            no_text = text in (NO_ANSWER_REFERENCE, NO_ANSWER_REFERENCE_PLACEHOLDER)
+        except Exception:
+            no_text = False
+        try:
+            nodes = getattr(response, "source_nodes", None) or []
+            no_nodes = len(nodes) == 0
+        except Exception:
+            no_nodes = True
+        return no_text or no_nodes
+
+    def query(self, *args, **kwargs):
+        resp = self._inner.query(*args, **kwargs)
+        if not self._is_no_answer(resp):
+            return resp
+        original_q = self._extract_query(*args, **kwargs)
+        if not original_q:
+            return resp
+        rephrased = rephrase_question(original_q)
+        if not rephrased or rephrased == original_q:
+            return resp
+        # Re-run with rephrased question
+        new_args = list(args)
+        if new_args:
+            if isinstance(new_args[0], str):
+                new_args[0] = rephrased
+            else:
+                # If QueryBundle-like, try to update query_str
+                qb = new_args[0]
+                if hasattr(qb, "query_str"):
+                    try:
+                        qb.query_str = rephrased
+                    except Exception:
+                        pass
+        else:
+            kwargs["query_str"] = rephrased
+        return self._inner.query(*tuple(new_args), **kwargs)
+
+    async def aquery(self, *args, **kwargs):
+        resp = await self._inner.aquery(*args, **kwargs)
+        if not self._is_no_answer(resp):
+            return resp
+        original_q = self._extract_query(*args, **kwargs)
+        if not original_q:
+            return resp
+        rephrased = rephrase_question(original_q)
+        if not rephrased or rephrased == original_q:
+            return resp
+        new_args = list(args)
+        if new_args:
+            if isinstance(new_args[0], str):
+                new_args[0] = rephrased
+            else:
+                qb = new_args[0]
+                if hasattr(qb, "query_str"):
+                    try:
+                        qb.query_str = rephrased
+                    except Exception:
+                        pass
+        else:
+            kwargs["query_str"] = rephrased
+        return await self._inner.aquery(*tuple(new_args), **kwargs)
 
 
 if __name__ == "__main__":
