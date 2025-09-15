@@ -275,6 +275,10 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
                 metadata_date_format=combined.metadata_date_format,
                 date_margin=combined.date_margin,
             )
+            # This was added to check the eval scores with no raw nodes
+            # TODO: remove after testing
+            raw_nodes_filtered = []
+
             context_str = utils_helper.combine_nodes_for_prompt(
                 summary_nodes_filtered, raw_nodes_filtered
             )
