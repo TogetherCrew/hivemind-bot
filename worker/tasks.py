@@ -14,6 +14,7 @@ from utils.globals import (
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from utils.traceloop import init_tracing
 from worker.celery import app
+from utils.rephrase import rephrase_question
 
 
 @app.task
@@ -114,6 +115,28 @@ def query_data_sources(
             response, references, metadata = result
         else:
             response, references = result
+
+        # If no useful answer, try rephrasing once and retry
+        no_answer = (
+            response is None
+            or response == NO_ANSWER_REFERENCE
+            or not references
+        )
+        if no_answer:
+            rephrased = rephrase_question(query, context_hint=f"community_id={community_id}")
+            if rephrased and rephrased != query:
+                logging.info(f"{prefix} Rephrasing query and retrying: '{rephrased}'")
+                result = query_multiple_source(
+                    query=rephrased,
+                    community_id=community_id,
+                    enable_answer_skipping=enable_answer_skipping,
+                    return_metadata=return_metadata,
+                    **data_sources,
+                )
+                if return_metadata:
+                    response, references, metadata = result
+                else:
+                    response, references = result
     else:
         logging.info(f"No data source selected!")
         response = NO_DATA_SOURCE_SELECTED
