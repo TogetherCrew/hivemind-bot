@@ -48,7 +48,9 @@ class DiscordDualQueryEngine:
             metadata_date_summary_key="date",
             metadata_date_summary_format=DataType.STRING,
             enable_answer_skipping=enable_answer_skipping,
-            summary_type="day",
+            # Ignore searching on specific summaries and 
+            # just search based on all available summaries
+            # summary_type="day",
         )
         return engine
 
