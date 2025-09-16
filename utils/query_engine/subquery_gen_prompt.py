@@ -14,9 +14,17 @@ def build_tools_text(tools: Sequence[ToolMetadata]) -> str:
 
 
 PREFIX = """\
-Given a user question, and a list of tools, output a list of relevant sub-questions \
-in json markdown that when composed can help answer the full user question. \
-Define the sub-questions as search queries that can be used for vector similarity search:
+Given a user question and a list of tools, output a list of relevant sub-questions for all the tools \
+in json markdown that, when composed, can help answer the full user question. \
+Define the sub-questions as search queries that can be used for vector similarity search.
+
+Requirements:
+- Include every tool at least once. The number of items must be greater than or equal to the number of tools.
+- Each item must target one tool via the "tool_name" field (case-sensitive match).
+- Write platform-appropriate search queries in the "sub_question" field; prefer concise phrasing but allow longer queries when helpful (no strict word limit).
+- The JSON output must be an object with key "items" whose value is an array of objects.
+- Order of items does not matter.
+- Return only a single JSON code block in the <Output> section; no text outside the JSON.
 """
 
 
