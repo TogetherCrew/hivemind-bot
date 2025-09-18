@@ -2,7 +2,7 @@ import logging
 
 from bot.retrievers.forum_summary_retriever import ForumBasedSummaryRetriever
 from bot.retrievers.retrieve_similar_nodes import RetrieveSimilarNodes
-from bot.retrievers.utils.load_hyperparams import load_hyperparams
+from utils.globals import K1_RETRIEVER_SEARCH, K2_RETRIEVER_SEARCH, D_RETRIEVER_SEARCH
 from llama_index.core import VectorStoreIndex
 from llama_index.core.base.response.schema import Response
 from llama_index.core.prompts import PromptTemplate
@@ -150,12 +150,11 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         )._vector_store
 
         cls._enable_answer_skipping = kwargs.get("enable_answer_skipping", False)
-        _, similarity_top_k, d = load_hyperparams()
-        cls._d = d
+        cls._d = D_RETRIEVER_SEARCH
 
         cls._raw_vector_store = index._vector_store
 
-        cls._similarity_top_k = similarity_top_k
+        cls._similarity_top_k = K2_RETRIEVER_SEARCH
         cls._filters = filters
         cls._summary_nodes_filters = summary_nodes_filters
 
@@ -215,7 +214,6 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
             the created query engine with the filters
         """
         dbname = f"community_{community_id}"
-        summary_similarity_top_k, _, d = load_hyperparams()
 
         base_engine = BasePGEngine(
             platform_table_name + "_summary",
@@ -229,7 +227,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
 
         retriever = RetrieveSimilarNodes(
             vector_store,
-            summary_similarity_top_k,
+            K1_RETRIEVER_SEARCH,
         )
         if platform_table_name != "discourse":
             # getting nodes of just thread summaries
@@ -272,7 +270,7 @@ class LevelBasedPlatformQueryEngine(CustomQueryEngine):
         cls._level1_key = level1_key
         cls._level2_key = level2_key
         cls._date_key = date_key
-        cls._d = d
+        cls._d = D_RETRIEVER_SEARCH
         cls._platform_table_name = platform_table_name
 
         logging.debug(
