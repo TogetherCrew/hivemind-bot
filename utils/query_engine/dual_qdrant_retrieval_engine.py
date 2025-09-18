@@ -6,7 +6,7 @@ from utils.globals import (
     D_RETRIEVER_SEARCH,
     RERANK_TOP_K
 )
-import cohere
+from sentence_transformers import CrossEncoder
 from llama_index.core import PromptTemplate, VectorStoreIndex
 from llama_index.core.base.response.schema import Response
 from llama_index.core.query_engine import CustomQueryEngine
@@ -33,7 +33,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     llm: OpenAI
     qa_prompt: PromptTemplate
     enable_reranking: bool = False
-    reranker_model: str = "rerank-english-v3.0"
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     def custom_query(self, query_str: str):
         retriever = self.retriever
@@ -43,7 +43,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
     def _rerank_nodes(self, query_str: str, nodes: list[NodeWithScore]) -> list[NodeWithScore]:
         """
-        Rerank nodes using Cohere's reranking API.
+        Rerank nodes using CrossEncoder model.
         
         Parameters
         ----------
@@ -61,34 +61,31 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             return nodes
             
         try:
-            # Initialize Cohere client
-            cohere_api_key = os.getenv("COHERE_API_KEY")
-            if not cohere_api_key:
-                logging.warning("COHERE_API_KEY not found, skipping reranking")
-                return nodes
-                
-            co = cohere.Client(cohere_api_key)
+            # Initialize CrossEncoder model
+            model = CrossEncoder(self.reranker_model)
             
-            # Prepare documents for reranking
+            # Prepare query-document pairs for reranking
             documents = [node.node.get_content() for node in nodes]
+            query_doc_pairs = [(query_str, doc) for doc in documents]
             
-            # Perform reranking
-            rerank_response = co.rerank(
-                query=query_str,
-                documents=documents,
-                model=self.reranker_model,
-                top_n=min(RERANK_TOP_K, len(documents)),
-            )
+            # Perform reranking - get relevance scores
+            relevance_scores = model.predict(query_doc_pairs)
             
-            # Reorder nodes based on reranking results
+            # Combine nodes with their new scores and sort by relevance
+            scored_nodes = list(zip(nodes, relevance_scores))
+            scored_nodes.sort(key=lambda x: x[1], reverse=True)
+            
+            # Take top-k nodes and update their scores
+            top_k = min(RERANK_TOP_K, len(scored_nodes))
             reranked_nodes = []
-            for result in rerank_response.results:
-                original_node = nodes[result.index]
+            
+            for i in range(top_k):
+                node, relevance_score = scored_nodes[i]
                 # Update the score with the reranking score
-                original_node.score = result.relevance_score
-                reranked_nodes.append(original_node)
+                node.score = float(relevance_score)
+                reranked_nodes.append(node)
                 
-            logging.info(f"Reranked {len(nodes)} nodes to top {len(reranked_nodes)} nodes")
+            logging.info(f"Reranked {len(nodes)} nodes to top {len(reranked_nodes)} nodes using CrossEncoder")
             return reranked_nodes
             
         except Exception as e:
@@ -107,7 +104,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         metadata_date_key: str | None = None,
         metadata_date_format: DataType | None = None,
         enable_reranking: bool = True,
-        reranker_model: str = "rerank-english-v3.0",
+        reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
         rerank_top_k: int = RERANK_TOP_K,
     ):
         """
@@ -168,8 +165,8 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         enable_answer_skipping: bool,
         summary_type: str | None = None,
         enable_reranking: bool = True,
-        reranker_model: str = "rerank-english-v3.0",
-        rerank_top_k: int = 10,
+        reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        rerank_top_k: int = RERANK_TOP_K,
     ):
         """
         setup the custom query engine on qdrant data
