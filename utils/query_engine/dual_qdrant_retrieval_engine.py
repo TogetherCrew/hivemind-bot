@@ -1,6 +1,12 @@
 import logging
-from datetime import datetime, timedelta, timezone
-from bot.retrievers.utils.load_hyperparams import load_hyperparams
+import os
+from utils.globals import (
+    K1_RETRIEVER_SEARCH,
+    K2_RETRIEVER_SEARCH,
+    D_RETRIEVER_SEARCH,
+    RERANK_TOP_K
+)
+from sentence_transformers import CrossEncoder
 from llama_index.core import PromptTemplate, VectorStoreIndex
 from llama_index.core.base.response.schema import Response
 from llama_index.core.query_engine import CustomQueryEngine
@@ -26,12 +32,66 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     response_synthesizer: BaseSynthesizer
     llm: OpenAI
     qa_prompt: PromptTemplate
+    enable_reranking: bool = False
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     def custom_query(self, query_str: str):
         retriever = self.retriever
         if isinstance(retriever, CombinedQdrantRetriever) and retriever.has_summary:
             return self._process_summary_query(query_str)
         return self._process_basic_query(query_str)
+
+    def _rerank_nodes(self, query_str: str, nodes: list[NodeWithScore]) -> list[NodeWithScore]:
+        """
+        Rerank nodes using CrossEncoder model.
+        
+        Parameters
+        ----------
+        query_str : str
+            The original query string
+        nodes : list[NodeWithScore]
+            List of nodes to rerank
+            
+        Returns
+        -------
+        list[NodeWithScore]
+            Reranked list of nodes
+        """
+        if not self.enable_reranking or not nodes:
+            return nodes
+            
+        try:
+            # Initialize CrossEncoder model
+            model = CrossEncoder(self.reranker_model)
+            
+            # Prepare query-document pairs for reranking
+            documents = [node.node.get_content() for node in nodes]
+            query_doc_pairs = [(query_str, doc) for doc in documents]
+            
+            # Perform reranking - get relevance scores
+            relevance_scores = model.predict(query_doc_pairs)
+            
+            # Combine nodes with their new scores and sort by relevance
+            scored_nodes = list(zip(nodes, relevance_scores))
+            scored_nodes.sort(key=lambda x: x[1], reverse=True)
+            
+            # Take top-k nodes and update their scores
+            top_k = min(RERANK_TOP_K, len(scored_nodes))
+            reranked_nodes = []
+            
+            for i in range(top_k):
+                node, relevance_score = scored_nodes[i]
+                # Update the score with the reranking score
+                node.score = float(relevance_score)
+                reranked_nodes.append(node)
+                
+            logging.info(f"Reranked {len(nodes)} nodes to top {len(reranked_nodes)} nodes using CrossEncoder")
+            return reranked_nodes
+            
+        except Exception as e:
+            logging.error(f"Error during reranking: {str(e)}")
+            # Return original nodes if reranking fails
+            return nodes
 
     @classmethod
     def setup_engine(
@@ -43,6 +103,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         enable_answer_skipping: bool,
         metadata_date_key: str | None = None,
         metadata_date_format: DataType | None = None,
+        enable_reranking: bool = True,
+        reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        rerank_top_k: int = RERANK_TOP_K,
     ):
         """
         setup the custom query engine on qdrant data
@@ -62,21 +125,19 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         """
         collection_name = f"{community_id}_{platform_id}"
 
-        _, raw_data_top_k, date_margin = load_hyperparams()
-
         vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
         )
         retriever = CombinedQdrantRetriever(
             raw_index=vector_store_index,
-            raw_top_k=raw_data_top_k,
+            raw_top_k=K2_RETRIEVER_SEARCH,
             summary_index=None,
             summary_top_k=None,
             metadata_date_key=metadata_date_key,
             metadata_date_format=metadata_date_format,
             metadata_date_summary_key=None,
             metadata_date_summary_format=None,
-            date_margin=date_margin,
+            date_margin=D_RETRIEVER_SEARCH,
             enable_answer_skipping=enable_answer_skipping,
         )
 
@@ -85,6 +146,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             response_synthesizer=synthesizer,
             llm=llm,
             qa_prompt=qa_prompt,
+            enable_reranking=enable_reranking,
+            reranker_model=reranker_model,
+            rerank_top_k=rerank_top_k,
         )
 
     @classmethod
@@ -100,6 +164,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         metadata_date_summary_format: DataType,
         enable_answer_skipping: bool,
         summary_type: str | None = None,
+        enable_reranking: bool = True,
+        reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        rerank_top_k: int = RERANK_TOP_K,
     ):
         """
         setup the custom query engine on qdrant data
@@ -133,7 +200,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             Default is None meaning no filter is applied to the summary index.
         """
         collection_name = f"{community_id}_{platform_id}"
-        summary_data_top_k, raw_data_top_k, date_margin = load_hyperparams()
 
         vector_store_index: VectorStoreIndex = cls._setup_vector_store_index(
             collection_name=collection_name
@@ -146,14 +212,14 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
         retriever = CombinedQdrantRetriever(
             raw_index=vector_store_index,
-            raw_top_k=raw_data_top_k,
+            raw_top_k=K2_RETRIEVER_SEARCH,
             summary_index=summary_vector_store_index,
-            summary_top_k=summary_data_top_k,
+            summary_top_k=K1_RETRIEVER_SEARCH,
             metadata_date_key=metadata_date_key,
             metadata_date_format=metadata_date_format,
             metadata_date_summary_key=metadata_date_summary_key,
             metadata_date_summary_format=metadata_date_summary_format,
-            date_margin=date_margin,
+            date_margin=D_RETRIEVER_SEARCH,
             enable_answer_skipping=enable_answer_skipping,
             summary_type=summary_type,
         )
@@ -163,6 +229,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             response_synthesizer=synthesizer,
             llm=llm,
             qa_prompt=qa_prompt,
+            enable_reranking=enable_reranking,
+            reranker_model=reranker_model,
+            rerank_top_k=rerank_top_k,
         )
 
     @classmethod
@@ -188,6 +257,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         # Delegate to retriever (combined retriever applies cutoff internally)
         nodes: list[NodeWithScore] = self.retriever.retrieve(query_str)
         logging.info(f"Retrieved {len(nodes)} nodes with cutoff filter applied")
+
+        # Apply reranking if enabled
+        nodes = self._rerank_nodes(query_str, nodes)
 
         nodes_filtered = [node for node in nodes if node.score >= RETRIEVER_THRESHOLD]
         logging.info(
@@ -224,6 +296,10 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         combined = self.retriever
         assert isinstance(combined, CombinedQdrantRetriever)
         summary_nodes = combined.retrieve_summary(query_str)
+        
+        # Apply reranking to summary nodes if enabled
+        summary_nodes = self._rerank_nodes(query_str, summary_nodes)
+        
         summary_nodes_filtered = [
             node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD
         ]
@@ -241,6 +317,9 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
 
         raw_nodes = combined.retrieve_raw_with_dates(query_str, dates)
         logging.info(f"Retrieved {len(raw_nodes)} raw nodes")
+
+        # Apply reranking to raw nodes if enabled
+        raw_nodes = self._rerank_nodes(query_str, raw_nodes)
 
         raw_nodes_filtered = [
             node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD
