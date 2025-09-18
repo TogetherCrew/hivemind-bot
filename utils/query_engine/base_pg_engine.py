@@ -1,5 +1,5 @@
 from bot.retrievers.custom_retriever import CustomVectorStoreRetriever
-from bot.retrievers.utils.load_hyperparams import load_hyperparams
+from utils.globals import K2_RETRIEVER_SEARCH
 from llama_index.core import VectorStoreIndex, get_response_synthesizer
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.query_engine import RetrieverQueryEngine
@@ -30,10 +30,9 @@ class BasePGEngine:
         index = self._setup_vector_store_index(
             testing=testing,
         )
-        _, similarity_top_k, _ = load_hyperparams()
 
         retriever = CustomVectorStoreRetriever(
-            index=index, similarity_top_k=similarity_top_k
+            index=index, similarity_top_k=K2_RETRIEVER_SEARCH
         )
         query_engine = RetrieverQueryEngine(
             retriever=retriever,
