@@ -34,6 +34,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     qa_prompt: PromptTemplate
     enable_reranking: bool = False
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    _reranker: CrossEncoder | None = None
 
     def custom_query(self, query_str: str):
         retriever = self.retriever
@@ -61,15 +62,18 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             return nodes
             
         try:
-            # Initialize CrossEncoder model
-            model = CrossEncoder(self.reranker_model)
+            # Initialize CrossEncoder model only once (lazy loading)
+            if self._reranker is None:
+                logging.info(f"Loading CrossEncoder model: {self.reranker_model}")
+                self._reranker = CrossEncoder(self.reranker_model)
+                logging.info("CrossEncoder model loaded successfully")
             
             # Prepare query-document pairs for reranking
             documents = [node.node.get_content() for node in nodes]
             query_doc_pairs = [(query_str, doc) for doc in documents]
             
             # Perform reranking - get relevance scores
-            relevance_scores = model.predict(query_doc_pairs)
+            relevance_scores = self._reranker.predict(query_doc_pairs)
             
             # Combine nodes with their new scores and sort by relevance
             scored_nodes = list(zip(nodes, relevance_scores))
@@ -105,7 +109,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         metadata_date_format: DataType | None = None,
         enable_reranking: bool = True,
         reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
-        rerank_top_k: int = RERANK_TOP_K,
     ):
         """
         setup the custom query engine on qdrant data
@@ -148,7 +151,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             qa_prompt=qa_prompt,
             enable_reranking=enable_reranking,
             reranker_model=reranker_model,
-            rerank_top_k=rerank_top_k,
         )
 
     @classmethod
@@ -166,7 +168,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         summary_type: str | None = None,
         enable_reranking: bool = True,
         reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
-        rerank_top_k: int = RERANK_TOP_K,
     ):
         """
         setup the custom query engine on qdrant data
@@ -231,7 +232,6 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             qa_prompt=qa_prompt,
             enable_reranking=enable_reranking,
             reranker_model=reranker_model,
-            rerank_top_k=rerank_top_k,
         )
 
     @classmethod
