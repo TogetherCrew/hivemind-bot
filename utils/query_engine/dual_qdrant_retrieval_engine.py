@@ -34,12 +34,31 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
     qa_prompt: PromptTemplate
     enable_reranking: bool = False
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    _cached_cross_encoder: CrossEncoder = None
 
     def custom_query(self, query_str: str):
         retriever = self.retriever
         if isinstance(retriever, CombinedQdrantRetriever) and retriever.has_summary:
             return self._process_summary_query(query_str)
         return self._process_basic_query(query_str)
+
+    def _get_cross_encoder(self) -> CrossEncoder:
+        """
+        Get or initialize the cached CrossEncoder model.
+        
+        Returns
+        -------
+        CrossEncoder
+            The cached CrossEncoder model
+        """
+        if (self._cached_cross_encoder is None or 
+            getattr(self._cached_cross_encoder, 'model_name', None) != self.reranker_model):
+            logging.info(f"Loading CrossEncoder model: {self.reranker_model}")
+            self._cached_cross_encoder = CrossEncoder(self.reranker_model)
+            # Store model name for cache validation
+            self._cached_cross_encoder.model_name = self.reranker_model
+            logging.info("CrossEncoder model loaded and cached")
+        return self._cached_cross_encoder
 
     def _rerank_nodes(self, query_str: str, nodes: list[NodeWithScore]) -> list[NodeWithScore]:
         """
@@ -61,12 +80,14 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
             return nodes
             
         try:
-            # Initialize CrossEncoder model
-            model = CrossEncoder(self.reranker_model)
+            # Get cached CrossEncoder model
+            model = self._get_cross_encoder()
             
             # Prepare query-document pairs for reranking
             documents = [node.node.get_content() for node in nodes]
             query_doc_pairs = [(query_str, doc) for doc in documents]
+            
+            logging.debug(f"Reranking {len(nodes)} nodes with query: '{query_str[:50]}...'")
             
             # Perform reranking - get relevance scores
             relevance_scores = model.predict(query_doc_pairs)
@@ -85,7 +106,7 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
                 node.score = float(relevance_score)
                 reranked_nodes.append(node)
                 
-            logging.info(f"Reranked {len(nodes)} nodes to top {len(reranked_nodes)} nodes using CrossEncoder")
+            logging.info(f"Reranked {len(nodes)} nodes to top {len(reranked_nodes)} nodes using cached CrossEncoder")
             return reranked_nodes
             
         except Exception as e:
