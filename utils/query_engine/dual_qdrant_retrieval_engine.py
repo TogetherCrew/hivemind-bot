@@ -112,20 +112,38 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         rerank_top_k: int = RERANK_TOP_K,
     ):
         """
-        setup the custom query engine on qdrant data
+        Set up a query engine over Qdrant data without summaries.
 
         Parameters
-        ------------
+        ----------
         llm : OpenAI
-            the llm to be used for RAG pipeline
+            LLM used to generate the final answer.
         synthesizer : BaseSynthesizer
-            the process of generating response using an LLM
-        qa_prompt : PromptTemplate
-            the prompt template to be filled and passed to an LLM
+            Response synthesizer used with the LLM.
         platform_id : str
-            specifying the platform ID to identify the data collection
+            Platform identifier to select the collection name.
         community_id : str
-            specifying community_id to identify the data collection
+            Community identifier to select the collection name.
+        enable_answer_skipping : bool
+            If True, skip generating an answer when all retrieved nodes are below
+            quality thresholds.
+        metadata_date_key : str | None, optional
+            Metadata key that contains the date in raw documents.
+        metadata_date_format : DataType | None, optional
+            Data type/format of the raw document date for filtering.
+        enable_reranking : bool, optional
+            If True, apply CrossEncoder-based reranking to retrieved nodes. Default True.
+        reranker_model : str, optional
+            Hugging Face model id or local path for the CrossEncoder. Default
+            "cross-encoder/ms-marco-MiniLM-L-6-v2".
+        rerank_top_k : int, optional
+            Number of top nodes to keep after reranking. Default from
+            `utils.globals.RERANK_TOP_K`.
+
+        Returns
+        -------
+        DualQdrantRetrievalEngine
+            Configured query engine instance.
         """
         collection_name = f"{community_id}_{platform_id}"
 
@@ -173,35 +191,44 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         rerank_top_k: int = RERANK_TOP_K,
     ):
         """
-        setup the custom query engine on qdrant data
+        Set up a query engine over Qdrant data with a summary index.
 
         Parameters
-        ------------
-        use_summary : bool
-            whether to use the summary data or not
-            note: the summary data should be available before
-            for this option to be enabled
+        ----------
         llm : OpenAI
-            the llm to be used for RAG pipeline
+            LLM used to generate the final answer.
         synthesizer : BaseSynthesizer
-            the process of generating response using an LLM
+            Response synthesizer used with the LLM.
         platform_id : str
-            specifying the platform ID to identify the data collection
+            Platform identifier to select the collection name.
         community_id : str
-            specifying community_id to identify the data collection
-        metadata_date_summary_key : str | None
-            the date key name in summary documents' metadata
-            In case of `use_summary` equal to be true this shuold be passed
-        metadata_date_summary_format : DataType | None
-            the date format in metadata
-            In case of `use_summary` equal to be true this shuold be passed
-            NOTE: this should be always a string for the filtering of it to work.
+            Community identifier to select the collection name.
+        metadata_date_key : str
+            Metadata key that contains the date in raw documents.
+        metadata_date_format : DataType
+            Data type/format of the raw document date for filtering.
+        metadata_date_summary_key : str
+            Metadata key that contains the date in summary documents.
+        metadata_date_summary_format : DataType
+            Data type/format of the summary date for filtering.
         enable_answer_skipping : bool
-            skip answering questions with non-relevant retrieved nodes
-            having this, it could provide `None` for response and source_nodes
-        summary_type : str, optional
-            Optional label describing the type of the summary collection.
-            Default is None meaning no filter is applied to the summary index.
+            If True, skip generating an answer when all retrieved nodes are below
+            quality thresholds.
+        summary_type : str | None, optional
+            Optional label to filter the summary index on a specific type. Default None.
+        enable_reranking : bool, optional
+            If True, apply CrossEncoder-based reranking to retrieved nodes. Default True.
+        reranker_model : str, optional
+            Hugging Face model id or local path for the CrossEncoder. Default
+            "cross-encoder/ms-marco-MiniLM-L-6-v2".
+        rerank_top_k : int, optional
+            Number of top nodes to keep after reranking. Default from
+            `utils.globals.RERANK_TOP_K`.
+
+        Returns
+        -------
+        DualQdrantRetrievalEngine
+            Configured query engine instance.
         """
         collection_name = f"{community_id}_{platform_id}"
 
