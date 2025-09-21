@@ -22,6 +22,7 @@ class TestDataSourceSelector(TestCase):
 
     def test_single_platform(self):
         platform_id = "6579c364f1120850414e0da1"
+        raise Exception("testing failed test case!")
         self.client["Core"]["modules"].insert_one(
             {
                 "name": "hivemind",
