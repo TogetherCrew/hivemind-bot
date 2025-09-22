@@ -1,6 +1,6 @@
 # the theshold to skip nodes of being included in an answer
-RETRIEVER_THRESHOLD = 0.4
-REFERENCE_SCORE_THRESHOLD = 0.5
+RETRIEVER_THRESHOLD = 0
+REFERENCE_SCORE_THRESHOLD = 0
 INVALID_QUERY_RESPONSE = (
     "We're unable to process your query. Please refine it and try again."
 )
@@ -14,3 +14,8 @@ NO_ANSWER_REFERENCE_PLACEHOLDER = "I don't have enough information to answer tha
 NO_DATA_SOURCE_SELECTED = "No data source is currently selected. Please choose a data source from the dashboard and try again."
 
 EXCLUDED_DATE_MARGIN = 5  # minutes
+K1_RETRIEVER_SEARCH=100  # summary retrieval
+K2_RETRIEVER_SEARCH=50  # raw data retrieval
+D_RETRIEVER_SEARCH=7   # days
+
+RERANK_TOP_K=10
