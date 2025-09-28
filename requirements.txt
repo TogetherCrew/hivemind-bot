@@ -23,3 +23,6 @@ tc-temporal-backend==1.1.4
 ragas==0.3.1
 ragas_experimental==0.3.1
 sentence-transformers>=2.0.0
+langchain-openai==0.3.33
+langsmith==0.4.29
+langgraph==0.6.7
