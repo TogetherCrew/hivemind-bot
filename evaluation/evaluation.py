@@ -15,7 +15,7 @@ from langchain_openai import ChatOpenAI
 from ragas.integrations.llama_index import evaluate
 from ragas.cost import get_token_usage_for_openai
 from ragas.llms import LangchainLLMWrapper
-from utils.query_engine.prepare_discord_query_engine import prepare_discord_engine_auto_filter
+from worker.tasks import query_data_sources
 from ragas_experimental import Dataset
 from ragas.testset.synthesizers.testset_schema import Testset
 from ast import literal_eval
@@ -38,9 +38,9 @@ class StartEvaluation:
         )
 
         logging.info(f"Preparing engine...")
-        self.engine = prepare_discord_engine_auto_filter(
-            community_id,
-            platform_id,
+        self.engine = QueryDataSourcesAdapter(
+            community_id=community_id,
+            platform_id=platform_id,
             enable_answer_skipping=False,
         )
 
@@ -195,6 +195,32 @@ class SourceMergingQueryEngine:
     async def aquery(self, *args, **kwargs):
         resp = await self._inner.aquery(*args, **kwargs)
         return self._merge(resp)
+
+
+class _SimpleResponse:
+    def __init__(self, response: str | None, source_nodes: list[Any] | None, metadata: dict | None = None):
+        self.response = response
+        self.source_nodes = source_nodes or []
+        self.metadata = metadata or {}
+
+
+class QueryDataSourcesAdapter:
+    def __init__(self, community_id: str, platform_id: str, enable_answer_skipping: bool = False):
+        self._community_id = community_id
+        self._platform_id = platform_id
+        self._enable_answer_skipping = enable_answer_skipping
+
+    def query(self, query: str, *_, **__):
+        response, refs, meta = query_data_sources(
+            community_id=self._community_id,
+            query=query,
+            enable_answer_skipping=self._enable_answer_skipping,
+            return_metadata=True,
+        )
+        return _SimpleResponse(response=response, source_nodes=refs, metadata=meta)
+
+    async def aquery(self, query: str, *_, **__):
+        return self.query(query)
 
 
 if __name__ == "__main__":

@@ -92,8 +92,17 @@ def query_data_sources(
     logging.info(
         f"{prefix} Answer skipping in case of non-relevant information: {enable_answer_skipping}"
     )
-    selector = DataSourceSelector()
-    data_sources = selector.select_data_source(community_id)
+
+    # TODO: update the flow to accept testing parameters in HivemindQueryPayload
+    # right now this is hardcoded for our evaluation pipeline to be discord only
+    if community_id == "1234":
+        data_sources = {
+            "discord": "4321",
+        }
+    else:
+        selector = DataSourceSelector()
+        data_sources = selector.select_data_source(community_id)
+
     logging.info(f"{prefix} Data sources selected: {data_sources}")
 
     # Platform IDs are now directly in data_sources, pass them directly
