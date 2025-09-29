@@ -164,12 +164,44 @@ class SourceMergingQueryEngine:
     def __getattr__(self, name: str):
         return getattr(self._inner, name)
 
+    def _normalize_nodes(self, items: list[Any] | None) -> list[Any]:
+        """
+        Normalize heterogeneous references into a flat list of objects that expose `.node`.
+
+        Accepts lists containing:
+        - NodeWithScore-like objects (having `.node`)
+        - SubQuestionAnswerPair-like objects (having `.sources` which is a list of NodeWithScore)
+        - Ignores None or unexpected types
+        """
+        if not items:
+            return []
+
+        normalized: list[Any] = []
+        for item in items:
+            if item is None:
+                continue
+            # Already a NodeWithScore-like object
+            if hasattr(item, "node"):
+                normalized.append(item)
+                continue
+            # SubQuestionAnswerPair-like: flatten its `.sources`
+            sources = getattr(item, "sources", None)
+            if isinstance(sources, list):
+                for s in sources:
+                    if s is None:
+                        continue
+                    if hasattr(s, "node"):
+                        normalized.append(s)
+                continue
+            # Unknown type; skip defensively
+        return normalized
+
     def _merge(self, response):
         try:
             summary_nodes = []
             if hasattr(response, "metadata") and response.metadata:
-                summary_nodes = response.metadata.get("summary_nodes", []) or []
-            orig_nodes = getattr(response, "source_nodes", []) or []
+                summary_nodes = self._normalize_nodes(response.metadata.get("summary_nodes", []) or [])
+            orig_nodes = self._normalize_nodes(getattr(response, "source_nodes", []) or [])
             combined = list(orig_nodes) + list(summary_nodes)
 
             seen_ids = set()
