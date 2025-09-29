@@ -5,7 +5,7 @@ from llama_index.core.schema import NodeWithScore, TextNode
 from temporalio import activity, workflow
 from openai import OpenAI
 from temporalio.common import RetryPolicy
-from utils.globals import NO_ANSWER_REFERENCE
+from utils.globals import NO_ANSWER_REFERENCE, NO_ANSWER_REFERENCE_PLACEHOLDER
 from utils.query_engine.prepare_answer_sources import PrepareAnswerSources
 from tc_temporal_backend.schema.hivemind import HivemindQueryPayload
 from bot.agent.tools import rag_tool, general_llm_tool
@@ -18,15 +18,24 @@ async def hivemind_activity(payload: HivemindQueryPayload):
     Route the incoming query to the appropriate tool.
     Uses a lightweight LLM-based router to select between RAG and general LLM.
     """
+    # If answer skipping is enabled, always route to RAG directly
+    if payload.enable_answer_skipping:
+        return await rag_tool(payload)
+
+    # else, try to answer using the general knowledge as well
     try:
         client = OpenAI()
         router_messages = [
             {
                 "role": "system",
                 "content": (
-                    "You are a strict router. Decide which tool to use for answering a question. "
-                    "Return exactly one word: 'rag' if the question likely needs specific data, "
-                    "or 'llm' if general world knowledge suffices. No extra text."
+                    "You are the TogetherCrew bot which is a strict router and lightweight answerer. If the question requires specific, external, or context data "
+                    "(e.g., company/product/project/community/user/platform/etc.), return exactly one word: 'rag'. "
+                    "Do not act as a general-purpose assistant and do not answer very broad or generic questions; if the query is generic, out of scope, or not directly about helping the user's specific problem, return 'rag'. "
+                    "Otherwise, answer the question directly in one short paragraph or less, following these rules: "
+                    "rely solely on your own knowledge, do not fabricate citations or sources, provide concise and clear answers, "
+                    f"never provide suggestions or ask for clarifications, and if you don't know the answer, reply exactly with '{NO_ANSWER_REFERENCE_PLACEHOLDER}'. "
+                    "When in doubt, prefer returning 'rag'. Return only 'rag' or the answer text. No extra commentary."
                 ),
             },
             {
@@ -42,15 +51,16 @@ async def hivemind_activity(payload: HivemindQueryPayload):
             messages=router_messages,
             temperature=0.0,
         )
-        choice = (decision.choices[0].message.content or "rag").strip().lower()
+        router_output = (decision.choices[0].message.content or "rag").strip()
     except Exception as ex:
         logging.exception(f"Error routing question to tool. defaulting to rag. Exception: {ex}")
-        choice = "rag"
+        router_output = "rag"
 
-    if choice == "llm":
-        return await general_llm_tool(payload)
-    else:
+    if router_output.lower() == "rag":
         return await rag_tool(payload)
+    # For any non-'rag' output, we answer via general LLM tool to ensure
+    # consistent evaluations and persistence behavior.
+    return await general_llm_tool(payload)
 
 
 @activity.defn
