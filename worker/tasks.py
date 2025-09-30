@@ -16,6 +16,11 @@ from utils.traceloop import init_tracing
 from worker.celery import app
 
 
+# TODO: update the flow to accept testing parameters in HivemindQueryPayload
+# Temporary hardcoded values for evaluation pipeline
+EVALUATION_COMMUNITY_ID = "1234"
+EVALUATION_DISCORD_PLATFORM_ID = "4321"
+
 @app.task
 def ask_question_auto_search(
     community_id: str,
@@ -93,11 +98,9 @@ def query_data_sources(
         f"{prefix} Answer skipping in case of non-relevant information: {enable_answer_skipping}"
     )
 
-    # TODO: update the flow to accept testing parameters in HivemindQueryPayload
-    # right now this is hardcoded for our evaluation pipeline to be discord only
-    if community_id == "1234":
+    if community_id == EVALUATION_COMMUNITY_ID:
         data_sources = {
-            "discord": "4321",
+            "discord": EVALUATION_DISCORD_PLATFORM_ID,
         }
     else:
         selector = DataSourceSelector()
