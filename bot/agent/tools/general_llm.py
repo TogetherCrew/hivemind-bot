@@ -48,7 +48,7 @@ async def general_llm_tool(payload: HivemindQueryPayload):
         if response == NO_ANSWER_REFERENCE_PLACEHOLDER:
             response = NO_ANSWER_REFERENCE
     except Exception as e:
-        logging.exception("LLM generation failed")
+        logging.exception(f"LLM generation failed. Exception: {str(e)}")
         response = None
 
     # There are no retrieval references in this mode
