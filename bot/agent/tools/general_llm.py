@@ -31,10 +31,10 @@ async def general_llm_tool(payload: HivemindQueryPayload):
             {
                 "role": "system",
                 "content": (
-                    + "You are a helpful assistant. Rely solely on your own knowledge. "
-                    + "Do not fabricate citations or sources. Provide concise, clear, and less than a paragraph answers. "
-                    + "Never provide suggestions or ask for clarifications. "
-                    + f"In case you didn't know the answer, just say '{NO_ANSWER_REFERENCE_PLACEHOLDER}'."
+                    "You are a helpful assistant. Rely solely on your own knowledge. "
+                    "Do not fabricate citations or sources. Provide concise, clear, and less than a paragraph answers. "
+                    "Never provide suggestions or ask for clarifications. "
+                    f"In case you didn't know the answer, just say '{NO_ANSWER_REFERENCE_PLACEHOLDER}'."
                 ),
             },
             {"role": "user", "content": payload.query},
