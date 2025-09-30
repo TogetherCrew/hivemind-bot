@@ -227,7 +227,7 @@ async def rag_tool(payload: HivemindQueryPayload):
         communityId=payload.community_id,
         route=RouteModel(source="temporal", destination=None),
         question=QuestionModel(message=payload.query),
-        response=ResponseModel(message=f"{response}\n\n{answer_reference}"),
+        response=ResponseModel(message=f"{response or ''}\n\n{answer_reference}"),
         metadata=evaluation_metadata,
     )
 
