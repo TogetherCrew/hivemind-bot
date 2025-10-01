@@ -16,6 +16,11 @@ from utils.traceloop import init_tracing
 from worker.celery import app
 
 
+# TODO: update the flow to accept testing parameters in HivemindQueryPayload
+# Temporary hardcoded values for evaluation pipeline
+EVALUATION_COMMUNITY_ID = "1234"
+EVALUATION_DISCORD_PLATFORM_ID = "4321"
+
 @app.task
 def ask_question_auto_search(
     community_id: str,
@@ -92,8 +97,15 @@ def query_data_sources(
     logging.info(
         f"{prefix} Answer skipping in case of non-relevant information: {enable_answer_skipping}"
     )
-    selector = DataSourceSelector()
-    data_sources = selector.select_data_source(community_id)
+
+    if community_id == EVALUATION_COMMUNITY_ID:
+        data_sources = {
+            "discord": EVALUATION_DISCORD_PLATFORM_ID,
+        }
+    else:
+        selector = DataSourceSelector()
+        data_sources = selector.select_data_source(community_id)
+
     logging.info(f"{prefix} Data sources selected: {data_sources}")
 
     # Platform IDs are now directly in data_sources, pass them directly

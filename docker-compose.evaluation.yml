@@ -9,6 +9,20 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
+  mongo:
+    image: "mongo:6.0.8"
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    healthcheck:
+      test: echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   evaluation:
     build:
       context: .
@@ -17,6 +31,7 @@ services:
     container_name: evaluation
     depends_on:
       - qdrant
+      - mongo
     working_dir: /project
     env_file:
       - .env
