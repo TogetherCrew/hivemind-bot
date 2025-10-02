@@ -1,5 +1,4 @@
 import logging
-import os
 from utils.globals import (
     K1_RETRIEVER_SEARCH,
     K2_RETRIEVER_SEARCH,
@@ -16,10 +15,6 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.llms.openai import OpenAI
 from schema.type import DataType
 from tc_hivemind_backend.qdrant_vector_access import QDrantVectorAccess
-from utils.globals import (
-    REFERENCE_SCORE_THRESHOLD,
-    RETRIEVER_THRESHOLD,
-)
 from utils.query_engine.qa_prompt import qa_prompt
 from utils.query_engine.combined_qdrant_retriever import CombinedQdrantRetriever
 from utils.query_engine.qdrant_query_engine_utils import QdrantEngineUtils
@@ -292,34 +287,16 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         # Apply reranking if enabled
         nodes = self._rerank_nodes(query_str, nodes)
 
-        nodes_filtered = [node for node in nodes if node.score >= RETRIEVER_THRESHOLD]
-        logging.info(
-            f"Filtered to {len(nodes_filtered)} nodes (threshold: {RETRIEVER_THRESHOLD})"
-        )
+        logging.info(f"Filtered to {len(nodes)} nodes Using cross encoder reranking")
 
-        raw_scores = [
-            node.score for node in nodes if node.score >= REFERENCE_SCORE_THRESHOLD
-        ]
-
-        enable_skip = (
-            isinstance(self.retriever, CombinedQdrantRetriever)
-            and self.retriever.enable_answer_skipping
-        )
-        if not raw_scores and enable_skip:
-            logging.warning("No high-quality nodes found, skipping answer")
-            raise ValueError(
-                f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
-                " Returning empty response"
-            )
-
-        context_str = "\n\n".join([n.node.get_content() for n in nodes_filtered])
+        context_str = "\n\n".join([n.node.get_content() for n in nodes])
         prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
         response = self.llm.complete(prompt)
 
         logging.info("=== BASIC QUERY MODE COMPLETED ===")
 
         # return final_response
-        return Response(response=str(response), source_nodes=nodes_filtered)
+        return Response(response=str(response), source_nodes=nodes)
 
     def _process_summary_query(self, query_str: str) -> Response:
         logging.info("=== SUMMARY QUERY MODE ===")
@@ -330,15 +307,12 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         
         # Apply reranking to summary nodes if enabled
         summary_nodes = self._rerank_nodes(query_str, summary_nodes)
-        
-        summary_nodes_filtered = [
-            node for node in summary_nodes if node.score >= RETRIEVER_THRESHOLD
-        ]
+
         dates = []
         if combined.metadata_date_summary_key is not None:
             dates = [
                 node.metadata[combined.metadata_date_summary_key]
-                for node in summary_nodes_filtered
+                for node in summary_nodes
                 if combined.metadata_date_summary_key in node.metadata
             ]
 
@@ -352,52 +326,27 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         # Apply reranking to raw nodes if enabled
         raw_nodes = self._rerank_nodes(query_str, raw_nodes)
 
-        raw_nodes_filtered = [
-            node for node in raw_nodes if node.score >= RETRIEVER_THRESHOLD
-        ]
-
-        # Checking nodes threshold
-        summary_scores = [
-            node.score
-            for node in summary_nodes_filtered
-            if node.score >= REFERENCE_SCORE_THRESHOLD
-        ]
-        raw_scores = [
-            node.score
-            for node in raw_nodes_filtered
-            if node.score >= REFERENCE_SCORE_THRESHOLD
-        ]
-        enable_skip = (
-            isinstance(self.retriever, CombinedQdrantRetriever)
-            and self.retriever.enable_answer_skipping
+        logging.info(f"Filtered {len(summary_nodes)} summary nodes and {len(raw_nodes)} raw nodes")
+        # if we had something above our threshold then try to answer
+        # Use QdrantEngineUtils to build combined prompt text
+        utils_helper = QdrantEngineUtils(
+            metadata_date_key=combined.metadata_date_key,
+            metadata_date_format=combined.metadata_date_format,
+            date_margin=combined.date_margin,
         )
-        if not summary_scores and not raw_scores and enable_skip:
-            raise ValueError(
-                f"All nodes are below threhsold: {REFERENCE_SCORE_THRESHOLD}"
-                " Returning empty response"
-            )
-        else:
-            logging.info(f"Filtered {len(summary_nodes_filtered)} summary nodes and {len(raw_nodes_filtered)} raw nodes")
-            # if we had something above our threshold then try to answer
-            # Use QdrantEngineUtils to build combined prompt text
-            utils_helper = QdrantEngineUtils(
-                metadata_date_key=combined.metadata_date_key,
-                metadata_date_format=combined.metadata_date_format,
-                date_margin=combined.date_margin,
-            )
-            context_str = utils_helper.combine_nodes_for_prompt(
-                summary_nodes_filtered, raw_nodes_filtered
-            )
-            prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
-            # TODO: remove this after testing
-            # logging.error(f"Prompt: {prompt}")
-            response = self.llm.complete(prompt)
+        context_str = utils_helper.combine_nodes_for_prompt(
+            summary_nodes, raw_nodes
+        )
+        prompt = self.qa_prompt.format(context_str=context_str, query_str=query_str)
+        # TODO: remove this after testing
+        # logging.error(f"Prompt: {prompt}")
+        response = self.llm.complete(prompt)
 
-            logging.info("=== SUMMARY QUERY MODE COMPLETED ===")
-            return Response(
-                response=str(response),
-                source_nodes=raw_nodes_filtered,
-                metadata={
-                    "summary_nodes": summary_nodes_filtered,
-                },
-            )
+        logging.info("=== SUMMARY QUERY MODE COMPLETED ===")
+        return Response(
+            response=str(response),
+            source_nodes=raw_nodes,
+            metadata={
+                "summary_nodes": summary_nodes,
+            },
+        )
