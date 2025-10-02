@@ -77,7 +77,6 @@ def prepare_discord_engine(
     query_engine : BaseQueryEngine
         the created query engine with the filters
     """
-    # Use the new DiscordQueryEngine instead of LevelBasedPlatformQueryEngine
     engine = DiscordQueryEngine(community_id=community_id, platform_id=platform_id)
     return engine.prepare(enable_answer_skipping=enable_answer_skipping)
 
