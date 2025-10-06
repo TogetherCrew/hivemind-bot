@@ -19,9 +19,11 @@ in json markdown that, when composed, can help answer the full user question. \
 Define the sub-questions as search queries that can be used for vector similarity search.
 
 Requirements:
-- Include every tool at least once. The number of items must be greater than or equal to the number of tools.
+- Include every tool at least twice. The total number of items must be greater than or equal to 2 × the number of tools.
 - Each item must target one tool via the "tool_name" field (case-sensitive match).
-- Write platform-appropriate search queries in the "sub_question" field; prefer concise phrasing but allow longer queries when helpful (no strict word limit).
+- For each unique sub-question text you generate, create a corresponding item for every tool so that the same set of sub-questions is used across all platforms (no platform-specific tailoring).
+- Generate at least two distinct sub-questions overall (and mirror each across all tools). Ensure these sub-questions use varied vocabulary and phrasing (e.g., synonyms, paraphrases, alternate key terms, acronyms, and related concepts) to maximize recall in vector search.
+- Sub-questions can be long but must remain concise and informative; avoid ultra-short keyword-only queries.
 - The JSON output must be an object with key "items" whose value is an array of objects.
 - Order of items does not matter.
 - Return only a single JSON code block in the <Output> section; no text outside the JSON.
