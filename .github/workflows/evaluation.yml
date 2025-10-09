@@ -146,7 +146,7 @@ jobs:
           assert results_csv.exists(), 'results.csv not found'
           df = pd.read_csv(results_csv)
 
-          metrics = ['faithfulness','answer_relevancy','context_precision','context_recall']
+          metrics = ['faithfulness','answer_relevancy','context_precision','context_recall','factual_correctness(mode=f1)']
           avgs = {m: float(df[m].mean()) for m in metrics if m in df.columns}
 
           cost_payload = {}
