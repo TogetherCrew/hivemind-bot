@@ -10,6 +10,7 @@ from ragas.metrics import (
     AnswerRelevancy,
     ContextPrecision,
     ContextRecall,
+    FactualCorrectness,
 )
 from langchain_openai import ChatOpenAI
 from ragas.integrations.llama_index import evaluate
@@ -137,6 +138,7 @@ class StartEvaluation:
             AnswerRelevancy(llm=evaluator_llm),
             ContextPrecision(llm=evaluator_llm),
             ContextRecall(llm=evaluator_llm),
+            FactualCorrectness(llm=evaluator_llm),
         ]
 
         result = evaluate(
