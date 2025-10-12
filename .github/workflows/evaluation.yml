@@ -147,7 +147,13 @@ jobs:
           df = pd.read_csv(results_csv)
 
           metrics = ['faithfulness','answer_relevancy','context_precision','context_recall','factual_correctness(mode=f1)']
-          avgs = {m: float(df[m].mean()) for m in metrics if m in df.columns}
+          avgs = {}
+          for m in metrics:
+            if m in df.columns:
+              # Handle NaN values by using dropna() before calculating mean
+              mean_val = df[m].dropna().mean()
+              if pd.notna(mean_val):  # Only add if the mean is not NaN
+                avgs[m] = float(mean_val)
 
           cost_payload = {}
           if cost_json.exists():
