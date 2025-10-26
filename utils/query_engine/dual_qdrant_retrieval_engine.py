@@ -294,9 +294,21 @@ class DualQdrantRetrievalEngine(CustomQueryEngine):
         response = self.llm.complete(prompt)
 
         logging.info("=== BASIC QUERY MODE COMPLETED ===")
+        
+        
+        # TODO: cleanup this
+        # this is for MediaWiki platform which should be handled over the ETL and not here
+        for node in nodes:
+            if node.metadata.get("url") is None:
+                url_route = node.metadata.get("title")
+                if url_route is not None:
+                    url_route = url_route.replace(" ", "_")
+                    node.metadata["url"] = f"https://wiki.p2pfoundation.net/{url_route}"
+
+        final_response = Response(response=str(response), source_nodes=nodes)
 
         # return final_response
-        return Response(response=str(response), source_nodes=nodes)
+        return final_response
 
     def _process_summary_query(self, query_str: str) -> Response:
         logging.info("=== SUMMARY QUERY MODE ===")
