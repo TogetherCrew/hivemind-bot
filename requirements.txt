@@ -5,7 +5,7 @@ python-pptx==1.0.2
 tc-neo4j-lib==2.0.4
 google-api-python-client==2.156.0
 unstructured==0.16.11
-tc-hivemind-backend==1.4.2.post2
+tc-hivemind-backend==1.4.8
 llama-index-question-gen-guidance==0.1.2
 llama-index-vector-stores-postgres
 celery[redis]>=5.3.6, <6.0.0
@@ -23,3 +23,9 @@ tc-temporal-backend==1.1.4
 ragas==0.3.1
 ragas_experimental==0.3.1
 sentence-transformers>=2.0.0
+langchain==0.3.27
+langchain-community==0.3.30
+langchain-core==0.3.76
+langchain-openai==0.3.33
+langchain-text-splitters==0.3.11
+opentelemetry-instrumentation-langchain==0.31.0
