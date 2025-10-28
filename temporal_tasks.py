@@ -103,10 +103,14 @@ class HivemindWorkflow:
             return None
 
     def serialize_references(
-        self, references: list[dict]
+        self, references: list[dict] | list[SubQuestionAnswerPair]
     ) -> list[SubQuestionAnswerPair]:
         ref_nodes: list[SubQuestionAnswerPair] = []
         for ref in references:
+            if isinstance(ref, SubQuestionAnswerPair):
+                ref_nodes.append(ref)
+                continue
+
             answer = ref["answer"]
             sources = ref["sources"]
             sub_q = ref["sub_q"]

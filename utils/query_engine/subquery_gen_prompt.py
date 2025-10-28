@@ -20,6 +20,8 @@ Define the sub-questions as search queries that can be used for vector similarit
 
 Requirements:
 - Include every tool at least once. The number of items must be greater than or equal to the number of tools.
+- If the question is for MediaWiki or Wikipedia, don't change the question, just use the question as exactly as it is.
+- If the question is for MediaWiki or Wikipedia, just return 1 subquestion.
 - Each item must target one tool via the "tool_name" field (case-sensitive match).
 - Write platform-appropriate search queries in the "sub_question" field; prefer concise phrasing but allow longer queries when helpful (no strict word limit).
 - The JSON output must be an object with key "items" whose value is an array of objects.
