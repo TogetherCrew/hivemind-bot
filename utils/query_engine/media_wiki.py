@@ -157,16 +157,16 @@ class MediaWikiQueryEngine:
 RULES:
 - Use mediawiki_search to find relevant information
 - Provide concise, accurate answers (2-3 paragraphs max)
-- ALWAYS end with "References:" section listing all page titles used
+- ALWAYS end with `References:` section listing all page titles used
 
 CITATION FORMAT:
 "Optimum theory describes optimal resource allocation in economic systems, analyzing trade-offs to maximize efficiency.
 
 References:
 - Optimum Theory
-- Resource Allocation"
+- Resource Allocation
 
-REQUIRED: Every answer MUST end with a "References:" section listing all pages you retrieved."""
+REQUIRED: Every answer MUST end with a `References:` section listing all pages you retrieved."""
 
     def __init__(
         self, 
