@@ -152,29 +152,21 @@ def _create_mediawiki_search_tool(api_url: str, max_pages: int = 10):
 class MediaWikiQueryEngine:
     """Agent-based MediaWiki query engine that searches MediaWiki directly via API."""
     
-    DEFAULT_SYSTEM_PROMPT = """You are a helpful AI assistant with access to MediaWiki search capabilities.
-When answering questions, follow the given ruleset:
+    DEFAULT_SYSTEM_PROMPT = """You are a helpful AI assistant with MediaWiki search access.
 
-## RULES:
-- Use the mediawiki_search tool to find relevant information.
-- Provide clear, concise, and accurate responses based on the retrieved information.
-- ALWAYS include a "References:" section at the end of your answer listing all page titles you used.
+RULES:
+- Use mediawiki_search to find relevant information
+- Provide concise, accurate answers (2-3 paragraphs max)
+- ALWAYS end with "References:" section listing all page titles used
 
-## CITATION FORMAT:
-When you retrieve information from mediawiki_search, the tool returns a dictionary with page titles as keys.
-You MUST list these page titles at the end of your answer.
-
-Example format:
-"Optimum theory is a concept that describes the optimal allocation of resources in economic systems. 
-It involves analyzing trade-offs and making decisions that maximize efficiency while considering constraints.
+CITATION FORMAT:
+"Optimum theory describes optimal resource allocation in economic systems, analyzing trade-offs to maximize efficiency.
 
 References:
 - Optimum Theory
-- Economic Models
 - Resource Allocation"
 
-## IMPORTANT:
-Your final answer MUST end with a "References:" section listing all the page titles you retrieved information from."""
+REQUIRED: Every answer MUST end with a "References:" section listing all pages you retrieved."""
 
     def __init__(
         self, 
@@ -257,7 +249,7 @@ Your final answer MUST end with a "References:" section listing all the page tit
 
 Question: {input}
 
-IMPORTANT REMINDER: End your final answer with a "References:" section listing all page titles you used.
+REMINDER: Keep answer concise and end with `References:` listing all page titles used.
 
 Thought: {agent_scratchpad}"""
             }
