@@ -3,6 +3,7 @@ import re
 import html
 import requests
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain.tools import tool
 from langchain.agents import initialize_agent, AgentType
 from langchain.chat_models import ChatOpenAI
@@ -80,7 +81,7 @@ def _fetch_page_content(api_url: str, title: str) -> str:
         return f"(Error: {str(e)})"
 
 
-def _create_mediawiki_search_tool(api_url: str, max_pages: int = 10):
+def _create_mediawiki_search_tool(api_url: str, max_pages: int = 30):
     """Create a MediaWiki search tool with the given API URL."""
     
     @tool("mediawiki_search", return_direct=False)
@@ -133,16 +134,34 @@ def _create_mediawiki_search_tool(api_url: str, max_pages: int = 10):
         if len(results) == 0:
             return {}
 
-        # 2. Fetch content for each page
+        # 2. Fetch content for each page in parallel
         pages_content = {}
-        for result in results[:max_pages]:
-            title = result.get("title")
-            if not title:
-                continue
+        titles_to_fetch = [
+            result.get("title") 
+            for result in results[:max_pages] 
+            if result.get("title")
+        ]
+        
+        logger.info(f"Fetching content for {len(titles_to_fetch)} pages in parallel...")
+        
+        # Use ThreadPoolExecutor for parallel fetching
+        with ThreadPoolExecutor(max_workers=min(10, len(titles_to_fetch))) as executor:
+            # Submit all fetch tasks
+            future_to_title = {
+                executor.submit(_fetch_page_content, api_url, title): title
+                for title in titles_to_fetch
+            }
             
-            logger.info(f"Fetching content for: {title}")
-            content = _fetch_page_content(api_url, title)
-            pages_content[title] = content
+            # Collect results as they complete
+            for future in as_completed(future_to_title):
+                title = future_to_title[future]
+                try:
+                    content = future.result()
+                    pages_content[title] = content
+                    logger.info(f"Successfully fetched content for: {title}")
+                except Exception as e:
+                    logger.error(f"Error fetching content for '{title}': {e}")
+                    pages_content[title] = f"(Error: Failed to fetch content - {str(e)})"
 
         return pages_content
     
